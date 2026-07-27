@@ -305,9 +305,9 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 40px rgba(219, 39, 119, 0.6)) 
-          drop-shadow(0 0 60px rgba(139, 92, 246, 0.4));
-  animation: none;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 50px rgba(219, 39, 119, 0.7)) 
+          drop-shadow(0 0 80px rgba(139, 92, 246, 0.5));
 }
 
 .ph-phoenix-glow {
@@ -340,8 +340,9 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 30px rgba(6, 182, 212, 0.5)) 
-          drop-shadow(0 0 50px rgba(0, 150, 255, 0.3));
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 40px rgba(6, 182, 212, 0.6)) 
+          drop-shadow(0 0 60px rgba(0, 150, 255, 0.4));
 }
 
 .ph-robot-glow {
