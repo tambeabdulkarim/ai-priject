@@ -17,7 +17,8 @@ export const dictionaries = {
       contact: 'تواصل',
       workspace: 'المساحة',
       files: 'الملفات',
-      projects: 'المشاريع'
+      projects: 'المشاريع',
+      analytics: 'التحليلات'
     },
     hero: {
       badge: 'منصة إنتاجية ذكية',
@@ -68,7 +69,8 @@ export const dictionaries = {
       contact: 'Contact',
       workspace: 'Workspace',
       files: 'Files',
-      projects: 'Projects'
+      projects: 'Projects',
+      analytics: 'Analytics'
     },
     hero: {
       badge: 'Smart productivity platform',

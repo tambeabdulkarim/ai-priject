@@ -420,6 +420,15 @@ main {
   cursor: pointer;
 }
 
+.primary-button {
+  border: none;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
 .progress-row {
   display: grid;
   gap: 0.45rem;
