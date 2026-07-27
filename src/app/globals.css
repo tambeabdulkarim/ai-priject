@@ -174,51 +174,51 @@ body {
 /* HERO SECTION - FIT 100VH MINUS NAVBAR */
 .ph-hero {
   height: calc(100vh - 65px);
-  padding: 1.5rem 1rem;
+  padding: 2rem 1.5rem;
   display: flex;
   align-items: center;
   position: relative;
   overflow: hidden;
 }
 
-/* 3-COLUMN LAYOUT: STATS | SCENE | TEXT */
+/* 3-COLUMN LAYOUT: TEXT (L) | ILLUSTRATION (CENTER) | STATS (R) */
 .ph-hero-inner {
-  max-width: 1500px;
+  max-width: 1600px;
   width: 100%;
   height: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 100px 1fr 240px;
-  gap: 1.5rem;
+  grid-template-columns: 320px 1fr 150px;
+  gap: 2rem;
   align-items: center;
   justify-items: center;
   position: relative;
 }
 
-/* ILLUSTRATION CONTAINER - ROBOT (LEFT) + PHOENIX (RIGHT) */
+/* ILLUSTRATION CONTAINER - CENTER (LARGE) */
 .ph-illus-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 20px;
   position: relative;
   height: 100%;
-  max-height: 300px;
+  max-height: 380px;
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
   grid-column: 2;
 }
 
-/* STATS PANEL - VERTICAL RIGHT COLUMN */
+/* STATS PANEL - RIGHT COLUMN (VERTICAL) */
 .ph-hero-stats {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.2rem;
   z-index: 2;
-  width: 100px;
+  width: 150px;
   height: 100%;
-  max-height: 300px;
-  grid-column: 1;
+  max-height: 350px;
+  grid-column: 3;
   grid-row: 1;
   justify-content: center;
 }
@@ -227,8 +227,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.5rem 0.4rem;
+  gap: 0.5rem;
+  padding: 0.8rem 0.6rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
@@ -245,34 +245,34 @@ body {
 }
 
 .ph-hstat-icon {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 1rem;
   box-shadow: 0 0 12px rgba(124, 58, 237, 0.3);
 }
 
 .ph-hstat-num {
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .ph-hstat-lbl {
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
-  line-height: 1;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
-/* PHOENIX - RIGHT SIDE (LANDSCAPE SCENE) */
+/* PHOENIX - RIGHT (LARGER) */
 .ph-illus-phoenix {
   position: relative;
-  height: 240px;
-  width: 240px;
+  height: 320px;
+  width: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -291,8 +291,8 @@ body {
 
 .ph-phoenix-glow {
   position: absolute;
-  width: 320px;
-  height: 320px;
+  width: 400px;
+  height: 400px;
   background: radial-gradient(circle, rgba(219, 39, 119, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
   border-radius: 50%;
   filter: blur(40px);
@@ -303,11 +303,11 @@ body {
   animation: ph-glow-pulse 3s ease-in-out infinite;
 }
 
-/* ROBOT - LEFT SIDE (LANDSCAPE SCENE) */
+/* ROBOT - LEFT (LARGER) */
 .ph-illus-robot {
   position: relative;
-  height: 220px;
-  width: 180px;
+  height: 280px;
+  width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -325,8 +325,8 @@ body {
 
 .ph-robot-glow {
   position: absolute;
-  width: 280px;
-  height: 280px;
+  width: 340px;
+  height: 340px;
   background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 70%);
   border-radius: 50%;
   filter: blur(35px);
@@ -350,8 +350,8 @@ body {
 
 .ph-float-icon {
   position: absolute;
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -360,75 +360,74 @@ body {
 
 /* Top corners above bird and robot */
 .ph-float-icon.top-left {
-  top: -15px;
-  left: 5%;
+  top: -25px;
+  left: 10%;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: -15px;
-  right: 5%;
+  top: -25px;
+  right: 10%;
   animation-delay: 1s;
 }
 
 /* Sides integrated with bird and robot */
 .ph-float-icon.bottom-left {
-  bottom: 50px;
-  left: -20px;
+  bottom: 40px;
+  left: -30px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 50px;
-  right: -20px;
+  bottom: 40px;
+  right: -30px;
   animation-delay: 1.5s;
 }
 
 .ph-icon-box {
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   background: rgba(139, 92, 246, 0.15);
   border: 2px solid rgba(219, 39, 119, 0.4);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 
               inset 0 0 10px rgba(139, 92, 246, 0.1);
   backdrop-filter: blur(5px);
 }
 
-/* TEXT COPY - LEFT COLUMN (NARROWER) */
+/* TEXT COPY - LEFT COLUMN (WIDER) */
 .ph-hero-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 1.2rem;
   z-index: 2;
   text-align: right;
   align-items: flex-start;
   width: 100%;
-  max-width: 240px;
-  grid-column: 3;
-  grid-row: 1;
   height: 100%;
+  grid-column: 1;
+  grid-row: 1;
   justify-content: center;
 }
 
 .ph-h1 {
-  font-size: 1.35rem;
+  font-size: 1.75rem;
   font-weight: 900;
   background: linear-gradient(180deg, #ffffff 0%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .ph-hero-sub {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.6;
   width: 100%;
 }
 
