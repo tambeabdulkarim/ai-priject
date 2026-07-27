@@ -253,10 +253,12 @@ body {
   order: 2;
 }
 
-.ph-phoenix-svg {
+.ph-phoenix-img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
   filter: drop-shadow(0 0 30px rgba(219, 39, 119, 0.4));
+  animation: ph-float-anim 5s ease-in-out infinite;
 }
 
 .ph-phoenix-glow {
@@ -284,9 +286,11 @@ body {
   order: 3;
 }
 
-.ph-robot-svg {
+.ph-robot-img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(0, 150, 255, 0.3));
 }
 
 .ph-robot-glow {

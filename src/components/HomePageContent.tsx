@@ -71,100 +71,22 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
 
             {/* PHOENIX WINGS */}
             <div className="ph-illus-phoenix">
-              <svg viewBox="0 0 300 300" className="ph-phoenix-svg">
-                <defs>
-                  <radialGradient id="phoenixGrad" cx="45%" cy="45%">
-                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
-                    <stop offset="30%" stopColor="#f59e0b" stopOpacity="1" />
-                    <stop offset="60%" stopColor="#db2777" stopOpacity="0.9" />
-                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.4" />
-                  </radialGradient>
-                  <filter id="phoenixGlow">
-                    <feGaussianBlur stdDeviation="10" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                
-                {/* Left Wing - Extended */}
-                <path d="M 150 150 Q 80 110 40 50 Q 20 20 45 60 Q 85 110 140 150 Z" 
-                      fill="#db2777" opacity="0.85" filter="url(#phoenixGlow)" />
-                <path d="M 150 150 Q 70 100 30 40 Q 10 10 35 50 Q 75 100 135 145 Z" 
-                      fill="#a855f7" opacity="0.6" />
-                
-                {/* Right Wing - Extended */}
-                <path d="M 150 150 Q 220 110 260 50 Q 280 20 255 60 Q 215 110 160 150 Z" 
-                      fill="#db2777" opacity="0.85" filter="url(#phoenixGlow)" />
-                <path d="M 150 150 Q 230 100 270 40 Q 290 10 265 50 Q 225 100 165 145 Z" 
-                      fill="#a855f7" opacity="0.6" />
-                
-                {/* Center Body - Flame */}
-                <circle cx="150" cy="140" r="50" fill="#fbbf24" filter="url(#phoenixGlow)" />
-                <circle cx="150" cy="135" r="40" fill="#f59e0b" />
-                <circle cx="150" cy="130" r="25" fill="#f97316" />
-                <circle cx="150" cy="125" r="15" fill="#fef3c7" />
-                
-                {/* Spark Effects */}
-                <circle cx="130" cy="120" r="4" fill="#fbbf24" />
-                <circle cx="170" cy="120" r="4" fill="#fbbf24" />
-                <circle cx="150" cy="160" r="3" fill="#f59e0b" />
-              </svg>
-              <div className="ph-phoenix-glow" />
+              <img 
+                src="/images/phoenix-hero-bird.png" 
+                alt="Phoenix Bird"
+                className="ph-phoenix-img"
+                loading="lazy"
+              />
             </div>
 
             {/* ROBOT */}
             <div className="ph-illus-robot">
-              <svg viewBox="0 0 200 250" className="ph-robot-svg">
-                <defs>
-                  <linearGradient id="headGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#e5e7eb" />
-                    <stop offset="100%" stopColor="#9ca3af" />
-                  </linearGradient>
-                  <filter id="robotGlow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                    <feMerge>
-                      <feMergeNode in="coloredBlur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                
-                {/* Head */}
-                <rect x="50" y="20" width="100" height="110" rx="15" fill="url(#headGrad)" stroke="#0ea5e9" strokeWidth="2" filter="url(#robotGlow)" />
-                
-                {/* Left Eye */}
-                <circle cx="75" cy="55" r="15" fill="#0ea5e9" />
-                <circle cx="75" cy="55" r="10" fill="#0369a1" />
-                <circle cx="77" cy="52" r="5" fill="#e0f2fe" />
-                
-                {/* Right Eye */}
-                <circle cx="125" cy="55" r="15" fill="#0ea5e9" />
-                <circle cx="125" cy="55" r="10" fill="#0369a1" />
-                <circle cx="127" cy="52" r="5" fill="#e0f2fe" />
-                
-                {/* Mouth */}
-                <path d="M 80 95 Q 100 105 120 95" stroke="#0ea5e9" strokeWidth="2" fill="none" strokeLinecap="round" />
-                
-                {/* Neck */}
-                <rect x="75" y="125" width="50" height="15" fill="#9ca3af" />
-                
-                {/* Chest */}
-                <rect x="40" y="145" width="120" height="90" rx="10" fill="url(#headGrad)" stroke="#0ea5e9" strokeWidth="2" />
-                
-                {/* AI Text */}
-                <text x="100" y="210" fontSize="48" fontWeight="bold" textAnchor="middle" fill="#0066ff" fontFamily="Arial">
-                  AI
-                </text>
-                
-                {/* Chest Details - Left Arm */}
-                <rect x="25" y="160" width="15" height="50" rx="7" fill="#9ca3af" />
-                
-                {/* Chest Details - Right Arm */}
-                <rect x="160" y="160" width="15" height="50" rx="7" fill="#9ca3af" />
-              </svg>
-              <div className="ph-robot-glow" />
+              <img 
+                src="/images/phoenix-hero-robot.png" 
+                alt="AI Robot"
+                className="ph-robot-img"
+                loading="lazy"
+              />
             </div>
 
             {/* ICONS around center */}
