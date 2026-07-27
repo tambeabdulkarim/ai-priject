@@ -1447,7 +1447,6 @@ main.ph-main {
 
 /* RTL overrides for phoenix components */
 .rtl .ph-topbar-inner,
-.rtl .ph-hero-inner,
 .rtl .ph-hero-copy,
 .rtl .ph-hero-btns,
 .rtl .ph-search,
@@ -1460,10 +1459,19 @@ main.ph-main {
 .rtl .ph-sec-hdr,
 .rtl .ph-hstat,
 .rtl .ph-bstat,
-.rtl .ph-hero-stats,
 .rtl .ph-nav,
 .rtl .ph-nav-actions,
 .rtl .ph-statsbar-inner {
+  direction: rtl;
+}
+
+/* Reverse grid columns for RTL */
+.rtl .ph-hero-inner {
+  direction: rtl;
+  grid-template-columns: 250px 0.85fr 1.15fr;
+}
+
+.rtl .ph-hero-stats {
   direction: rtl;
 }
 
@@ -1471,6 +1479,11 @@ main.ph-main {
   left: auto;
   right: 0.85rem;
 }
+
+/* RTL float positioning */
+.rtl .ph-float.f1 { right: auto; left: 6%; }
+.rtl .ph-float.f2 { left: auto; right: 1%; }
+.rtl .ph-float.f3 { right: auto; left: 4%; }
 
 .rtl .ph-search-input { direction: rtl; }
 .rtl .ph-nl-input { direction: rtl; }
