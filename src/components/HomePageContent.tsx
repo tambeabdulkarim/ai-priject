@@ -75,7 +75,6 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
                 src="/images/phoenix-hero-bird.png" 
                 alt="Phoenix Bird"
                 className="ph-phoenix-img"
-                loading="lazy"
               />
             </div>
 
@@ -85,7 +84,6 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
                 src="/images/phoenix-hero-robot.png" 
                 alt="AI Robot"
                 className="ph-robot-img"
-                loading="lazy"
               />
             </div>
 
