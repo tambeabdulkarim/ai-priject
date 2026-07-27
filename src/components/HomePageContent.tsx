@@ -73,13 +73,14 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
             <div className="ph-illus-phoenix">
               <svg viewBox="0 0 300 300" className="ph-phoenix-svg">
                 <defs>
-                  <radialGradient id="phoenixGrad" cx="40%" cy="50%">
-                    <stop offset="0%" stopColor="#db2777" stopOpacity="1" />
-                    <stop offset="50%" stopColor="#a855f7" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.3" />
+                  <radialGradient id="phoenixGrad" cx="45%" cy="45%">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
+                    <stop offset="30%" stopColor="#f59e0b" stopOpacity="1" />
+                    <stop offset="60%" stopColor="#db2777" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.4" />
                   </radialGradient>
                   <filter id="phoenixGlow">
-                    <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+                    <feGaussianBlur stdDeviation="10" result="coloredBlur" />
                     <feMerge>
                       <feMergeNode in="coloredBlur" />
                       <feMergeNode in="SourceGraphic" />
@@ -87,19 +88,28 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
                   </filter>
                 </defs>
                 
-                {/* Left Wing */}
-                <path d="M 150 150 Q 100 100 80 60 Q 70 40 85 50 Q 110 80 140 130 Z" fill="url(#phoenixGrad)" filter="url(#phoenixGlow)" />
-                <path d="M 150 150 Q 90 110 60 70 Q 45 50 65 65 Q 95 95 135 145 Z" fill="#db2777" opacity="0.6" />
+                {/* Left Wing - Extended */}
+                <path d="M 150 150 Q 80 110 40 50 Q 20 20 45 60 Q 85 110 140 150 Z" 
+                      fill="#db2777" opacity="0.85" filter="url(#phoenixGlow)" />
+                <path d="M 150 150 Q 70 100 30 40 Q 10 10 35 50 Q 75 100 135 145 Z" 
+                      fill="#a855f7" opacity="0.6" />
                 
-                {/* Right Wing */}
-                <path d="M 150 150 Q 200 100 220 60 Q 230 40 215 50 Q 190 80 160 130 Z" fill="url(#phoenixGrad)" filter="url(#phoenixGlow)" />
-                <path d="M 150 150 Q 210 110 240 70 Q 255 50 235 65 Q 205 95 165 145 Z" fill="#db2777" opacity="0.6" />
+                {/* Right Wing - Extended */}
+                <path d="M 150 150 Q 220 110 260 50 Q 280 20 255 60 Q 215 110 160 150 Z" 
+                      fill="#db2777" opacity="0.85" filter="url(#phoenixGlow)" />
+                <path d="M 150 150 Q 230 100 270 40 Q 290 10 265 50 Q 225 100 165 145 Z" 
+                      fill="#a855f7" opacity="0.6" />
                 
-                {/* Center Flame */}
-                <circle cx="150" cy="140" r="35" fill="#db2777" opacity="0.9" filter="url(#phoenixGlow)" />
-                <circle cx="150" cy="135" r="25" fill="#f472b6" opacity="0.8" />
-                <circle cx="150" cy="130" r="15" fill="#fbbf24" opacity="0.9" />
-                <circle cx="150" cy="128" r="8" fill="#fef3c7" />
+                {/* Center Body - Flame */}
+                <circle cx="150" cy="140" r="50" fill="#fbbf24" filter="url(#phoenixGlow)" />
+                <circle cx="150" cy="135" r="40" fill="#f59e0b" />
+                <circle cx="150" cy="130" r="25" fill="#f97316" />
+                <circle cx="150" cy="125" r="15" fill="#fef3c7" />
+                
+                {/* Spark Effects */}
+                <circle cx="130" cy="120" r="4" fill="#fbbf24" />
+                <circle cx="170" cy="120" r="4" fill="#fbbf24" />
+                <circle cx="150" cy="160" r="3" fill="#f59e0b" />
               </svg>
               <div className="ph-phoenix-glow" />
             </div>
