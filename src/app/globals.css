@@ -793,18 +793,20 @@ main.ph-main {
 }
 
 .ph-hero-inner {
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr 250px;
+  display: flex;
   gap: 1.75rem;
   align-items: center;
+  justify-content: center;
 }
 
 .ph-hero-copy {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+  flex: 1.15;
+  min-width: 0;
 }
 
 .ph-h1 {
@@ -900,6 +902,8 @@ main.ph-main {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0.85;
+  flex-shrink: 0;
 }
 
 .ph-illus-glow {
@@ -1013,6 +1017,8 @@ main.ph-main {
   border-radius: 1.15rem;
   padding: 1.1rem;
   backdrop-filter: blur(12px);
+  width: 250px;
+  flex-shrink: 0;
 }
 
 .ph-hstat {
@@ -1465,14 +1471,26 @@ main.ph-main {
   direction: rtl;
 }
 
-/* Reverse grid columns for RTL */
+/* Reverse flex direction for RTL */
 .rtl .ph-hero-inner {
   direction: rtl;
-  grid-template-columns: 250px 0.85fr 1.15fr;
+  flex-direction: row-reverse;
 }
 
 .rtl .ph-hero-copy {
-  direction: rtl;
+  flex: 1.15;
+  min-width: 0;
+}
+
+.rtl .ph-illus {
+  flex: 0.85;
+  flex-shrink: 0;
+}
+
+.rtl .ph-hero-stats {
+  flex: 0;
+  width: 250px;
+  flex-shrink: 0;
 }
 
 .rtl .ph-card-arr {
@@ -1491,12 +1509,17 @@ main.ph-main {
 /* Responsive */
 @media (max-width: 1100px) {
   .ph-hero-inner {
-    grid-template-columns: 1fr 1fr;
+    flex-wrap: wrap;
+  }
+  .ph-hero-copy {
+    flex: 1 1 100%;
+  }
+  .ph-illus {
+    flex: 1 1 100%;
   }
   .ph-hero-stats {
-    grid-column: 1 / 3;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex: 1 1 100%;
+    width: 100%;
   }
   .ph-feat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
