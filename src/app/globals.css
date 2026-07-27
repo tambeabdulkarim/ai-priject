@@ -184,121 +184,90 @@ body {
   overflow: visible;
 }
 
-/* 5-COLUMN LAYOUT FOR HERO: TEXT | ROBOT | CENTER | PHOENIX | STATS */
+/* 3-COLUMN LAYOUT FOR HERO: TEXT | IMAGES+ICONS | STATS */
 .ph-hero-inner {
   max-width: 1600px;
   width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 280px 1fr 380px 180px;
-  gap: 1.5rem;
-  align-items: stretch;
+  grid-template-columns: 1fr 1fr 200px;
+  gap: 2rem;
+  align-items: center;
   justify-items: stretch;
   position: relative;
 }
 
-/* ILLUSTRATION CONTAINER - CENTER */
-.ph-illus-container {
-  display: none;
-}
-
-/* ROBOT - SECOND COLUMN */
-.ph-illus-robot {
+/* IMAGES CONTAINER - SECOND COLUMN (CENTER) */
+.ph-images-wrapper {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   position: relative;
   height: 500px;
   width: 100%;
+  grid-column: 2;
+  grid-row: 1;
+  direction: ltr;
+}
+
+/* ROBOT - LEFT SIDE OF IMAGES */
+.ph-illus-robot {
+  position: relative;
+  height: 100%;
+  width: auto;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   z-index: 4;
   flex-shrink: 0;
-  grid-column: 2;
-  grid-row: 1;
-}
-
-/* PHOENIX - FOURTH COLUMN */
-.ph-illus-phoenix {
-  position: relative;
-  height: 500px;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 3;
-  flex-shrink: 0;
-  grid-column: 4;
-  grid-row: 1;
-}
-
-.ph-phoenix-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 50px rgba(219, 39, 119, 0.7)) 
-          drop-shadow(0 0 80px rgba(139, 92, 246, 0.5));
-}
-
-.ph-phoenix-glow {
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(219, 39, 119, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(40px);
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: ph-glow-pulse 3s ease-in-out infinite;
-}
-
-/* ROBOT - LEFT (in front of phoenix) */
-.ph-illus-robot {
-  position: relative;
-  height: 380px;
-  width: 280px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 12;
-  flex-shrink: 0;
+  margin-right: 20px;
 }
 
 .ph-robot-img {
-  width: 100%;
+  width: auto;
   height: 100%;
+  max-height: 400px;
   object-fit: contain;
   mix-blend-mode: screen;
   filter: drop-shadow(0 0 40px rgba(6, 182, 212, 0.6)) 
           drop-shadow(0 0 60px rgba(0, 150, 255, 0.4));
 }
 
-.ph-robot-glow {
-  position: absolute;
-  width: 340px;
-  height: 340px;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(35px);
-  z-index: 1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: ph-glow-pulse 3.5s ease-in-out infinite;
+/* PHOENIX - RIGHT SIDE OF IMAGES */
+.ph-illus-phoenix {
+  position: relative;
+  height: 100%;
+  width: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 3;
+  flex-shrink: 0;
+  margin-left: 20px;
 }
 
-/* FLOAT ICONS - THIRD COLUMN CENTER */
+.ph-phoenix-img {
+  width: auto;
+  height: 100%;
+  max-height: 450px;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 50px rgba(219, 39, 119, 0.7)) 
+          drop-shadow(0 0 80px rgba(139, 92, 246, 0.5));
+}
+
+/* FLOAT ICONS - POSITIONED AROUND IMAGES */
 .ph-illus-icons {
-  position: relative;
+  position: absolute;
   width: 100%;
-  height: 500px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 5;
-  grid-column: 3;
-  grid-row: 1;
+  top: 0;
+  left: 0;
+  pointer-events: none;
 }
 
 .ph-float-icon {
@@ -309,30 +278,31 @@ body {
   align-items: center;
   justify-content: center;
   animation: ph-float-anim 4s ease-in-out infinite;
+  pointer-events: auto;
 }
 
-/* Icons distributed naturally around the illustration scene */
+/* Icons positioned at corners */
 .ph-float-icon.top-left {
-  top: 20px;
+  top: 30px;
   left: 20px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 20px;
+  top: 30px;
   right: 20px;
   animation-delay: 1s;
 }
 
 .ph-float-icon.bottom-left {
-  bottom: 100px;
-  left: 30px;
+  bottom: 50px;
+  left: 20px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 100px;
-  right: 30px;
+  bottom: 50px;
+  right: 20px;
   animation-delay: 1.5s;
 }
 
@@ -351,7 +321,7 @@ body {
   backdrop-filter: blur(5px);
 }
 
-/* STATS PANEL - FIFTH COLUMN (RIGHT) */
+/* STATS PANEL - THIRD COLUMN (RIGHT) */
 .ph-hero-stats {
   display: flex;
   flex-direction: column;
@@ -360,7 +330,7 @@ body {
   width: 100%;
   height: 100%;
   max-height: 400px;
-  grid-column: 5;
+  grid-column: 3;
   grid-row: 1;
   justify-content: center;
 }

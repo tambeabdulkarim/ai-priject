@@ -51,7 +51,7 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
         <section className="ph-hero">
           <div className="ph-hero-inner">
 
-            {/* COLUMN 1: TEXT COPY */}
+            {/* COLUMN 1: TEXT COPY (LEFT) */}
             <div className="ph-hero-copy">
               <h1 className="ph-h1">
                 تعلم الذكاء الاصطناعي<br />
@@ -76,41 +76,44 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
               </div>
             </div>
 
-            {/* COLUMN 2: ROBOT */}
-            <div className="ph-illus-robot">
-              <img 
-                src="/images/phoenix-hero-robot.png" 
-                alt="AI Robot"
-                className="ph-robot-img"
-              />
+            {/* COLUMN 2: IMAGES + ICONS (CENTER) */}
+            <div className="ph-images-wrapper">
+              {/* ROBOT (LEFT) */}
+              <div className="ph-illus-robot">
+                <img 
+                  src="/images/phoenix-hero-robot.png" 
+                  alt="AI Robot"
+                  className="ph-robot-img"
+                />
+              </div>
+
+              {/* ICONS (AROUND IMAGES) */}
+              <div className="ph-illus-icons">
+                <div className="ph-float-icon top-left">
+                  <div className="ph-icon-box">&lt;/&gt;</div>
+                </div>
+                <div className="ph-float-icon top-right">
+                  <div className="ph-icon-box">💬</div>
+                </div>
+                <div className="ph-float-icon bottom-left">
+                  <div className="ph-icon-box">📄</div>
+                </div>
+                <div className="ph-float-icon bottom-right">
+                  <div className="ph-icon-box">⚡</div>
+                </div>
+              </div>
+
+              {/* PHOENIX (RIGHT) */}
+              <div className="ph-illus-phoenix">
+                <img 
+                  src="/images/phoenix-hero-bird.png" 
+                  alt="Phoenix Bird"
+                  className="ph-phoenix-img"
+                />
+              </div>
             </div>
 
-            {/* COLUMN 3: CENTER GRAPHICS & ICONS */}
-            <div className="ph-illus-icons">
-              <div className="ph-float-icon top-left">
-                <div className="ph-icon-box">&lt;/&gt;</div>
-              </div>
-              <div className="ph-float-icon top-right">
-                <div className="ph-icon-box">💬</div>
-              </div>
-              <div className="ph-float-icon bottom-left">
-                <div className="ph-icon-box">📄</div>
-              </div>
-              <div className="ph-float-icon bottom-right">
-                <div className="ph-icon-box">⚡</div>
-              </div>
-            </div>
-
-            {/* COLUMN 4: PHOENIX BIRD */}
-            <div className="ph-illus-phoenix">
-              <img 
-                src="/images/phoenix-hero-bird.png" 
-                alt="Phoenix Bird"
-                className="ph-phoenix-img"
-              />
-            </div>
-
-            {/* COLUMN 5: STATS PANEL */}
+            {/* COLUMN 3: STATS PANEL (RIGHT) */}
             <div className="ph-hero-stats">
               {([
                 { g: 'linear-gradient(135deg,#7c3aed,#a78bfa)', icon: '🤖', num: '+200', lbl: 'أداة ذكاء اصطناعي' },
