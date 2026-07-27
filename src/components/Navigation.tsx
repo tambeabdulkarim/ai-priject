@@ -2,55 +2,66 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { getDictionary, locales, type Locale } from '@/lib/i18n';
+import { locales, type Locale } from '@/lib/i18n';
 
-type NavigationProps = {
-  locale: Locale;
-};
+type NavigationProps = { locale: Locale };
 
 export default function Navigation({ locale }: NavigationProps) {
-  const dict = getDictionary(locale);
   const pathname = usePathname();
   const router = useRouter();
 
   const switchLocale = (nextLocale: Locale) => {
     const segments = pathname.split('/').filter(Boolean);
-    const currentLocaleIndex = segments.findIndex((segment) => locales.includes(segment as Locale));
-
-    if (currentLocaleIndex >= 0) {
-      segments[currentLocaleIndex] = nextLocale;
-    } else {
-      segments.unshift(nextLocale);
-    }
-
-    const nextPath = `/${segments.join('/')}`;
-    router.push(nextPath || '/');
+    const idx = segments.findIndex((s) => locales.includes(s as Locale));
+    if (idx >= 0) segments[idx] = nextLocale;
+    else segments.unshift(nextLocale);
+    router.push(`/${segments.join('/')}` || '/');
   };
 
   return (
-    <header className="topbar">
-      <Link href={`/${locale}`} className="brand-link">
-        {dict.nav.brand}
-      </Link>
+    <header className="ph-topbar">
+      <div className="ph-topbar-inner">
 
-      <nav className="nav-links" aria-label="Primary navigation">
-        <Link href={`/${locale}`}>{dict.nav.home}</Link>
-        <Link href={`/${locale}#features`}>{dict.nav.features}</Link>
-        <Link href={`/${locale}#about`}>{dict.nav.about}</Link>
-        <Link href={`/${locale}/workspace`}>{dict.nav.workspace}</Link>
-        <Link href={`/${locale}/files`}>{dict.nav.files}</Link>
-        <Link href={`/${locale}/projects`}>{dict.nav.projects}</Link>
-        <Link href={`/${locale}/analytics`}>{dict.nav.analytics}</Link>
-        <Link href={`/${locale}#contact`}>{dict.nav.contact}</Link>
-      </nav>
+        {/* Brand */}
+        <Link href={`/${locale}`} className="ph-brand">
+          <span className="ph-brand-icon">🦅</span>
+          <div>
+            <div className="ph-brand-name">Phoenix Project</div>
+            <div className="ph-brand-tag">منصة تبني مهاراتك، خطوة بخطوة</div>
+          </div>
+        </Link>
 
-      <div className="lang-switcher" aria-label="Language switcher">
-        <button type="button" onClick={() => switchLocale('ar')} className={locale === 'ar' ? 'active' : ''}>
-          العربية
-        </button>
-        <button type="button" onClick={() => switchLocale('en')} className={locale === 'en' ? 'active' : ''}>
-          English
-        </button>
+        {/* Nav links */}
+        <nav className="ph-nav" aria-label="Primary navigation">
+          <Link href={`/${locale}`}              className="ph-nav-link ph-nav-active">الرئيسية</Link>
+          <Link href={`/${locale}/workspace`}    className="ph-nav-link">أدوات الذكاء التدريبي</Link>
+          <Link href={`/${locale}/projects`}     className="ph-nav-link">المسارات المهنية</Link>
+          <Link href={`/${locale}/analytics`}    className="ph-nav-link">الأخبار</Link>
+          <Link href={`/${locale}/files`}         className="ph-nav-link">الكتب الإلكترونية</Link>
+          <Link href={`/${locale}/dashboard`}    className="ph-nav-link">المنتجات الرقمية</Link>
+          <span className="ph-nav-link ph-nav-more">المزيد ▾</span>
+        </nav>
+
+        {/* Actions */}
+        <div className="ph-nav-actions">
+          <button type="button" className="ph-icon-btn" aria-label="Search">🔍</button>
+          <div className="ph-lang-pill">
+            {locales.map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => switchLocale(l)}
+                className={`ph-lang-btn${locale === l ? ' ph-lang-active' : ''}`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="ph-icon-btn" aria-label="Toggle theme">🌙</button>
+          <button type="button" className="ph-btn-outline">تسجيل الدخول</button>
+          <button type="button" className="ph-btn-grad">إنشاء حساب</button>
+        </div>
+
       </div>
     </header>
   );
