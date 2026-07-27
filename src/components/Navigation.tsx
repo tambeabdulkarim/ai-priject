@@ -39,6 +39,7 @@ export default function Navigation({ locale }: NavigationProps) {
         <Link href={`/${locale}#about`}>{dict.nav.about}</Link>
         <Link href={`/${locale}/workspace`}>{dict.nav.workspace}</Link>
         <Link href={`/${locale}/files`}>{dict.nav.files}</Link>
+        <Link href={`/${locale}/projects`}>{dict.nav.projects}</Link>
         <Link href={`/${locale}#contact`}>{dict.nav.contact}</Link>
       </nav>
 
