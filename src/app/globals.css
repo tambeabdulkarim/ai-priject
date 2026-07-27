@@ -375,6 +375,27 @@ main {
   gap: 1rem;
 }
 
+.auth-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-card button {
+  border: none;
+  padding: 0.7rem 0.9rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+.muted-text {
+  color: var(--muted);
+}
+
 .panel-card h2 {
   margin-top: 0;
 }
