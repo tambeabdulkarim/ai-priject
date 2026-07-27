@@ -51,7 +51,129 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
         <section className="ph-hero">
           <div className="ph-hero-inner">
 
-            {/* Text copy */}
+            {/* STATS (Right in LTR, Left in RTL) */}
+            <div className="ph-hero-stats">
+              {([
+                { g: 'linear-gradient(135deg,#7c3aed,#a78bfa)', icon: '🤖', num: '+200', lbl: 'أداة ذكاء اصطناعي' },
+                { g: 'linear-gradient(135deg,#db2777,#f472b6)', icon: '🎓', num: '+150', lbl: 'دورة تدريبية' },
+                { g: 'linear-gradient(135deg,#0891b2,#38bdf8)', icon: '🗺️', num: '+30',  lbl: 'مسار مهني' },
+                { g: 'linear-gradient(135deg,#059669,#34d399)', icon: '👥', num: '+10K', lbl: 'متعلم نشط' },
+              ] as const).map((s) => (
+                <div key={s.lbl} className="ph-hstat">
+                  <span className="ph-hstat-icon" style={{ background: s.g }}>{s.icon}</span>
+                  <div>
+                    <div className="ph-hstat-num">{s.num}</div>
+                    <div className="ph-hstat-lbl">{s.lbl}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* PHOENIX WINGS */}
+            <div className="ph-illus-phoenix">
+              <svg viewBox="0 0 300 300" className="ph-phoenix-svg">
+                <defs>
+                  <radialGradient id="phoenixGrad" cx="40%" cy="50%">
+                    <stop offset="0%" stopColor="#db2777" stopOpacity="1" />
+                    <stop offset="50%" stopColor="#a855f7" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.3" />
+                  </radialGradient>
+                  <filter id="phoenixGlow">
+                    <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                
+                {/* Left Wing */}
+                <path d="M 150 150 Q 100 100 80 60 Q 70 40 85 50 Q 110 80 140 130 Z" fill="url(#phoenixGrad)" filter="url(#phoenixGlow)" />
+                <path d="M 150 150 Q 90 110 60 70 Q 45 50 65 65 Q 95 95 135 145 Z" fill="#db2777" opacity="0.6" />
+                
+                {/* Right Wing */}
+                <path d="M 150 150 Q 200 100 220 60 Q 230 40 215 50 Q 190 80 160 130 Z" fill="url(#phoenixGrad)" filter="url(#phoenixGlow)" />
+                <path d="M 150 150 Q 210 110 240 70 Q 255 50 235 65 Q 205 95 165 145 Z" fill="#db2777" opacity="0.6" />
+                
+                {/* Center Flame */}
+                <circle cx="150" cy="140" r="35" fill="#db2777" opacity="0.9" filter="url(#phoenixGlow)" />
+                <circle cx="150" cy="135" r="25" fill="#f472b6" opacity="0.8" />
+                <circle cx="150" cy="130" r="15" fill="#fbbf24" opacity="0.9" />
+                <circle cx="150" cy="128" r="8" fill="#fef3c7" />
+              </svg>
+              <div className="ph-phoenix-glow" />
+            </div>
+
+            {/* ROBOT */}
+            <div className="ph-illus-robot">
+              <svg viewBox="0 0 200 250" className="ph-robot-svg">
+                <defs>
+                  <linearGradient id="headGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#e5e7eb" />
+                    <stop offset="100%" stopColor="#9ca3af" />
+                  </linearGradient>
+                  <filter id="robotGlow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                
+                {/* Head */}
+                <rect x="50" y="20" width="100" height="110" rx="15" fill="url(#headGrad)" stroke="#0ea5e9" strokeWidth="2" filter="url(#robotGlow)" />
+                
+                {/* Left Eye */}
+                <circle cx="75" cy="55" r="15" fill="#0ea5e9" />
+                <circle cx="75" cy="55" r="10" fill="#0369a1" />
+                <circle cx="77" cy="52" r="5" fill="#e0f2fe" />
+                
+                {/* Right Eye */}
+                <circle cx="125" cy="55" r="15" fill="#0ea5e9" />
+                <circle cx="125" cy="55" r="10" fill="#0369a1" />
+                <circle cx="127" cy="52" r="5" fill="#e0f2fe" />
+                
+                {/* Mouth */}
+                <path d="M 80 95 Q 100 105 120 95" stroke="#0ea5e9" strokeWidth="2" fill="none" strokeLinecap="round" />
+                
+                {/* Neck */}
+                <rect x="75" y="125" width="50" height="15" fill="#9ca3af" />
+                
+                {/* Chest */}
+                <rect x="40" y="145" width="120" height="90" rx="10" fill="url(#headGrad)" stroke="#0ea5e9" strokeWidth="2" />
+                
+                {/* AI Text */}
+                <text x="100" y="210" fontSize="48" fontWeight="bold" textAnchor="middle" fill="#0066ff" fontFamily="Arial">
+                  AI
+                </text>
+                
+                {/* Chest Details - Left Arm */}
+                <rect x="25" y="160" width="15" height="50" rx="7" fill="#9ca3af" />
+                
+                {/* Chest Details - Right Arm */}
+                <rect x="160" y="160" width="15" height="50" rx="7" fill="#9ca3af" />
+              </svg>
+              <div className="ph-robot-glow" />
+            </div>
+
+            {/* ICONS around center */}
+            <div className="ph-illus-icons">
+              <div className="ph-float-icon top-left">
+                <div className="ph-icon-box">📊</div>
+              </div>
+              <div className="ph-float-icon top-right">
+                <div className="ph-icon-box">💡</div>
+              </div>
+              <div className="ph-float-icon bottom-left">
+                <div className="ph-icon-box">📝</div>
+              </div>
+              <div className="ph-float-icon bottom-right">
+                <div className="ph-icon-box">⚙️</div>
+              </div>
+            </div>
+
+            {/* TEXT COPY (Left in LTR, Right in RTL) */}
             <div className="ph-hero-copy">
               <h1 className="ph-h1">
                 تعلم الذكاء الاصطناعي<br />
@@ -74,41 +196,6 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
                 <a href={`/${locale}/workspace`} className="ph-btn-primary">← ابدأ التعلم الآن</a>
                 <button className="ph-btn-ghost" type="button">▶ شاهد كيف تعمل المنصة</button>
               </div>
-            </div>
-
-            {/* Illustration */}
-            <div className="ph-illus">
-              <div className="ph-illus-glow" />
-              <div className="ph-illus-ring" />
-              <div className="ph-phoenix-wings" />
-              <div className="ph-robot">
-                <div className="ph-robot-head">
-                  <div className="ph-robot-eye" />
-                  <div className="ph-robot-eye" />
-                </div>
-                <div className="ph-robot-chest">AI</div>
-              </div>
-              <div className="ph-float f1">💬</div>
-              <div className="ph-float f2">📄</div>
-              <div className="ph-float f3">⌨️</div>
-            </div>
-
-            {/* Stats panel */}
-            <div className="ph-hero-stats">
-              {([
-                { g: 'linear-gradient(135deg,#7c3aed,#a78bfa)', icon: '🤖', num: '+200', lbl: 'أداة ذكاء اصطناعي' },
-                { g: 'linear-gradient(135deg,#db2777,#f472b6)', icon: '🎓', num: '+150', lbl: 'دورة تدريبية' },
-                { g: 'linear-gradient(135deg,#0891b2,#38bdf8)', icon: '🗺️', num: '+30',  lbl: 'مسار مهني' },
-                { g: 'linear-gradient(135deg,#059669,#34d399)', icon: '👥', num: '+10K', lbl: 'متعلم نشط' },
-              ] as const).map((s) => (
-                <div key={s.lbl} className="ph-hstat">
-                  <span className="ph-hstat-icon" style={{ background: s.g }}>{s.icon}</span>
-                  <div>
-                    <div className="ph-hstat-num">{s.num}</div>
-                    <div className="ph-hstat-lbl">{s.lbl}</div>
-                  </div>
-                </div>
-              ))}
             </div>
 
           </div>
