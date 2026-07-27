@@ -22,12 +22,17 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
             <h1>{dict.hero.title}</h1>
             <p>{dict.hero.description}</p>
             <div className="hero-actions">
-              <a href={`/${locale}#features`} className="primary-button">
+              <a href={`/${locale}/workspace`} className="primary-button">
                 {dict.hero.primaryCta}
               </a>
-              <a href={`/${locale}#features`} className="secondary-button">
+              <a href={`/${locale}/projects`} className="secondary-button">
                 {dict.hero.secondaryCta}
               </a>
+            </div>
+            <div className="hero-highlights">
+              <span>⚡ Fast workflows</span>
+              <span>🧠 Smart organization</span>
+              <span>📈 Clear analytics</span>
             </div>
           </div>
 
