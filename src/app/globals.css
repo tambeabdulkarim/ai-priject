@@ -1468,11 +1468,21 @@ main.ph-main {
 /* Reverse grid columns for RTL */
 .rtl .ph-hero-inner {
   direction: rtl;
-  grid-template-columns: 250px 0.85fr 1.15fr;
+  grid-template-columns: 1.15fr 0.85fr 250px;
+}
+
+.rtl .ph-hero-copy {
+  direction: rtl;
+  order: 3;
+}
+
+.rtl .ph-illus {
+  order: 2;
 }
 
 .rtl .ph-hero-stats {
   direction: rtl;
+  order: 1;
 }
 
 .rtl .ph-card-arr {
