@@ -941,6 +941,22 @@ body {
   direction: rtl;
 }
 
+.rtl .ph-hero-copy {
+  order: 4;
+}
+
+.rtl .ph-illus {
+  order: 3;
+}
+
+.rtl .ph-phoenix-wings {
+  order: 2;
+}
+
+.rtl .ph-hero-stats {
+  order: 1;
+}
+
 .rtl .ph-cta-buttons {
   flex-direction: row-reverse;
 }
