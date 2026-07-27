@@ -283,6 +283,98 @@ main {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.workspace-page {
+  width: min(1280px, 100%);
+  padding: 1rem 0 2rem;
+}
+
+.workspace-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+.tasks-panel,
+.calendar-panel,
+.settings-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.tasks-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tasks-header p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.task-filters {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.task-filters button {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.task-filters button.active {
+  background: var(--accent);
+}
+
+.compact-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.task-list label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.task-completed {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.priority-pill {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  text-transform: capitalize;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.priority-pill.high {
+  color: #fda4af;
+}
+
+.priority-pill.medium {
+  color: #fde68a;
+}
+
+.priority-pill.low {
+  color: #86efac;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
 .panel-card h2 {
   margin-top: 0;
 }
@@ -355,11 +447,8 @@ main {
 
   .stats-grid,
   .dashboard-grid,
-  .hero {
-    grid-template-columns: 1fr;
-  }
-
-  .hero {
+  .hero,
+  .workspace-grid {
     grid-template-columns: 1fr;
   }
 }
