@@ -1,9 +1,16 @@
 {
   "version": 2,
+  "name": "ai-productivity-platform",
   "builds": [
     {
       "src": "package.json",
       "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }

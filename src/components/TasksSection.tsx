@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { createTask, removeTask } from '@/lib/taskManager';
+import { getReminderAlerts, reorderTasks, searchTasks } from '@/lib/taskFeatures';
 import { filterTasks, getTaskStats, type Task, type TaskStatus } from '@/lib/tasks';
 
 type TasksSectionProps = {
@@ -10,14 +12,48 @@ type TasksSectionProps = {
 export default function TasksSection({ initialTasks }: TasksSectionProps) {
   const [tasks, setTasks] = useState(initialTasks);
   const [status, setStatus] = useState<TaskStatus>('all');
+  const [draftTitle, setDraftTitle] = useState('');
+  const [priority, setPriority] = useState<Task['priority']>('medium');
+  const [query, setQuery] = useState('');
 
-  const visibleTasks = useMemo(() => filterTasks(tasks, status), [tasks, status]);
+  const visibleTasks = useMemo(() => {
+    const filteredByStatus = filterTasks(tasks, status);
+    return searchTasks(filteredByStatus, query);
+  }, [tasks, status, query]);
   const stats = useMemo(() => getTaskStats(tasks), [tasks]);
+  const reminders = useMemo(() => getReminderAlerts(tasks), [tasks]);
 
   const toggleTask = (id: number) => {
     setTasks((current) =>
       current.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task))
     );
+  };
+
+  const addTask = () => {
+    const trimmedTitle = draftTitle.trim();
+
+    if (!trimmedTitle) {
+      return;
+    }
+
+    setTasks((current) => [createTask(trimmedTitle, priority), ...current]);
+    setDraftTitle('');
+    setPriority('medium');
+  };
+
+  const deleteTask = (id: number) => {
+    setTasks((current) => removeTask(current, id));
+  };
+
+  const moveTask = (taskId: number, direction: 'up' | 'down') => {
+    const currentIndex = tasks.findIndex((task) => task.id === taskId);
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    setTasks((current) => reorderTasks(current, taskId, targetIndex));
   };
 
   return (
@@ -55,14 +91,62 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
         </article>
       </div>
 
+      <div className="auth-card">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search tasks"
+          className="secondary-button"
+        />
+        <input
+          value={draftTitle}
+          onChange={(event) => setDraftTitle(event.target.value)}
+          placeholder="Add a new task"
+          className="secondary-button"
+        />
+        <select value={priority} onChange={(event) => setPriority(event.target.value as Task['priority'])}>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button type="button" onClick={addTask} className="primary-button">
+          Add task
+        </button>
+      </div>
+
+      {reminders.length > 0 && (
+        <div className="auth-card">
+          <strong>Reminders</strong>
+          <ul className="task-list">
+            {reminders.map((reminder: { id: number; title: string; priority: Task['priority']; type: string }) => (
+              <li key={reminder.id}>
+                <span>{reminder.title}</span>
+                <span className={`priority-pill ${reminder.priority}`}>{reminder.type}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <ul className="task-list">
-        {visibleTasks.map((task) => (
+        {visibleTasks.map((task: Task) => (
           <li key={task.id}>
             <label>
               <input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} />
               <span className={task.completed ? 'task-completed' : ''}>{task.title}</span>
             </label>
-            <span className={`priority-pill ${task.priority}`}>{task.priority}</span>
+            <div className="task-filters">
+              <button type="button" onClick={() => moveTask(task.id, 'up')}>
+                ↑
+              </button>
+              <button type="button" onClick={() => moveTask(task.id, 'down')}>
+                ↓
+              </button>
+              <span className={`priority-pill ${task.priority}`}>{task.priority}</span>
+              <button type="button" onClick={() => deleteTask(task.id)}>
+                Delete
+              </button>
+            </div>
           </li>
         ))}
       </ul>

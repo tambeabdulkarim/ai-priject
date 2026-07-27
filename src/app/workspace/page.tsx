@@ -1,6 +1,7 @@
 import TasksSection from '@/components/TasksSection';
 import CalendarSection from '@/components/CalendarSection';
 import SettingsPanel from '@/components/SettingsPanel';
+import NotesPanel from '@/components/NotesPanel';
 import { type Task } from '@/lib/tasks';
 
 const initialTasks: Task[] = [
@@ -13,9 +14,14 @@ export default function WorkspacePage() {
   return (
     <main className="workspace-page">
       <section className="workspace-grid">
-        <TasksSection initialTasks={initialTasks} />
-        <CalendarSection />
-        <SettingsPanel />
+        <div className="tasks-panel">
+          <TasksSection initialTasks={initialTasks} />
+          <NotesPanel />
+        </div>
+        <div className="calendar-panel">
+          <CalendarSection />
+          <SettingsPanel />
+        </div>
       </section>
     </main>
   );

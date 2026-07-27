@@ -13,6 +13,12 @@ npm install
 npm run dev
 ```
 
+## التحقق
+```bash
+npm run build
+node --test tests/taskFeatures.test.js tests/notes.test.js tests/tasks.test.js
+```
+
 ## البنية
 - src/app: الصفحات والتطبيق
 - src/components: المكونات القابلة لإعادة الاستخدام

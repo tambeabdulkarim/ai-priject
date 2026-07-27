@@ -188,6 +188,8 @@ main {
   border-radius: 0.8rem;
   background: rgba(255, 255, 255, 0.05);
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.6rem;
 }
 
@@ -335,11 +337,17 @@ main {
 
 .task-filters button {
   border: 1px solid var(--border);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   padding: 0.45rem 0.7rem;
   border-radius: 999px;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.task-filters button:hover {
+  transform: translateY(-1px);
+  background: rgba(96, 165, 250, 0.2);
 }
 
 .task-filters button.active {
@@ -389,12 +397,29 @@ main {
   gap: 1rem;
 }
 
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 0.8rem 0.9rem;
+  resize: vertical;
+}
+
 .auth-card {
   display: grid;
   gap: 0.5rem;
   padding: 1rem;
   border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border);
+}
+
+.auth-card input {
+  width: 100%;
+  border-radius: 0.8rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .auth-card button {
@@ -404,6 +429,15 @@ main {
   background: var(--accent);
   color: white;
   cursor: pointer;
+}
+
+.auth-card select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 0.75rem 0.9rem;
 }
 
 .muted-text {
@@ -438,9 +472,10 @@ main {
   border: none;
   padding: 0.7rem 1rem;
   border-radius: 999px;
-  background: var(--accent);
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
   color: white;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.25);
 }
 
 .progress-row {
@@ -519,6 +554,16 @@ main {
 }
 
 @media (max-width: 840px) {
+  .task-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task-filters {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .topbar {
     flex-wrap: wrap;
     gap: 0.8rem;
