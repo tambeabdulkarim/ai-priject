@@ -244,12 +244,12 @@ body {
 /* PHOENIX - SECOND */
 .ph-illus-phoenix {
   position: relative;
-  height: 300px;
-  width: 300px;
+  height: 320px;
+  width: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 5;
   order: 2;
 }
 
@@ -257,32 +257,34 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 30px rgba(219, 39, 119, 0.4));
-  animation: ph-float-anim 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 40px rgba(219, 39, 119, 0.6)) 
+          drop-shadow(0 0 60px rgba(139, 92, 246, 0.4));
+  animation: ph-float-anim 4s ease-in-out infinite;
 }
 
 .ph-phoenix-glow {
   position: absolute;
-  width: 350px;
-  height: 350px;
-  background: radial-gradient(circle, rgba(219, 39, 119, 0.3) 0%, transparent 70%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(219, 39, 119, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
   border-radius: 50%;
-  filter: blur(30px);
-  z-index: -1;
+  filter: blur(40px);
+  z-index: 1;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  animation: ph-glow-pulse 3s ease-in-out infinite;
 }
 
 /* ROBOT - THIRD */
 .ph-illus-robot {
   position: relative;
   height: 280px;
-  width: 200px;
+  width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;
+  z-index: 4;
   order: 3;
 }
 
@@ -290,20 +292,22 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 20px rgba(0, 150, 255, 0.3));
+  filter: drop-shadow(0 0 30px rgba(6, 182, 212, 0.5)) 
+          drop-shadow(0 0 50px rgba(0, 150, 255, 0.3));
 }
 
 .ph-robot-glow {
   position: absolute;
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(0, 150, 255, 0.2) 0%, transparent 70%);
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 70%);
   border-radius: 50%;
-  filter: blur(25px);
-  z-index: -1;
+  filter: blur(35px);
+  z-index: 1;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  animation: ph-glow-pulse 3.5s ease-in-out infinite;
 }
 
 /* FLOAT ICONS */
@@ -320,8 +324,8 @@ body {
 
 .ph-float-icon {
   position: absolute;
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -329,40 +333,42 @@ body {
 }
 
 .ph-float-icon.top-left {
-  top: 10px;
-  left: 20px;
+  top: -20px;
+  left: 0px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 30px;
-  right: 20px;
+  top: 10px;
+  right: 10px;
   animation-delay: 1s;
 }
 
 .ph-float-icon.bottom-left {
-  bottom: 40px;
-  left: 30px;
+  bottom: 30px;
+  left: -10px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 50px;
-  right: 30px;
+  bottom: 40px;
+  right: 0px;
   animation-delay: 1.5s;
 }
 
 .ph-icon-box {
-  width: 45px;
-  height: 45px;
-  background: rgba(0, 150, 255, 0.1);
-  border: 1.5px solid rgba(0, 150, 255, 0.3);
-  border-radius: 8px;
+  width: 50px;
+  height: 50px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 2px solid rgba(219, 39, 119, 0.4);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  box-shadow: 0 0 12px rgba(0, 150, 255, 0.2);
+  font-size: 1.3rem;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 
+              inset 0 0 10px rgba(139, 92, 246, 0.1);
+  backdrop-filter: blur(5px);
 }
 
 /* TEXT COPY - LAST (leftmost in RTL) */
@@ -886,6 +892,17 @@ body {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes ph-glow-pulse {
+  0%, 100% {
+    filter: blur(40px);
+    opacity: 1;
+  }
+  50% {
+    filter: blur(50px);
+    opacity: 0.8;
   }
 }
 

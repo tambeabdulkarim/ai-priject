@@ -90,16 +90,16 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
             {/* ICONS around center */}
             <div className="ph-illus-icons">
               <div className="ph-float-icon top-left">
-                <div className="ph-icon-box">📊</div>
+                <div className="ph-icon-box">&lt;/&gt;</div>
               </div>
               <div className="ph-float-icon top-right">
-                <div className="ph-icon-box">💡</div>
+                <div className="ph-icon-box">💬</div>
               </div>
               <div className="ph-float-icon bottom-left">
-                <div className="ph-icon-box">📝</div>
+                <div className="ph-icon-box">📄</div>
               </div>
               <div className="ph-float-icon bottom-right">
-                <div className="ph-icon-box">⚙️</div>
+                <div className="ph-icon-box">⚡</div>
               </div>
             </div>
 
