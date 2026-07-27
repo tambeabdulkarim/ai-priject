@@ -195,18 +195,18 @@ body {
   position: relative;
 }
 
-/* ILLUSTRATION CONTAINER - CENTER (LARGE) - MERGED IMAGES */
+/* ILLUSTRATION CONTAINER - CENTER */
 .ph-illus-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
   position: relative;
-  height: 100%;
-  max-height: 380px;
+  height: 380px;
   width: 100%;
-  max-width: 600px;
+  max-width: 640px;
   grid-column: 2;
+  padding: 60px 70px;
+  box-sizing: border-box;
 }
 
 /* STATS PANEL - RIGHT COLUMN (VERTICAL) */
@@ -268,19 +268,17 @@ body {
   white-space: nowrap;
 }
 
-/* PHOENIX - RIGHT (MERGED WITH ROBOT) */
+/* PHOENIX - RIGHT */
 .ph-illus-phoenix {
-  position: absolute;
-  height: 320px;
-  width: 320px;
+  position: relative;
+  height: 280px;
+  width: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
   flex-shrink: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  margin-left: -55px;
 }
 
 .ph-phoenix-img {
@@ -306,19 +304,16 @@ body {
   animation: ph-glow-pulse 3s ease-in-out infinite;
 }
 
-/* ROBOT - LEFT (MERGED WITH PHOENIX) */
+/* ROBOT - LEFT */
 .ph-illus-robot {
-  position: absolute;
-  height: 280px;
-  width: 220px;
+  position: relative;
+  height: 250px;
+  width: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 8;
   flex-shrink: 0;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 .ph-robot-img {
@@ -364,33 +359,28 @@ body {
   animation: ph-float-anim 4s ease-in-out infinite;
 }
 
-/* Horizontal layout - left and right sides */
+/* 4 corners around the two images */
 .ph-float-icon.top-left {
-  top: 50%;
-  left: -70px;
-  transform: translateY(-50%);
+  top: 5px;
+  left: 5px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 50%;
-  right: -70px;
-  transform: translateY(-50%);
+  top: 5px;
+  right: 5px;
   animation-delay: 1s;
 }
 
-/* Above and below center */
 .ph-float-icon.bottom-left {
-  bottom: -50px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 5px;
+  left: 5px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  top: -50px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 5px;
+  right: 5px;
   animation-delay: 1.5s;
 }
 
