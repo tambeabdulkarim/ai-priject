@@ -182,22 +182,27 @@ body {
 }
 
 .ph-hero-inner {
-  max-width: 1600px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 180px 250px 280px 1fr;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-/* STATS PANEL - FIRST (rightmost in RTL) */
-.ph-hero-stats {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  position: relative;
+  min-height: 600px;
+}
+
+/* STATS PANEL - BOTTOM LAYOUT */
+.ph-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   z-index: 2;
-  order: 1;
+  width: 100%;
+  max-width: 600px;
+  margin-top: 2rem;
 }
 
 .ph-hstat {
@@ -241,7 +246,7 @@ body {
   line-height: 1.2;
 }
 
-/* PHOENIX - SECOND */
+/* PHOENIX - CENTER TOP */
 .ph-illus-phoenix {
   position: relative;
   height: 320px;
@@ -249,8 +254,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
-  order: 2;
+  z-index: 10;
+  margin-bottom: 1rem;
 }
 
 .ph-phoenix-img {
@@ -276,16 +281,17 @@ body {
   animation: ph-glow-pulse 3s ease-in-out infinite;
 }
 
-/* ROBOT - THIRD */
+/* ROBOT - HIDDEN/BELOW */
 .ph-illus-robot {
-  position: relative;
+  position: absolute;
+  bottom: -100px;
   height: 280px;
   width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 4;
-  order: 3;
+  z-index: 2;
+  opacity: 0.6;
 }
 
 .ph-robot-img {
@@ -310,15 +316,14 @@ body {
   animation: ph-glow-pulse 3.5s ease-in-out infinite;
 }
 
-/* FLOAT ICONS */
+/* FLOAT ICONS - POSITIONED AROUND PHOENIX */
 .ph-illus-icons {
   position: absolute;
-  width: 350px;
-  height: 350px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 8;
   pointer-events: none;
 }
 
@@ -332,27 +337,29 @@ body {
   animation: ph-float-anim 4s ease-in-out infinite;
 }
 
+/* Code icons on sides of phoenix */
 .ph-float-icon.top-left {
-  top: -20px;
-  left: 0px;
+  top: 50px;
+  left: -60px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 10px;
-  right: 10px;
+  top: 50px;
+  right: -60px;
   animation-delay: 1s;
 }
 
+/* Other icons below */
 .ph-float-icon.bottom-left {
-  bottom: 30px;
-  left: -10px;
+  bottom: 100px;
+  left: 20px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 40px;
-  right: 0px;
+  bottom: 100px;
+  right: 20px;
   animation-delay: 1.5s;
 }
 
@@ -371,13 +378,17 @@ body {
   backdrop-filter: blur(5px);
 }
 
-/* TEXT COPY - LAST (leftmost in RTL) */
+/* TEXT COPY - BELOW PHOENIX */
 .ph-hero-copy {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   z-index: 2;
-  order: 4;
+  text-align: center;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 3rem;
 }
 
 .ph-h1 {
@@ -923,20 +934,17 @@ body {
   flex-direction: row-reverse;
 }
 
-.rtl .ph-hero-inner {
-  grid-template-columns: 1fr 280px 250px 180px;
-}
-
+/* RTL: Flex column, no special ordering needed */
 .rtl .ph-hero-copy {
-  order: 1;
+  text-align: center;
 }
 
 .rtl .ph-illus-phoenix {
-  order: 2;
+  /* Centered, no change needed */
 }
 
 .rtl .ph-illus-robot {
-  order: 3;
+  /* Below phoenix, no change needed */
 }
 
 .rtl .ph-illus-icons {
@@ -981,22 +989,29 @@ body {
     gap: 2rem;
   }
 
-  .rtl .ph-hero-inner {
-    grid-template-columns: 1fr;
-  }
-
   .ph-hero-copy {
-    order: 1 !important;
+    max-width: 100%;
   }
 
   .ph-illus-robot {
-    width: 250px;
-    height: 350px;
+    width: 200px;
+    height: 250px;
   }
 
   .ph-illus-phoenix {
-    width: 300px;
-    height: 300px;
+    width: 280px;
+    height: 280px;
+  }
+
+  .ph-float-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ph-icon-box {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
 
   .ph-dual {
