@@ -51,56 +51,43 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
         <section className="ph-hero">
           <div className="ph-hero-inner">
 
-            {/* STATS (Right in LTR, Left in RTL) */}
-            <div className="ph-hero-stats">
-              {([
-                { g: 'linear-gradient(135deg,#7c3aed,#a78bfa)', icon: '🤖', num: '+200', lbl: 'أداة ذكاء اصطناعي' },
-                { g: 'linear-gradient(135deg,#db2777,#f472b6)', icon: '🎓', num: '+150', lbl: 'دورة تدريبية' },
-                { g: 'linear-gradient(135deg,#0891b2,#38bdf8)', icon: '🗺️', num: '+30',  lbl: 'مسار مهني' },
-                { g: 'linear-gradient(135deg,#059669,#34d399)', icon: '👥', num: '+10K', lbl: 'متعلم نشط' },
-              ] as const).map((s) => (
-                <div key={s.lbl} className="ph-hstat">
-                  <span className="ph-hstat-icon" style={{ background: s.g }}>{s.icon}</span>
-                  <div>
-                    <div className="ph-hstat-num">{s.num}</div>
-                    <div className="ph-hstat-lbl">{s.lbl}</div>
-                  </div>
+            {/* LANDSCAPE SCENE - ROBOT (LEFT) + PHOENIX (RIGHT) + ICONS TOGETHER */}
+            <div className="ph-illus-container">
+              
+              {/* ROBOT - LEFT */}
+              <div className="ph-illus-robot">
+                <img 
+                  src="/images/phoenix-hero-robot.png" 
+                  alt="AI Robot"
+                  className="ph-robot-img"
+                />
+              </div>
+
+              {/* PHOENIX - RIGHT */}
+              <div className="ph-illus-phoenix">
+                <img 
+                  src="/images/phoenix-hero-bird.png" 
+                  alt="Phoenix Bird"
+                  className="ph-phoenix-img"
+                />
+              </div>
+
+              {/* ICONS INTEGRATED INTO LANDSCAPE SCENE */}
+              <div className="ph-illus-icons">
+                <div className="ph-float-icon top-left">
+                  <div className="ph-icon-box">&lt;/&gt;</div>
                 </div>
-              ))}
-            </div>
+                <div className="ph-float-icon top-right">
+                  <div className="ph-icon-box">💬</div>
+                </div>
+                <div className="ph-float-icon bottom-left">
+                  <div className="ph-icon-box">📄</div>
+                </div>
+                <div className="ph-float-icon bottom-right">
+                  <div className="ph-icon-box">⚡</div>
+                </div>
+              </div>
 
-            {/* PHOENIX WINGS */}
-            <div className="ph-illus-phoenix">
-              <img 
-                src="/images/phoenix-hero-bird.png" 
-                alt="Phoenix Bird"
-                className="ph-phoenix-img"
-              />
-            </div>
-
-            {/* ROBOT */}
-            <div className="ph-illus-robot">
-              <img 
-                src="/images/phoenix-hero-robot.png" 
-                alt="AI Robot"
-                className="ph-robot-img"
-              />
-            </div>
-
-            {/* ICONS around center */}
-            <div className="ph-illus-icons">
-              <div className="ph-float-icon top-left">
-                <div className="ph-icon-box">&lt;/&gt;</div>
-              </div>
-              <div className="ph-float-icon top-right">
-                <div className="ph-icon-box">💬</div>
-              </div>
-              <div className="ph-float-icon bottom-left">
-                <div className="ph-icon-box">📄</div>
-              </div>
-              <div className="ph-float-icon bottom-right">
-                <div className="ph-icon-box">⚡</div>
-              </div>
             </div>
 
             {/* TEXT COPY (Left in LTR, Right in RTL) */}
@@ -126,6 +113,24 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
                 <a href={`/${locale}/workspace`} className="ph-btn-primary">← ابدأ التعلم الآن</a>
                 <button className="ph-btn-ghost" type="button">▶ شاهد كيف تعمل المنصة</button>
               </div>
+            </div>
+
+            {/* STATS PANEL AT BOTTOM */}
+            <div className="ph-hero-stats">
+              {([
+                { g: 'linear-gradient(135deg,#7c3aed,#a78bfa)', icon: '🤖', num: '+200', lbl: 'أداة ذكاء اصطناعي' },
+                { g: 'linear-gradient(135deg,#db2777,#f472b6)', icon: '🎓', num: '+150', lbl: 'دورة تدريبية' },
+                { g: 'linear-gradient(135deg,#0891b2,#38bdf8)', icon: '🗺️', num: '+30',  lbl: 'مسار مهني' },
+                { g: 'linear-gradient(135deg,#059669,#34d399)', icon: '👥', num: '+10K', lbl: 'متعلم نشط' },
+              ] as const).map((s) => (
+                <div key={s.lbl} className="ph-hstat">
+                  <span className="ph-hstat-icon" style={{ background: s.g }}>{s.icon}</span>
+                  <div>
+                    <div className="ph-hstat-num">{s.num}</div>
+                    <div className="ph-hstat-lbl">{s.lbl}</div>
+                  </div>
+                </div>
+              ))}
             </div>
 
           </div>
