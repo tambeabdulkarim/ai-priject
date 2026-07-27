@@ -201,11 +201,11 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-  height: 380px;
+  height: 100%;
   width: 100%;
   max-width: 640px;
   grid-column: 2;
-  padding: 60px 70px;
+  padding: 40px 55px;
   box-sizing: border-box;
 }
 
@@ -271,14 +271,14 @@ body {
 /* PHOENIX - RIGHT */
 .ph-illus-phoenix {
   position: relative;
-  height: 280px;
-  width: 280px;
+  height: 320px;
+  width: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10;
   flex-shrink: 0;
-  margin-left: -55px;
+  margin-left: -60px;
 }
 
 .ph-phoenix-img {
@@ -307,8 +307,8 @@ body {
 /* ROBOT - LEFT */
 .ph-illus-robot {
   position: relative;
-  height: 250px;
-  width: 200px;
+  height: 300px;
+  width: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
