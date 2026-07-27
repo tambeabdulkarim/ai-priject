@@ -35,6 +35,25 @@ export const dictionaries = {
       brand: 'أوبسيف',
       tagline: 'مساعدتك على بناء يوم إنتاجي ومرتب.',
       copyright: '© 2026 أوبسيف. جميع الحقوق محفوظة.'
+    },
+    dashboard: {
+      badge: 'لوحة تحكم إنتاجية',
+      title: 'تابع تقدمك اليومي من مكان واحد.',
+      description: 'لوحة مرئية تساعدك على تنظيم أولويات العمل والمهام والتقدم بشكل واضح.',
+      focus: 'التركيز الحالي',
+      focusValue: 'إكمال المشروع الأساسي',
+      stats: [
+        { label: 'المهام المكتملة', value: '12', caption: 'هذا الأسبوع' },
+        { label: 'الوقت الموجه', value: '6.4h', caption: 'في العمل العميق' },
+        { label: 'التقدم', value: '83%', caption: 'من الخطة الحالية' }
+      ],
+      tasksTitle: 'أولويات اليوم',
+      tasks: ['مراجعة المتطلبات', 'تحديث المخطط', 'مواصلة التطوير', 'إرسال ملاحظات للفريق'],
+      insightsTitle: 'رؤى سريعة',
+      insights: [
+        { title: 'التركيز', text: 'أفضل وقت للتنفيذ هو في بداية الصباح.' },
+        { title: 'التعاون', text: 'المراجعات المؤقتة تحسن جودة العمل وتقلل التأخير.' }
+      ]
     }
   },
   en: {
@@ -64,6 +83,25 @@ export const dictionaries = {
       brand: 'Opsive',
       tagline: 'Helping you build a productive and structured day.',
       copyright: '© 2026 Opsive. All rights reserved.'
+    },
+    dashboard: {
+      badge: 'Productivity dashboard',
+      title: 'Track your progress from one place.',
+      description: 'A focused workspace that helps you organize priorities, tasks, and momentum clearly.',
+      focus: 'Current focus',
+      focusValue: 'Complete the core milestone',
+      stats: [
+        { label: 'Completed tasks', value: '12', caption: 'this week' },
+        { label: 'Focused time', value: '6.4h', caption: 'in deep work' },
+        { label: 'Progress', value: '83%', caption: 'of the current plan' }
+      ],
+      tasksTitle: 'Today priorities',
+      tasks: ['Review requirements', 'Update roadmap', 'Continue implementation', 'Share feedback with the team'],
+      insightsTitle: 'Quick insights',
+      insights: [
+        { title: 'Focus', text: 'The best execution window is early in the morning.' },
+        { title: 'Collaboration', text: 'Short review cycles improve quality and reduce delays.' }
+      ]
     }
   }
 } as const;
