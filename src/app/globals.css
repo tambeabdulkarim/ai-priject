@@ -208,7 +208,8 @@ body {
   grid-column: 2;
   grid-row: 1;
   direction: ltr;
-  gap: 30px;
+  gap: 20px;
+  padding: 0 20px;
 }
 
 /* ROBOT - LEFT SIDE OF IMAGES */
@@ -282,26 +283,26 @@ body {
 
 /* Icons positioned at 4 corners within container */
 .ph-float-icon.top-left {
-  top: 50px;
-  left: 30px;
+  top: 40px;
+  left: 20px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 50px;
-  right: 30px;
+  top: 40px;
+  right: 20px;
   animation-delay: 1s;
 }
 
 .ph-float-icon.bottom-left {
-  bottom: 80px;
-  left: 30px;
+  bottom: 20px;
+  left: 20px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 80px;
-  right: 30px;
+  bottom: 20px;
+  right: 20px;
   animation-delay: 1.5s;
 }
 
