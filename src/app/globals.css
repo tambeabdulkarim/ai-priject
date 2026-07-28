@@ -200,14 +200,15 @@ body {
 /* IMAGES CONTAINER - SECOND COLUMN (CENTER) */
 .ph-images-wrapper {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   position: relative;
-  height: 500px;
+  height: 450px;
   width: 100%;
   grid-column: 2;
   grid-row: 1;
   direction: ltr;
+  gap: 80px;
 }
 
 /* ROBOT - LEFT SIDE OF IMAGES */
@@ -216,17 +217,16 @@ body {
   height: 100%;
   width: auto;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 4;
   flex-shrink: 0;
-  margin-right: 20px;
 }
 
 .ph-robot-img {
   width: auto;
   height: 100%;
-  max-height: 400px;
+  max-height: 300px;
   object-fit: contain;
   mix-blend-mode: screen;
   filter: drop-shadow(0 0 40px rgba(6, 182, 212, 0.6)) 
@@ -239,17 +239,16 @@ body {
   height: 100%;
   width: auto;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 3;
   flex-shrink: 0;
-  margin-left: 20px;
 }
 
 .ph-phoenix-img {
   width: auto;
   height: 100%;
-  max-height: 450px;
+  max-height: 400px;
   object-fit: contain;
   mix-blend-mode: screen;
   filter: drop-shadow(0 0 50px rgba(219, 39, 119, 0.7)) 
@@ -272,8 +271,8 @@ body {
 
 .ph-float-icon {
   position: absolute;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -283,42 +282,42 @@ body {
 
 /* Icons positioned at corners */
 .ph-float-icon.top-left {
-  top: 30px;
-  left: 20px;
+  top: 0;
+  left: -80px;
   animation-delay: 0s;
 }
 
 .ph-float-icon.top-right {
-  top: 30px;
-  right: 20px;
+  top: 0;
+  right: -80px;
   animation-delay: 1s;
 }
 
 .ph-float-icon.bottom-left {
-  bottom: 50px;
-  left: 20px;
+  bottom: -30px;
+  left: -80px;
   animation-delay: 0.5s;
 }
 
 .ph-float-icon.bottom-right {
-  bottom: 50px;
-  right: 20px;
+  bottom: -30px;
+  right: -80px;
   animation-delay: 1.5s;
 }
 
 .ph-icon-box {
-  width: 50px;
-  height: 50px;
-  background: rgba(139, 92, 246, 0.15);
-  border: 2px solid rgba(219, 39, 119, 0.4);
-  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  background: rgba(139, 92, 246, 0.2);
+  border: 2px solid rgba(219, 39, 119, 0.5);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 
-              inset 0 0 10px rgba(139, 92, 246, 0.1);
-  backdrop-filter: blur(5px);
+  font-size: 1.5rem;
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.4), 
+              inset 0 0 12px rgba(139, 92, 246, 0.15);
+  backdrop-filter: blur(8px);
 }
 
 /* STATS PANEL - THIRD COLUMN (RIGHT) */
