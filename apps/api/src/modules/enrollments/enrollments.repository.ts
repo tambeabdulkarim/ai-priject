@@ -18,6 +18,12 @@ export class EnrollmentsRepository {
     return this.prisma.enrollment.findUnique({ where: { id } });
   }
 
+  /** Used by refund() to resolve the linked Order for a purchased enrollment's OrderItem. */
+  async findOrderIdForOrderItem(orderItemId: string): Promise<string | null> {
+    const orderItem = await this.prisma.orderItem.findUnique({ where: { id: orderItemId }, select: { orderId: true } });
+    return orderItem?.orderId ?? null;
+  }
+
   create(data: Prisma.EnrollmentCreateInput): Promise<Enrollment> {
     return this.prisma.enrollment.create({ data });
   }

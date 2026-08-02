@@ -31,6 +31,7 @@ describe('AuthService.login', () => {
       hash: jest.fn(),
       verify: jest.fn().mockResolvedValue(overrides.passwordValid ?? false),
     };
+    const breachedPasswordService = { isBreached: jest.fn().mockResolvedValue(false) };
     const auditLogService = { record: jest.fn() };
     const redisService = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
     const jwtService = { sign: jest.fn().mockReturnValue('signed.jwt.token'), verify: jest.fn() };
@@ -42,13 +43,14 @@ describe('AuthService.login', () => {
       sessionsService as never,
       refreshTokensService as never,
       passwordService as never,
+      breachedPasswordService as never,
       auditLogService as never,
       redisService as never,
       jwtService as never,
       configService as never,
     );
 
-    return { service, usersService, passwordService, auditLogService };
+    return { service, usersService, passwordService, breachedPasswordService, auditLogService };
   };
 
   it('rejects login with the same error for a nonexistent account (enumeration-safe)', async () => {

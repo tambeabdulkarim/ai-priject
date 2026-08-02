@@ -1,6 +1,6 @@
 // Data-access layer for Orders/Order_Items/Coupons (docs/13-DATABASE-BLUEPRINT.md).
 
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Coupon, Order, OrderItem, Prisma, Product } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
@@ -67,10 +67,31 @@ export class OrdersRepository {
       });
 
       if (params.couponId) {
-        await tx.coupon.update({
-          where: { id: params.couponId },
+        // docs/16-API-CONTRACT.md POST /orders. Fixed during the Phase 13
+        // final audit: an unconditional `increment: 1` here let two
+        // concurrent checkouts both pass OrdersService's pre-transaction
+        // "redeemedCount < maxRedemptions" read and both increment,
+        // pushing the coupon over its redemption cap (over-discounting).
+        // Fixed by making the increment itself conditional on the cap
+        // still holding, evaluated atomically by Postgres as part of a
+        // single UPDATE...WHERE statement (the row lock the UPDATE takes
+        // means a second concurrent transaction re-evaluates the WHERE
+        // against the already-incremented row, not a stale read) — the
+        // same pattern as an optimistic-lock guard, no isolation-level
+        // change needed since it's one statement, not a read-then-write
+        // pair.
+        const coupon = await tx.coupon.findUniqueOrThrow({ where: { id: params.couponId } });
+        const guard: Prisma.CouponWhereInput = { id: params.couponId };
+        if (coupon.maxRedemptions !== null) {
+          guard.redeemedCount = { lt: coupon.maxRedemptions };
+        }
+        const { count } = await tx.coupon.updateMany({
+          where: guard,
           data: { redeemedCount: { increment: 1 } },
         });
+        if (count === 0) {
+          throw new ConflictException('Coupon has reached its redemption limit.');
+        }
       }
 
       const orderItems = await tx.orderItem.findMany({ where: { orderId: order.id } });

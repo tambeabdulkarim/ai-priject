@@ -18,13 +18,14 @@
 //    enabled given the current schema, so this is inert rather than a
 //    security gap.
 
-import { HttpException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppConfig } from '../../config/configuration';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { PasswordService } from '../../common/services/password.service';
+import { BreachedPasswordService } from '../../common/services/breached-password.service';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { RedisService } from '../../redis/redis.service';
 import { RolesService, DEFAULT_REGISTRATION_ROLE } from '../roles/roles.service';
@@ -76,6 +77,7 @@ export class AuthService {
     private readonly sessionsService: SessionsService,
     private readonly refreshTokensService: RefreshTokensService,
     private readonly passwordService: PasswordService,
+    private readonly breachedPasswordService: BreachedPasswordService,
     private readonly auditLogService: AuditLogService,
     private readonly redisService: RedisService,
     private readonly jwtService: JwtService,
@@ -98,6 +100,14 @@ export class AuthService {
     if (existing) {
       this.logger.warn(`Registration attempted for an existing email (${meta.ipAddress ?? 'unknown ip'}).`);
       return { userId: randomUUID(), email: dto.email, verificationRequired: true };
+    }
+
+    // docs/16-API-CONTRACT.md POST /auth/register Validation Rules:
+    // "breached-password check". Fixed during the Phase 13 final audit —
+    // previously not implemented anywhere despite being unambiguously
+    // required with the exact mechanism (HIBP range API) named.
+    if (await this.breachedPasswordService.isBreached(dto.password)) {
+      throw new BadRequestException('This password has appeared in a known data breach — please choose another.');
     }
 
     const passwordHash = await this.passwordService.hash(dto.password);

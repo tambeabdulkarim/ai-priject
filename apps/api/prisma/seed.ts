@@ -20,9 +20,12 @@
 //    ONLY where docs/16-API-CONTRACT.md's own "Authorization Required"
 //    column explicitly names them (e.g. "course:create (instructor/
 //    content_editor)" is a direct transcription, not a guess). Where
-//    doc16 doesn't name specific roles (e.g. user:ban, user:assign_role),
-//    only superadmin is granted, since assigning it to `admin` vs
+//    doc16 doesn't name specific roles (e.g. user:assign_role — "(superadmin)"
+//    only), only superadmin is granted, since assigning it to `admin` vs
 //    `support` vs `moderator` would be an undocumented product decision.
+//    [Corrected during Phase 13 final audit: an earlier version of this
+//    comment incorrectly claimed doc16 doesn't name roles for user:list,
+//    user:read, user:ban, and audit:read — it does; see EXPLICIT_ROLE_GRANTS.]
 
 import { PrismaClient } from '@prisma/client';
 
@@ -53,12 +56,29 @@ const PERMISSION_KEYS = [
   'news:create',
   'news:publish',
   'media:reprocess',
+  'moderation:read',
+  'comment:moderate',
+  'analytics:read',
+  'settings:read',
+  'settings:write',
 ] as const;
 
 // docs/16-API-CONTRACT.md "Authorization Required" — direct transcription,
 // not an invented mapping. Every key here also implicitly goes to
 // superadmin (handled separately below).
 const EXPLICIT_ROLE_GRANTS: Record<string, string[]> = {
+  // docs/16-API-CONTRACT.md: "user:list (admin/support)"
+  'user:list': ['admin', 'support'],
+  // docs/16-API-CONTRACT.md: "user:read (admin/support)"
+  'user:read': ['admin', 'support'],
+  // docs/16-API-CONTRACT.md: "user:ban (admin)"
+  'user:ban': ['admin'],
+  // docs/16-API-CONTRACT.md: "audit:read (admin/security)" — "security" is
+  // not a role in docs/09-PLATFORM-ARCHITECTURE.md §5's 8-role catalog
+  // (guest/learner/instructor/content_editor/moderator/support/admin/
+  // superadmin), so only the real, named "admin" role is granted here;
+  // the non-existent "security" role is a documentation gap, not invented.
+  'audit:read': ['admin'],
   'course:create': ['instructor', 'content_editor'],
   'course:publish': ['content_editor', 'admin'],
   'order:refund': ['admin', 'support'],
@@ -72,6 +92,15 @@ const EXPLICIT_ROLE_GRANTS: Record<string, string[]> = {
   'news:publish': ['content_editor', 'admin'],
   // docs/16-API-CONTRACT.md: "media:reprocess (admin)"
   'media:reprocess': ['admin'],
+  // docs/16-API-CONTRACT.md: "moderation:read (moderator/admin)"
+  'moderation:read': ['moderator', 'admin'],
+  // docs/16-API-CONTRACT.md: "comment:moderate (moderator/admin)"
+  'comment:moderate': ['moderator', 'admin'],
+  // docs/16-API-CONTRACT.md: "analytics:read (admin)"
+  'analytics:read': ['admin'],
+  // docs/16-API-CONTRACT.md: "settings:read (superadmin)" and
+  // "settings:write (superadmin)" — no explicit grant needed beyond the
+  // default superadmin grant every permission already receives.
 };
 
 async function main(): Promise<void> {

@@ -79,6 +79,15 @@ export class SessionsService {
     return this.sessionsRepository.revokeAllForUser(userId);
   }
 
+  /** docs/16-API-CONTRACT.md POST /users/me/change-password: "revokes other sessions" — the caller's own session survives. */
+  findActiveByUserIdExcept(userId: string, exceptSessionId: string): Promise<UserSession[]> {
+    return this.sessionsRepository.findActiveByUserIdExcept(userId, exceptSessionId);
+  }
+
+  revokeAllForUserExcept(userId: string, exceptSessionId: string) {
+    return this.sessionsRepository.revokeAllForUserExcept(userId, exceptSessionId);
+  }
+
   findById(id: string): Promise<UserSession | null> {
     return this.sessionsRepository.findById(id);
   }

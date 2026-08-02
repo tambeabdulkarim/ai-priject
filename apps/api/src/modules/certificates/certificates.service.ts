@@ -11,7 +11,7 @@
 
 import { randomUUID } from 'crypto';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Certificate, Enrollment } from '@prisma/client';
+import { Certificate, Enrollment, Prisma } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { StorageService } from '../../storage/storage.service';
@@ -31,19 +31,70 @@ export class CertificatesService {
     private readonly coursesRepository: CoursesRepository,
   ) {}
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §11 — called by ProgressService on 100% course completion. */
+  /**
+   * docs/15-SYSTEM-WORKFLOWS.md §11 — called by ProgressService on 100%
+   * course completion.
+   *
+   * Production readiness fix pass: re-validates passing quiz scores
+   * server-side before issuing, per docs15 §11 ("passing quiz scores
+   * where required... re-validated server-side at generation time, not
+   * assumed from client-reported progress alone"). `PUT
+   * /progress/lessons/:lessonId` lets a caller mark ANY lesson —
+   * including a quiz-type one — complete via a client-supplied
+   * `progressPercent`, with no cross-check against `QuizAttempt`
+   * (`progress.repository.ts` `upsertProgressAndRecomputeCompletion`).
+   * That completion-percent calculation itself is unchanged here — fixing
+   * it would mean redesigning how "100% complete" is computed platform-
+   * wide, out of scope for this pass. This method only adds the one gate
+   * docs15 §11 actually asks for: a course whose quiz(zes) haven't been
+   * genuinely passed does not get a certificate, even if
+   * `Enrollment.completionPercent` says 100. Resolved using only existing
+   * relationships (Quiz.lessonId → Lesson → Module → Course,
+   * QuizAttempt.userId/quizId/passed) — nothing invented.
+   */
   async issueForEnrollment(enrollment: Enrollment): Promise<Certificate | null> {
     const existing = await this.certificatesRepository.findByEnrollmentId(enrollment.id);
     if (existing) {
       return existing;
     }
 
-    const certificate = await this.certificatesRepository.create({
-      user: { connect: { id: enrollment.userId } },
-      course: { connect: { id: enrollment.courseId } },
-      enrollment: { connect: { id: enrollment.id } },
-      certificateNumber: this.generateCertificateNumber(),
-    });
+    const quizzes = await this.certificatesRepository.findQuizIdsForCourse(enrollment.courseId);
+    for (const quiz of quizzes) {
+      const passed = await this.certificatesRepository.hasPassingAttempt(enrollment.userId, quiz.id);
+      if (!passed) {
+        // Not audit-logged, not an error: this is an expected, frequent
+        // state (completion percent reached 100% via non-quiz lessons,
+        // or a quiz attempt was failed) — the certificate simply isn't
+        // issued yet. It will be (re-)attempted on the next progress
+        // write that reaches 100%, per the existing call site in
+        // ProgressService.updateLessonProgress.
+        return null;
+      }
+    }
+
+    let certificate: Certificate;
+    try {
+      certificate = await this.certificatesRepository.create({
+        user: { connect: { id: enrollment.userId } },
+        course: { connect: { id: enrollment.courseId } },
+        enrollment: { connect: { id: enrollment.id } },
+        certificateNumber: this.generateCertificateNumber(),
+      });
+    } catch (error) {
+      // Fixed during the Phase 13 final audit: two concurrent progress
+      // updates both reaching 100% for the same enrollment could both pass
+      // the findByEnrollmentId check above before either commits. The
+      // unique constraint on Certificate.enrollmentId is the real
+      // idempotency guard; this makes the loser return the winner's
+      // already-created certificate instead of an unhandled 500.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const alreadyIssued = await this.certificatesRepository.findByEnrollmentId(enrollment.id);
+        if (alreadyIssued) {
+          return alreadyIssued;
+        }
+      }
+      throw error;
+    }
 
     // docs/15-SYSTEM-WORKFLOWS.md §11: "Certificate issuance... is
     // audit-logged given its role as a durable credential."

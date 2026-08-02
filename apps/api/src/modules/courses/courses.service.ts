@@ -5,7 +5,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { Course } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
-import { assertOwnerOrEditorial } from '../../common/utils/authorization';
+import { assertOwnerOrEditorial, isOwnerOrEditorial } from '../../common/utils/authorization';
 import { slugify } from '../../common/utils/slugify';
 import { CategoriesService } from '../categories/categories.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -34,16 +34,45 @@ export class CoursesService {
     });
   }
 
-  /** docs/16-API-CONTRACT.md GET /courses/:slug */
-  async getBySlug(slug: string, viewerId?: string) {
+  /**
+   * docs/16-API-CONTRACT.md GET /courses/:slug — "full course detail
+   * including module/lesson outline (lesson content bodies excluded unless
+   * enrolled/preview)".
+   *
+   * Two bugs fixed during the Phase 13 final audit:
+   *  1. Draft visibility only checked `instructorId === viewerId`, so an
+   *     editorial role (content_editor/admin) reviewing a draft — exactly
+   *     what doc16 line 288 ("owner/editorial for drafts") calls for —
+   *     got a 404 on any course they didn't personally author.
+   *  2. `findBySlug` returns full `Lesson` rows (including `body`) with no
+   *     redaction at all — every visitor, including unauthenticated ones,
+   *     received the full text/body of every lesson in every module,
+   *     preview or not, entitled or not.
+   */
+  async getBySlug(slug: string, viewerId?: string, viewerRoles: string[] = []) {
     const course = await this.coursesRepository.findBySlug(slug);
     if (!course) {
       throw new NotFoundException('Course not found.');
     }
-    if (course.status !== 'published' && course.instructorId !== viewerId) {
+
+    const canSeeDraft = viewerId !== undefined && isOwnerOrEditorial(course.instructorId, viewerId, viewerRoles);
+    if (course.status !== 'published' && !canSeeDraft) {
       throw new NotFoundException('Course not found.');
     }
-    return course;
+
+    const isEntitledToFullContent =
+      canSeeDraft ||
+      (viewerId !== undefined && (await this.coursesRepository.hasActiveEnrollment(viewerId, course.id)));
+
+    return {
+      ...course,
+      modules: course.modules.map((module_) => ({
+        ...module_,
+        lessons: module_.lessons.map((lesson) =>
+          lesson.isPreview || isEntitledToFullContent ? lesson : { ...lesson, body: null },
+        ),
+      })),
+    };
   }
 
   /** docs/16-API-CONTRACT.md POST /courses */

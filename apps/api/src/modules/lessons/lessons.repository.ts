@@ -32,6 +32,24 @@ export class LessonsRepository {
     return this.prisma.lesson.findMany({ where: { moduleId }, orderBy: { position: 'asc' } });
   }
 
+  /**
+   * docs/16-API-CONTRACT.md GET .../lessons — "Response Body: ordered list
+   * of lesson summaries (title, type, duration, is_preview)". Fixed during
+   * the Phase 13 final audit: `findManyByModule` (above) returns the full
+   * row including `body`, which this public, unauthenticated-by-default
+   * endpoint was leaking for every lesson (including non-preview ones)
+   * regardless of viewer entitlement. This method returns only the
+   * documented summary fields; `findManyByModule` is kept for internal
+   * callers (`reorder`) that need full rows.
+   */
+  findSummariesByModule(moduleId: string) {
+    return this.prisma.lesson.findMany({
+      where: { moduleId },
+      orderBy: { position: 'asc' },
+      select: { id: true, title: true, contentType: true, durationSeconds: true, isPreview: true, position: true },
+    });
+  }
+
   findById(id: string): Promise<Lesson | null> {
     return this.prisma.lesson.findUnique({ where: { id } });
   }

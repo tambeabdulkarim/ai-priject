@@ -23,7 +23,7 @@ export class CoursesController {
   @Public()
   @Get(':slug')
   getBySlug(@Param('slug') slug: string, @CurrentUser() user?: JwtPayload) {
-    return this.coursesService.getBySlug(slug, user?.sub);
+    return this.coursesService.getBySlug(slug, user?.sub, user?.roles);
   }
 
   @Post()

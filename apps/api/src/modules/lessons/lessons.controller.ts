@@ -26,7 +26,7 @@ export class LessonsController {
   @Public()
   @Get('lessons/:id')
   getContent(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: JwtPayload) {
-    return this.lessonsService.getContent(id, user?.sub);
+    return this.lessonsService.getContent(id, user?.sub, user?.roles);
   }
 
   // Not documented in docs/16-API-CONTRACT.md — see create-module.dto.ts.

@@ -14,7 +14,7 @@
 
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
-import { Payment } from '@prisma/client';
+import { Payment, Prisma } from '@prisma/client';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OrdersRepository } from '../orders/orders.repository';
@@ -80,13 +80,27 @@ export class PaymentsService {
       return;
     }
 
-    const payment = await this.paymentsRepository.recordSuccessfulPayment({
-      orderId: order.id,
-      providerPaymentId: paymentIntentId,
-      amountCents: session.amount_total ?? order.totalCents,
-      currency: (session.currency ?? order.currency).toUpperCase(),
-      providerReference: session.id,
-    });
+    let payment: Payment;
+    try {
+      payment = await this.paymentsRepository.recordSuccessfulPayment({
+        orderId: order.id,
+        providerPaymentId: paymentIntentId,
+        amountCents: session.amount_total ?? order.totalCents,
+        currency: (session.currency ?? order.currency).toUpperCase(),
+        providerReference: session.id,
+      });
+    } catch (error) {
+      // Two concurrent deliveries of the same Stripe event can both pass
+      // the findByProviderPaymentId check above before either commits —
+      // the unique constraint on providerPaymentId (schema.prisma:924) is
+      // the real idempotency guard; this just makes the loser's failure a
+      // graceful no-op (matching the existing early-return above) instead
+      // of an unhandled 500 that would make Stripe retry indefinitely.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return;
+      }
+      throw error;
+    }
 
     await this.auditLogService.record({
       actorUserId: order.userId,
@@ -152,45 +166,43 @@ export class PaymentsService {
       throw new NotFoundException('Payment not found.');
     }
 
-    const alreadyRefunded = (await this.paymentsRepository.sumRefundedForPayment(id))._sum.amountCents ?? 0;
-    const refundable = payment.amountCents - alreadyRefunded;
-    if (refundable <= 0) {
-      throw new ConflictException('This payment has already been fully refunded.');
+    let result: { payment: Payment; isFullRefund: boolean; transaction: { amountCents: number } };
+    try {
+      result = await this.paymentsRepository.processRefund({
+        paymentId: id,
+        requestedAmountCents: amountCents,
+        currency: payment.order.currency,
+        orderId: payment.orderId,
+      });
+    } catch (error) {
+      // Concurrent refund requests racing the same payment: Postgres
+      // aborts the losing Serializable transaction with P2034. Surfaced
+      // as 409 rather than an opaque 500 — the caller can safely retry
+      // and will see the balance the other request already committed.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        throw new ConflictException('This payment is being refunded concurrently — please retry.');
+      }
+      throw error;
     }
 
-    const refundAmount = amountCents ?? refundable;
-    if (refundAmount > refundable) {
-      throw new BadRequestException(`Refund amount exceeds the refundable balance of ${refundable} cents.`);
-    }
-
-    await this.paymentsRepository.createTransaction({
-      payment: { connect: { id } },
-      type: 'refund',
-      amountCents: refundAmount,
-      currency: payment.order.currency,
-    });
-
-    const isFullRefund = refundAmount === refundable;
-    if (isFullRefund) {
-      await this.ordersRepository.update(payment.orderId, { status: 'refunded' });
-    }
+    const { payment: updatedPayment, isFullRefund, transaction } = result;
 
     await this.auditLogService.record({
       actorUserId: actorId,
       action: 'payment.refunded',
       targetType: 'Payment',
       targetId: id,
-      afterState: { refundAmount, reason, fullRefund: isFullRefund },
+      afterState: { refundAmount: transaction.amountCents, reason, fullRefund: isFullRefund },
     });
 
     await this.notificationsService.create({
       userId: payment.order.userId,
       type: 'payment.refunded',
       title: 'Refund processed',
-      body: `A refund of ${(refundAmount / 100).toFixed(2)} ${payment.order.currency} has been issued for order ${payment.order.orderNumber}.`,
+      body: `A refund of ${(transaction.amountCents / 100).toFixed(2)} ${payment.order.currency} has been issued for order ${payment.order.orderNumber}.`,
       sourceEventId: payment.id,
     });
 
-    return payment;
+    return updatedPayment;
   }
 }

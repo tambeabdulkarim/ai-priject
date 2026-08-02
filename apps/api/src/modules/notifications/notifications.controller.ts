@@ -3,6 +3,7 @@
 import {
   Controller,
   Get,
+  HttpCode,
   NotImplementedException,
   Param,
   ParseUUIDPipe,
@@ -29,6 +30,7 @@ export class NotificationsController {
     return this.notificationsService.markRead(id, user.sub);
   }
 
+  @HttpCode(200)
   @Post('read-all')
   async markAllRead(@CurrentUser() user: JwtPayload): Promise<{ marked_read: number }> {
     const count = await this.notificationsService.markAllRead(user.sub);

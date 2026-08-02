@@ -2,8 +2,11 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { Prisma, Role, User } from '@prisma/client';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { PasswordService } from '../../common/services/password.service';
+import { BreachedPasswordService } from '../../common/services/breached-password.service';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { RolesService } from '../roles/roles.service';
+import { SessionsService } from '../sessions/sessions.service';
+import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
@@ -16,8 +19,11 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly passwordService: PasswordService,
+    private readonly breachedPasswordService: BreachedPasswordService,
     private readonly auditLogService: AuditLogService,
     private readonly rolesService: RolesService,
+    private readonly sessionsService: SessionsService,
+    private readonly refreshTokensService: RefreshTokensService,
   ) {}
 
   findById(id: string): Promise<User | null> {
@@ -43,12 +49,28 @@ export class UsersService {
     await this.usersRepository.update(userId, { passwordHash });
   }
 
-  async getSafeById(id: string): Promise<SafeUser> {
+  /**
+   * docs/16-API-CONTRACT.md GET /users/:id — "full user record (admin
+   * view, including status/role history summary)".
+   *
+   * Partially fixed during the Phase 13 final audit: this previously
+   * returned the bare user row (minus passwordHash) with no roles at all,
+   * even though the current role list is trivially available — exactly
+   * what `getMeView` already resolves via `RolesService`. A full
+   * chronological "role history" (who granted what, when) has no backing
+   * table anywhere in docs/13-DATABASE-BLUEPRINT.md — `Role_Permissions`
+   * models role→permission grants, not a per-user audit trail of role
+   * assignment over time — so that specific piece remains unavailable;
+   * only the current role list (the derivable part of "role history
+   * summary") is added here.
+   */
+  async getSafeById(id: string): Promise<SafeUser & { roles: string[] }> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
       throw new NotFoundException('User not found.');
     }
-    return this.toSafeUser(user);
+    const roles = await this.rolesService.getRoleNamesForUser(id);
+    return { ...this.toSafeUser(user), roles };
   }
 
   /**
@@ -90,8 +112,14 @@ export class UsersService {
     return this.toSafeUser(user);
   }
 
-  /** docs/16-API-CONTRACT.md POST /users/me/change-password */
-  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+  /**
+   * docs/16-API-CONTRACT.md POST /users/me/change-password — "Validation
+   * Rules: ... revokes other sessions." Mirrors AuthService.resetPassword's
+   * session/refresh-token revocation, except the caller's own current
+   * session (the one used to make this authenticated request) survives —
+   * "other sessions", not all sessions.
+   */
+  async changePassword(userId: string, currentSessionId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.usersRepository.findById(userId);
     if (!user || !user.passwordHash) {
       throw new NotFoundException('User not found.');
@@ -102,8 +130,21 @@ export class UsersService {
       throw new UnauthorizedException('Current password is incorrect.');
     }
 
+    // docs/10-SECURITY-BIBLE.md §4: breached-password check "at
+    // registration and password-change time". Fixed during the Phase 13
+    // final audit alongside the same gap in AuthService.register.
+    if (await this.breachedPasswordService.isBreached(dto.newPassword)) {
+      throw new BadRequestException('This password has appeared in a known data breach — please choose another.');
+    }
+
     const newHash = await this.passwordService.hash(dto.newPassword);
     await this.usersRepository.update(userId, { passwordHash: newHash });
+
+    const otherSessions = await this.sessionsService.findActiveByUserIdExcept(userId, currentSessionId);
+    await this.sessionsService.revokeAllForUserExcept(userId, currentSessionId);
+    await Promise.all(
+      otherSessions.map((s) => this.refreshTokensService.revokeAllForSession(s.id, 'password_changed')),
+    );
 
     await this.auditLogService.record({
       actorUserId: userId,

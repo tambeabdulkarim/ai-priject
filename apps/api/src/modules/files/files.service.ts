@@ -11,6 +11,7 @@ import { File } from '@prisma/client';
 import { RedisService } from '../../redis/redis.service';
 import { StorageService } from '../../storage/storage.service';
 import { detectMimeTypeFromMagicBytes } from '../../common/utils/magic-bytes';
+import { isOwnerOrEditorial } from '../../common/utils/authorization';
 import { SessionsService } from '../sessions/sessions.service';
 import { FilesRepository } from './files.repository';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
@@ -128,21 +129,56 @@ export class FilesService {
   }
 
   /**
-   * docs/16-API-CONTRACT.md GET /files/:id — "entitlement resolved per the
-   * owning content's own access rules." That resolution is generic across
-   * every content type (avatar, lesson file, course video, product file,
-   * certificate PDF) and is intentionally NOT re-implemented here — each
-   * owning module (Lessons, Certificates, etc.) is responsible for its own
-   * entitlement check before ever exposing a file ID to a caller. This
-   * method only enforces the two rules that apply universally: the
-   * uploader may always read their own file, and scan status gates
-   * delivery for everyone else.
+   * docs/16-API-CONTRACT.md GET /files/:id — "Resource owner or entitled
+   * consumer of the content the file is attached to."
+   *
+   * Production readiness fix: this previously had NO entitlement check at
+   * all beyond scan status — any authenticated user could fetch a signed
+   * URL for any clean file by UUID, despite a comment here claiming
+   * owner-only and per-content delegation were enforced. Resolved per
+   * content type using only existing, documented Prisma relations
+   * (`FilesRepository.findEntitlementContext` — see its own comment for
+   * why this lives here rather than importing Certificates/Library/
+   * Products' modules, which would be circular):
+   *   - Uploader: always allowed (unchanged intent, now actually enforced).
+   *   - Avatar (User/Author.avatarFileId): always allowed — docs/16 §3
+   *     `GET /profiles/:userId` serves `avatar_url` with no auth at all,
+   *     so avatars are documented-public.
+   *   - Lesson attachment (LessonFile) or lesson video (Media): identical
+   *     rule to `GET /lessons/:id` / `GET /media/:id` — preview lesson,
+   *     or owning instructor/editorial role, or active enrollment.
+   *   - Library item: identical rule to `POST /library/items/:id/access`
+   *     (`LibraryService.assertEntitled`) — free items open, paid items
+   *     require an existing Downloads record (the same documented,
+   *     BLOCKED-BY-DOCUMENTATION-constrained rule already in
+   *     library.service.ts; not re-litigated or loosened here).
+   *   - Product: an existing paid `Order_Items`/`Orders` row for this
+   *     user and product, or the product's own `ownerId` (the same
+   *     "owner always allowed" rule applied everywhere else in this
+   *     codebase) — Product→OrderItem is a real, direct relation, not the
+   *     unresolvable Product↔Course/LibraryItem gap documented elsewhere.
+   *   - Certificate PDF: identical rule to `GET /certificates/:id`
+   *     (`certificate.userId === viewer`, owner-only, no privileged-role
+   *     bypass — matching that endpoint's actual current behavior).
+   *   - Anything else (Upload/Version-only, or no recognized attachment):
+   *     denied for non-owners — there is no documented entitlement path
+   *     to allow through, and guessing one is exactly what this pass is
+   *     told not to do.
    */
-  async getById(id: string): Promise<{ file: File; signedUrl: string }> {
+  async getById(id: string, viewerId: string, viewerRoles: string[]): Promise<{ file: File; signedUrl: string }> {
     const file = await this.filesRepository.findFileById(id);
     if (!file) {
       throw new NotFoundException('File not found.');
     }
+
+    if (file.uploadedById !== viewerId) {
+      const context = await this.filesRepository.findEntitlementContext(id);
+      const entitled = await this.isEntitled(context, viewerId, viewerRoles);
+      if (!entitled) {
+        throw new ForbiddenException('Not authorized to access this file.');
+      }
+    }
+
     if (file.scanStatus === 'quarantined') {
       throw new ForbiddenException('This file has been quarantined.');
     }
@@ -151,5 +187,38 @@ export class FilesService {
     }
     const signedUrl = await this.storageService.createPresignedDownloadUrl(file.storageKey);
     return { file, signedUrl };
+  }
+
+  private async isEntitled(
+    context: Awaited<ReturnType<FilesRepository['findEntitlementContext']>>,
+    viewerId: string,
+    viewerRoles: string[],
+  ): Promise<boolean> {
+    if (context.isAvatar) {
+      return true;
+    }
+
+    for (const lesson of context.lessonContexts) {
+      if (lesson.isPreview) return true;
+      if (isOwnerOrEditorial(lesson.instructorId, viewerId, viewerRoles)) return true;
+      if (await this.filesRepository.hasActiveEnrollment(viewerId, lesson.courseId)) return true;
+    }
+
+    if (context.libraryItem) {
+      const isFree = context.libraryItem.priceCents === null || context.libraryItem.priceCents === 0;
+      if (isFree) return true;
+      if (await this.filesRepository.hasLibraryDownloadRecord(viewerId, context.libraryItem.id)) return true;
+    }
+
+    if (context.product) {
+      if (context.product.ownerId === viewerId) return true;
+      if (await this.filesRepository.hasPaidOrderForProduct(viewerId, context.product.id)) return true;
+    }
+
+    if (context.certificate) {
+      if (context.certificate.userId === viewerId) return true;
+    }
+
+    return false;
   }
 }

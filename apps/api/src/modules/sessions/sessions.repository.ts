@@ -43,4 +43,17 @@ export class SessionsRepository {
       data: { revokedAt: new Date() },
     });
   }
+
+  findActiveByUserIdExcept(userId: string, exceptSessionId: string): Promise<UserSession[]> {
+    return this.prisma.userSession.findMany({
+      where: { userId, revokedAt: null, id: { not: exceptSessionId } },
+    });
+  }
+
+  revokeAllForUserExcept(userId: string, exceptSessionId: string): Promise<Prisma.BatchPayload> {
+    return this.prisma.userSession.updateMany({
+      where: { userId, revokedAt: null, id: { not: exceptSessionId } },
+      data: { revokedAt: new Date() },
+    });
+  }
 }

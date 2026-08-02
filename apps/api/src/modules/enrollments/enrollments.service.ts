@@ -14,11 +14,13 @@
 // endpoints, depend on the missing relation.
 
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Enrollment } from '@prisma/client';
+import { Enrollment, Prisma } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { CoursesRepository } from '../courses/courses.repository';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
+import { PaymentsRepository } from '../payments/payments.repository';
 import { EnrollmentsRepository, EnrollmentWithCourse } from './enrollments.repository';
 import { ListEnrollmentsQueryDto } from './dto/list-enrollments-query.dto';
 
@@ -31,6 +33,8 @@ export class EnrollmentsService {
     private readonly coursesRepository: CoursesRepository,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
+    private readonly paymentsService: PaymentsService,
+    private readonly paymentsRepository: PaymentsRepository,
   ) {}
 
   /** docs/15-SYSTEM-WORKFLOWS.md Workflow 8: "You're enrolled" (in-app portion — email delivery is BLOCKED, no provider configured). */
@@ -60,11 +64,28 @@ export class EnrollmentsService {
       throw new ConflictException({ message: 'Already enrolled in this course.', details: existing });
     }
 
-    const enrollment = await this.enrollmentsRepository.create({
-      user: { connect: { id: userId } },
-      course: { connect: { id: courseId } },
-      status: 'active',
-    });
+    let enrollment: Enrollment;
+    try {
+      enrollment = await this.enrollmentsRepository.create({
+        user: { connect: { id: userId } },
+        course: { connect: { id: courseId } },
+        status: 'active',
+      });
+    } catch (error) {
+      // Fixed during the Phase 13 final audit: two concurrent enroll
+      // requests can both pass the findByUserAndCourse check above before
+      // either commits. The unique constraint on (userId, courseId) is the
+      // real guard; this turns the loser's failure into the documented
+      // "409 (already enrolled — returns existing enrollment)" (doc16 line
+      // 437) instead of an unhandled 500.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const raced = await this.enrollmentsRepository.findByUserAndCourse(userId, courseId);
+        if (raced) {
+          throw new ConflictException({ message: 'Already enrolled in this course.', details: raced });
+        }
+      }
+      throw error;
+    }
 
     await this.auditLogService.record({
       actorUserId: userId,
@@ -138,7 +159,20 @@ export class EnrollmentsService {
     return enrollment;
   }
 
-  /** docs/16-API-CONTRACT.md POST /enrollments/:id/refund — `order:refund` (admin/support). */
+  /**
+   * docs/16-API-CONTRACT.md POST /enrollments/:id/refund — `order:refund`
+   * (admin/support). Response body doc: "updated enrollment status
+   * refunded, triggers linked Orders/refund processing".
+   *
+   * Fixed during the Phase 13 final audit: this previously only flipped
+   * `Enrollment.status` to `refunded` — it never actually triggered the
+   * linked Order/Payment refund the doc requires, so the customer was
+   * never refunded and no `Transactions` ledger entry was written. Now
+   * resolves the enrollment's `OrderItem` → `Order` → succeeded `Payment`
+   * and calls the same (now race-safe, see PaymentsRepository.processRefund)
+   * `PaymentsService.refund()` used by `POST /admin/payments/:id/refund`,
+   * rather than duplicating that logic.
+   */
   async refund(id: string, reason: string, actorId: string): Promise<Enrollment> {
     const enrollment = await this.enrollmentsRepository.findById(id);
     if (!enrollment) {
@@ -150,6 +184,20 @@ export class EnrollmentsService {
     if (!enrollment.orderItemId) {
       throw new BadRequestException('This enrollment has no linked purchase to refund.');
     }
+
+    const orderId = await this.enrollmentsRepository.findOrderIdForOrderItem(enrollment.orderItemId);
+    if (!orderId) {
+      throw new BadRequestException('This enrollment has no linked purchase to refund.');
+    }
+    const payment = await this.paymentsRepository.findSucceededByOrderId(orderId);
+    if (!payment) {
+      throw new BadRequestException('No successful payment found for this enrollment’s linked order.');
+    }
+
+    // Refund the payment first — if this fails, the enrollment must not be
+    // left falsely marked `refunded`. PaymentsService.refund() records its
+    // own `payment.refunded` audit log entry and buyer notification.
+    await this.paymentsService.refund(payment.id, undefined, reason, actorId);
 
     const updated = await this.enrollmentsRepository.update(id, { status: 'refunded' });
     await this.auditLogService.record({

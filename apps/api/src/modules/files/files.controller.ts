@@ -26,7 +26,7 @@ export class FilesController {
   }
 
   @Get(':id')
-  getById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.filesService.getById(id);
+  getById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.filesService.getById(id, user.sub, user.roles);
   }
 }

@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PaymentsService } from './payments.service';
 
 describe('PaymentsService', () => {
@@ -12,6 +13,7 @@ describe('PaymentsService', () => {
       createTransaction: jest.fn(),
       sumRefundedForPayment: jest.fn(),
       recordSuccessfulPayment: jest.fn(),
+      processRefund: jest.fn(),
     };
     const ordersRepository = { findById: jest.fn(), update: jest.fn() };
     const stripeService = { constructWebhookEvent: jest.fn() };
@@ -87,15 +89,14 @@ describe('PaymentsService', () => {
   });
 
   describe('refund', () => {
+    const baseOrder = { id: 'pay1', amountCents: 1000, orderId: 'order1', order: { userId: 'u1', currency: 'USD', orderNumber: 'ORD-1' } };
+
     it('rejects refunding a payment that has already been fully refunded', async () => {
       const { service, paymentsRepository } = makeService();
-      paymentsRepository.findByIdWithOrder.mockResolvedValue({
-        id: 'pay1',
-        amountCents: 1000,
-        orderId: 'order1',
-        order: { userId: 'u1', currency: 'USD', orderNumber: 'ORD-1' },
-      });
-      paymentsRepository.sumRefundedForPayment.mockResolvedValue({ _sum: { amountCents: 1000 } });
+      paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
+      paymentsRepository.processRefund.mockRejectedValue(
+        new ConflictException('This payment has already been fully refunded.'),
+      );
 
       await expect(service.refund('pay1', undefined, 'customer request', 'admin1')).rejects.toBeInstanceOf(
         ConflictException,
@@ -104,56 +105,68 @@ describe('PaymentsService', () => {
 
     it('rejects a refund amount exceeding the refundable balance', async () => {
       const { service, paymentsRepository } = makeService();
-      paymentsRepository.findByIdWithOrder.mockResolvedValue({
-        id: 'pay1',
-        amountCents: 1000,
-        orderId: 'order1',
-        order: { userId: 'u1', currency: 'USD', orderNumber: 'ORD-1' },
-      });
-      paymentsRepository.sumRefundedForPayment.mockResolvedValue({ _sum: { amountCents: 0 } });
+      paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
+      paymentsRepository.processRefund.mockRejectedValue(
+        new BadRequestException('Refund amount exceeds the refundable balance of 1000 cents.'),
+      );
 
       await expect(service.refund('pay1', 5000, 'customer request', 'admin1')).rejects.toBeInstanceOf(
         BadRequestException,
       );
     });
 
-    it('processes a full refund and marks the order refunded', async () => {
-      const { service, paymentsRepository, ordersRepository, notificationsService } = makeService();
-      paymentsRepository.findByIdWithOrder.mockResolvedValue({
-        id: 'pay1',
-        amountCents: 1000,
-        orderId: 'order1',
-        order: { userId: 'u1', currency: 'USD', orderNumber: 'ORD-1' },
+    it('processes a full refund atomically via the repository and notifies the buyer', async () => {
+      const { service, paymentsRepository, notificationsService, auditLogService } = makeService();
+      paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
+      paymentsRepository.processRefund.mockResolvedValue({
+        payment: { id: 'pay1', amountCents: 1000, status: 'refunded' },
+        transaction: { amountCents: 1000 },
+        isFullRefund: true,
       });
-      paymentsRepository.sumRefundedForPayment.mockResolvedValue({ _sum: { amountCents: 0 } });
 
-      await service.refund('pay1', undefined, 'customer request', 'admin1');
+      const result = await service.refund('pay1', undefined, 'customer request', 'admin1');
 
-      expect(paymentsRepository.createTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'refund', amountCents: 1000 }),
+      expect(paymentsRepository.processRefund).toHaveBeenCalledWith({
+        paymentId: 'pay1',
+        requestedAmountCents: undefined,
+        currency: 'USD',
+        orderId: 'order1',
+      });
+      expect(result.status).toBe('refunded');
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'payment.refunded', afterState: expect.objectContaining({ refundAmount: 1000, fullRefund: true }) }),
       );
-      expect(ordersRepository.update).toHaveBeenCalledWith('order1', { status: 'refunded' });
       expect(notificationsService.create).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'u1', type: 'payment.refunded' }),
       );
     });
 
-    it('processes a partial refund without marking the order refunded', async () => {
-      const { service, paymentsRepository, ordersRepository } = makeService();
-      paymentsRepository.findByIdWithOrder.mockResolvedValue({
-        id: 'pay1',
-        amountCents: 1000,
-        orderId: 'order1',
-        order: { userId: 'u1', currency: 'USD', orderNumber: 'ORD-1' },
+    it('processes a partial refund without treating it as full', async () => {
+      const { service, paymentsRepository, auditLogService } = makeService();
+      paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
+      paymentsRepository.processRefund.mockResolvedValue({
+        payment: { id: 'pay1', amountCents: 1000, status: 'succeeded' },
+        transaction: { amountCents: 400 },
+        isFullRefund: false,
       });
-      paymentsRepository.sumRefundedForPayment.mockResolvedValue({ _sum: { amountCents: 0 } });
 
       await service.refund('pay1', 400, 'partial goodwill refund', 'admin1');
 
-      expect(paymentsRepository.createTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'refund', amountCents: 400 }),
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        expect.objectContaining({ afterState: expect.objectContaining({ refundAmount: 400, fullRefund: false }) }),
       );
-      expect(ordersRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('converts a concurrent-refund write conflict (Prisma P2034) into 409', async () => {
+      const { service, paymentsRepository } = makeService();
+      paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
+      const conflictError = Object.assign(new Error('Transaction write conflict'), { code: 'P2034', name: 'PrismaClientKnownRequestError' });
+      Object.setPrototypeOf(conflictError, Prisma.PrismaClientKnownRequestError.prototype);
+      paymentsRepository.processRefund.mockRejectedValue(conflictError);
+
+      await expect(service.refund('pay1', undefined, 'customer request', 'admin1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
   });
 });

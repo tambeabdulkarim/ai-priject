@@ -20,6 +20,27 @@ export class CertificatesRepository {
     return this.prisma.certificate.findUnique({ where: { id } });
   }
 
+  /**
+   * docs/15-SYSTEM-WORKFLOWS.md §11: certificate issuance must re-validate
+   * "passing quiz scores where required... server-side at generation
+   * time, not assumed from client-reported progress alone". Resolved
+   * using only existing, documented relationships: Quiz.lessonId → Lesson
+   * → Module → Course (docs/13-DATABASE-BLUEPRINT.md Quizzes/Lessons/
+   * Modules/Courses), no invented relation.
+   */
+  findQuizIdsForCourse(courseId: string): Promise<{ id: string }[]> {
+    return this.prisma.quiz.findMany({
+      where: { lesson: { module: { courseId } } },
+      select: { id: true },
+    });
+  }
+
+  /** docs/13-DATABASE-BLUEPRINT.md Quiz_Attempts: userId + quizId + passed. */
+  async hasPassingAttempt(userId: string, quizId: string): Promise<boolean> {
+    const attempt = await this.prisma.quizAttempt.findFirst({ where: { userId, quizId, passed: true } });
+    return attempt !== null;
+  }
+
   findByCertificateNumber(certificateNumber: string) {
     return this.prisma.certificate.findUnique({
       where: { certificateNumber },

@@ -46,7 +46,7 @@ export class UsersController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: ChangePasswordDto,
   ): Promise<{ success: true }> {
-    await this.usersService.changePassword(user.sub, dto);
+    await this.usersService.changePassword(user.sub, user.sessionId, dto);
     return { success: true };
   }
 
@@ -58,7 +58,7 @@ export class UsersController {
 
   @Get(':id')
   @RequirePermissions('user:read')
-  getUserById(@Param('id', ParseUUIDPipe) id: string): Promise<SafeUser> {
+  getUserById(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.getSafeById(id);
   }
 

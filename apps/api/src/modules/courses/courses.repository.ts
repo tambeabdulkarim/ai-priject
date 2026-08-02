@@ -92,4 +92,18 @@ export class CoursesRepository {
   update(id: string, data: Prisma.CourseUpdateInput): Promise<Course> {
     return this.prisma.course.update({ where: { id }, data });
   }
+
+  /**
+   * Kept local to CoursesRepository (a small, self-contained duplicate of
+   * the identical query in LessonsRepository) rather than importing
+   * LessonsModule/EnrollmentsModule here — both of those modules already
+   * import CoursesModule, so the reverse import would create a circular
+   * module dependency. Same trivial one-line query, no business logic to
+   * diverge.
+   */
+  hasActiveEnrollment(userId: string, courseId: string): Promise<boolean> {
+    return this.prisma.enrollment
+      .findFirst({ where: { userId, courseId, status: 'active' } })
+      .then((e) => e !== null);
+  }
 }

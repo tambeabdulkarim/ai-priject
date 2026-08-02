@@ -12,6 +12,7 @@ import { PermissionsGuard } from './guards/permissions.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PasswordService } from './services/password.service';
 import { AuditLogService } from './services/audit-log.service';
+import { BreachedPasswordService } from './services/breached-password.service';
 
 @Module({
   imports: [PermissionsModule],
@@ -23,7 +24,8 @@ import { AuditLogService } from './services/audit-log.service';
     { provide: APP_GUARD, useClass: PermissionsGuard },
     PasswordService,
     AuditLogService,
+    BreachedPasswordService,
   ],
-  exports: [PasswordService, AuditLogService],
+  exports: [PasswordService, AuditLogService, BreachedPasswordService],
 })
 export class CommonModule {}

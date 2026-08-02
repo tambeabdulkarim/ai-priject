@@ -31,6 +31,7 @@ import { LibraryModule } from './modules/library/library.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NewsModule } from './modules/news/news.module';
 import { MediaModule } from './modules/media/media.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { MediaModule } from './modules/media/media.module';
     AiModule,
     NewsModule,
     MediaModule,
+    SettingsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
