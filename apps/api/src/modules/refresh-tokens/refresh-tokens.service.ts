@@ -9,7 +9,7 @@
 // look the token up by hash in O(1) rather than comparing against every row.
 
 import { createHash, randomBytes } from 'crypto';
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { RefreshToken } from '@prisma/client';
 import { SessionsRepository } from '../sessions/sessions.repository';
 import { RefreshTokensRepository } from './refresh-tokens.repository';
@@ -47,9 +47,10 @@ export class RefreshTokensService {
 
   /**
    * docs/15-SYSTEM-WORKFLOWS.md §4 (Refresh): validates, detects reuse, and
-   * rotates. Throws UnauthorizedException for an invalid/expired token, and
-   * revokes the whole session family (ForbiddenException) on reuse
-   * detection, per docs/10-SECURITY-BIBLE.md §6.
+   * rotates. docs/16-API-CONTRACT.md POST /auth/refresh: "401
+   * (invalid/expired/reused token — reused triggers full session-family
+   * revocation)" — reuse is a 401 like every other failure mode here, not
+   * a 403; the session-family revocation still happens either way.
    */
   async rotate(rawToken: string): Promise<IssuedRefreshToken> {
     const tokenHash = this.hash(rawToken);
@@ -66,17 +67,15 @@ export class RefreshTokensService {
         'reuse_detected',
       );
       await this.sessionsRepository.revoke(existing.sessionId);
-      throw new ForbiddenException('Refresh token reuse detected — session revoked.');
+      throw new UnauthorizedException('Refresh token reuse detected — session revoked.');
     }
 
     if (existing.expiresAt.getTime() < Date.now()) {
       throw new UnauthorizedException('Refresh token has expired.');
     }
 
-    await this.refreshTokensRepository.markUsed(existing.id);
-
     const raw = randomBytes(48).toString('hex');
-    const record = await this.refreshTokensRepository.create({
+    const record = await this.refreshTokensRepository.markUsedAndCreateNext(existing.id, {
       user: { connect: { id: existing.userId } },
       session: { connect: { id: existing.sessionId } },
       tokenHash: this.hash(raw),

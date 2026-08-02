@@ -52,29 +52,37 @@ export class AuthController {
   // docs/10-SECURITY-BIBLE.md §11/§2: brute-force protection — tighter
   // per-IP limits than the platform default on every unauthenticated,
   // credential- or token-issuing auth endpoint.
+  // docs/16-API-CONTRACT.md: "5 requests / 15 min per IP"
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
   @Post('register')
   register(@Body() dto: RegisterDto, @Req() req: Request) {
     return this.authService.register(dto, this.requestMeta(req));
   }
 
+  // docs/16-API-CONTRACT.md: "10 requests / 15 min per IP", "200 OK"
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  @HttpCode(200)
   @Post('verify-email')
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
   }
 
+  // docs/16-API-CONTRACT.md: "3 requests / 15 min per IP and per account"
+  // — per-IP is what the default throttler key enforces; a per-account
+  // tracker doesn't exist and isn't invented here. "200 OK"
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 3, ttl: 900_000 } })
+  @HttpCode(200)
   @Post('resend-verification')
   resendVerification(@Body() dto: EmailOnlyDto) {
     return this.authService.resendVerification(dto.email);
   }
 
+  // docs/16-API-CONTRACT.md: "10 requests / 15 min per IP"
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
   @HttpCode(200)
   @Post('login')
   async login(
@@ -97,8 +105,11 @@ export class AuthController {
     );
   }
 
+  // docs/16-API-CONTRACT.md: "30 requests / 15 min per session" — the
+  // default throttler keys by IP, the closest enforceable proxy without a
+  // per-session tracker.
   @Public()
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 900_000 } })
   @HttpCode(200)
   @Post('refresh')
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -121,26 +132,27 @@ export class AuthController {
     res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' });
   }
 
-  @HttpCode(204)
+  @HttpCode(200)
   @Post('logout-all')
-  async logoutAll(
-    @CurrentUser() user: JwtPayload,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<void> {
-    await this.authService.logoutAll(user);
+  async logoutAll(@CurrentUser() user: JwtPayload, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logoutAll(user);
     res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' });
+    return result;
   }
 
+  // docs/16-API-CONTRACT.md: "3 requests / 15 min per IP and per account"
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 3, ttl: 900_000 } })
   @HttpCode(200)
   @Post('forgot-password')
   forgotPassword(@Body() dto: EmailOnlyDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
+  // docs/16-API-CONTRACT.md: "5 requests / 15 min per IP", "Success Codes: 200 OK"
   @Public()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @HttpCode(200)
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);

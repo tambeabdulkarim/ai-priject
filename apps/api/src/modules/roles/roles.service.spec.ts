@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
 describe('RolesService', () => {
@@ -46,7 +46,7 @@ describe('RolesService', () => {
   it('replaces roles, records an audit entry, and invalidates the permission cache', async () => {
     const { service, rolesRepository, auditLogService, permissionsService } = makeService();
     rolesRepository.findRoleNamesForUser.mockResolvedValue([]);
-    rolesRepository.findAll.mockResolvedValue([{ id: 'role-1', name: 'admin' }]);
+    rolesRepository.findAll.mockResolvedValue([{ id: 'role-1', name: 'instructor' }]);
     rolesRepository.replaceUserRoles.mockResolvedValue(undefined);
 
     const result = await service.assignRolesToUser('u1', ['role-1'], 'actor-1');
@@ -56,6 +56,29 @@ describe('RolesService', () => {
     expect(auditLogService.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.roles.replaced', targetId: 'u1' }),
     );
-    expect(result).toEqual([{ id: 'role-1', name: 'admin' }]);
+    expect(result).toEqual([{ id: 'role-1', name: 'instructor' }]);
+  });
+
+  it('rejects granting an admin-capable role when the actor is not superadmin', async () => {
+    const { service, rolesRepository } = makeService();
+    rolesRepository.findRoleNamesForUser.mockResolvedValue([]);
+    rolesRepository.findAll.mockResolvedValue([{ id: 'role-admin', name: 'admin' }]);
+
+    await expect(
+      service.assignRolesToUser('u1', ['role-admin'], 'actor-1', ['admin']),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(rolesRepository.replaceUserRoles).not.toHaveBeenCalled();
+  });
+
+  it('allows granting an admin-capable role when the actor is superadmin', async () => {
+    const { service, rolesRepository } = makeService();
+    rolesRepository.findRoleNamesForUser.mockResolvedValue([]);
+    rolesRepository.findAll.mockResolvedValue([{ id: 'role-admin', name: 'admin' }]);
+    rolesRepository.replaceUserRoles.mockResolvedValue(undefined);
+
+    const result = await service.assignRolesToUser('u1', ['role-admin'], 'actor-1', ['superadmin']);
+
+    expect(rolesRepository.replaceUserRoles).toHaveBeenCalled();
+    expect(result).toEqual([{ id: 'role-admin', name: 'admin' }]);
   });
 });

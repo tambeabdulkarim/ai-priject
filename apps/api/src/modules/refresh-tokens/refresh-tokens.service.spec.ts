@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { RefreshTokensService } from './refresh-tokens.service';
 
 describe('RefreshTokensService', () => {
@@ -7,6 +7,7 @@ describe('RefreshTokensService', () => {
       create: jest.fn(),
       findByTokenHash: jest.fn(),
       markUsed: jest.fn(),
+      markUsedAndCreateNext: jest.fn(),
       revoke: jest.fn(),
       revokeAllForSession: jest.fn(),
     };
@@ -39,7 +40,7 @@ describe('RefreshTokensService', () => {
     await expect(service.rotate('expired-token')).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it('treats reuse of an already-used token as theft and revokes the whole session family', async () => {
+  it('treats reuse of an already-used token as theft (401) and revokes the whole session family', async () => {
     const { service, refreshTokensRepository, sessionsRepository } = makeService();
     refreshTokensRepository.findByTokenHash.mockResolvedValue({
       id: 't1',
@@ -50,12 +51,12 @@ describe('RefreshTokensService', () => {
       expiresAt: new Date(Date.now() + 100000),
     });
 
-    await expect(service.rotate('reused-token')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.rotate('reused-token')).rejects.toBeInstanceOf(UnauthorizedException);
     expect(refreshTokensRepository.revokeAllForSession).toHaveBeenCalledWith('s1', 'reuse_detected');
     expect(sessionsRepository.revoke).toHaveBeenCalledWith('s1');
   });
 
-  it('rotates a valid, unused token: marks it used and issues a new one chained to it', async () => {
+  it('rotates a valid, unused token atomically: marks it used and issues a new one chained to it', async () => {
     const { service, refreshTokensRepository } = makeService();
     const expiresAt = new Date(Date.now() + 100000);
     refreshTokensRepository.findByTokenHash.mockResolvedValue({
@@ -66,12 +67,12 @@ describe('RefreshTokensService', () => {
       revokedAt: null,
       expiresAt,
     });
-    refreshTokensRepository.create.mockResolvedValue({ id: 't2', expiresAt });
+    refreshTokensRepository.markUsedAndCreateNext.mockResolvedValue({ id: 't2', expiresAt });
 
     const result = await service.rotate('valid-token');
 
-    expect(refreshTokensRepository.markUsed).toHaveBeenCalledWith('t1');
-    expect(refreshTokensRepository.create).toHaveBeenCalledWith(
+    expect(refreshTokensRepository.markUsedAndCreateNext).toHaveBeenCalledWith(
+      't1',
       expect.objectContaining({ previousToken: { connect: { id: 't1' } } }),
     );
     expect(result.raw).toBeDefined();

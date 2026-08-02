@@ -15,10 +15,14 @@
 //    Library, News, Files, AI) is NOT enumerated anywhere in the approved
 //    docs and is intentionally left un-invented — seeding it would be
 //    guessing architecture, which this session's rules forbid.
-//  - Grants: superadmin receives all seeded permissions (the catalog's own
-//    apex role); no other role is granted anything here, since assigning
-//    e.g. `user:ban` to `admin` vs `support` vs `moderator` is a product
-//    decision not specified in any approved document.
+//  - Grants: superadmin always receives every seeded permission (the
+//    catalog's own apex role). Additional roles are granted a permission
+//    ONLY where docs/16-API-CONTRACT.md's own "Authorization Required"
+//    column explicitly names them (e.g. "course:create (instructor/
+//    content_editor)" is a direct transcription, not a guess). Where
+//    doc16 doesn't name specific roles (e.g. user:ban, user:assign_role),
+//    only superadmin is granted, since assigning it to `admin` vs
+//    `support` vs `moderator` would be an undocumented product decision.
 
 import { PrismaClient } from '@prisma/client';
 
@@ -41,7 +45,34 @@ const PERMISSION_KEYS = [
   'user:ban',
   'user:assign_role',
   'audit:read',
+  'course:create',
+  'course:publish',
+  'order:refund',
+  'product:create',
+  'order:list',
+  'news:create',
+  'news:publish',
+  'media:reprocess',
 ] as const;
+
+// docs/16-API-CONTRACT.md "Authorization Required" — direct transcription,
+// not an invented mapping. Every key here also implicitly goes to
+// superadmin (handled separately below).
+const EXPLICIT_ROLE_GRANTS: Record<string, string[]> = {
+  'course:create': ['instructor', 'content_editor'],
+  'course:publish': ['content_editor', 'admin'],
+  'order:refund': ['admin', 'support'],
+  // docs/16-API-CONTRACT.md: "product:create (admin; future vendor role)"
+  'product:create': ['admin'],
+  // docs/16-API-CONTRACT.md: "order:list (admin)"
+  'order:list': ['admin'],
+  // docs/16-API-CONTRACT.md: "news:create (content_editor/admin)"
+  'news:create': ['content_editor', 'admin'],
+  // docs/16-API-CONTRACT.md: "news:publish (content_editor/admin)"
+  'news:publish': ['content_editor', 'admin'],
+  // docs/16-API-CONTRACT.md: "media:reprocess (admin)"
+  'media:reprocess': ['admin'],
+};
 
 async function main(): Promise<void> {
   for (const name of ROLE_NAMES) {
@@ -61,18 +92,31 @@ async function main(): Promise<void> {
     });
   }
 
-  const superadmin = await prisma.role.findUniqueOrThrow({ where: { name: 'superadmin' } });
+  const roles = await prisma.role.findMany({ where: { name: { in: ROLE_NAMES as unknown as string[] } } });
+  const roleByName = new Map(roles.map((r) => [r.name, r]));
   const permissions = await prisma.permission.findMany({ where: { key: { in: [...PERMISSION_KEYS] } } });
 
+  const superadmin = roleByName.get('superadmin');
+  if (!superadmin) throw new Error('superadmin role missing after seed.');
+
+  let grantCount = 0;
   for (const permission of permissions) {
-    await prisma.rolePermission.upsert({
-      where: { roleId_permissionId: { roleId: superadmin.id, permissionId: permission.id } },
-      update: {},
-      create: { roleId: superadmin.id, permissionId: permission.id },
-    });
+    const roleNamesToGrant = new Set<string>(['superadmin', ...(EXPLICIT_ROLE_GRANTS[permission.key] ?? [])]);
+    for (const roleName of roleNamesToGrant) {
+      const role = roleByName.get(roleName);
+      if (!role) continue;
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
+        update: {},
+        create: { roleId: role.id, permissionId: permission.id },
+      });
+      grantCount += 1;
+    }
   }
 
-  console.log(`Seeded ${ROLE_NAMES.length} roles and ${PERMISSION_KEYS.length} permissions.`);
+  console.log(
+    `Seeded ${ROLE_NAMES.length} roles, ${PERMISSION_KEYS.length} permissions, ${grantCount} role-permission grants.`,
+  );
 }
 
 main()

@@ -4,9 +4,37 @@ import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { ListNotificationsQueryDto } from './dto/list-notifications-query.dto';
 import { NotificationsRepository } from './notifications.repository';
 
+export interface CreateNotificationParams {
+  userId: string;
+  type: string;
+  title: string;
+  body?: string;
+  linkUrl?: string;
+  sourceEventId?: string;
+}
+
 @Injectable()
 export class NotificationsService {
   constructor(private readonly notificationsRepository: NotificationsRepository) {}
+
+  /**
+   * Used by other domain services to emit the in-app notifications
+   * docs/15-SYSTEM-WORKFLOWS.md requires (e.g. Workflow 8 "You're
+   * enrolled", completion milestones, certificate issuance). `channel` is
+   * always `in_app` here — email/push delivery is a separate, unbuilt
+   * integration (docs/SESSION-HANDOFF.md Blocker: no email provider).
+   */
+  create(params: CreateNotificationParams): Promise<Notification> {
+    return this.notificationsRepository.create({
+      user: { connect: { id: params.userId } },
+      type: params.type,
+      title: params.title,
+      body: params.body,
+      linkUrl: params.linkUrl,
+      channel: 'in_app',
+      sourceEventId: params.sourceEventId,
+    });
+  }
 
   /** docs/16-API-CONTRACT.md GET /notifications/me */
   async listForUser(

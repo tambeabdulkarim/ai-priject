@@ -51,6 +51,37 @@ export class UsersService {
     return this.toSafeUser(user);
   }
 
+  /**
+   * docs/16-API-CONTRACT.md GET /users/me — the documented response is
+   * exactly `id, email, email_verified, roles, status, locale, created_at`,
+   * distinct from getSafeById's broader admin-view shape (used by
+   * GET /users/:id, which doc16 explicitly scopes as "full user record").
+   */
+  async getMeView(id: string): Promise<{
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    roles: string[];
+    status: string;
+    locale: string;
+    createdAt: Date;
+  }> {
+    const user = await this.usersRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    const roles = await this.rolesService.getRoleNamesForUser(id);
+    return {
+      id: user.id,
+      email: user.email,
+      emailVerified: user.emailVerifiedAt !== null,
+      roles,
+      status: user.status,
+      locale: user.locale,
+      createdAt: user.createdAt,
+    };
+  }
+
   async updateProfile(userId: string, dto: UpdateMeDto): Promise<SafeUser> {
     const user = await this.usersRepository.update(userId, {
       ...(dto.locale ? { locale: dto.locale } : {}),
@@ -124,7 +155,12 @@ export class UsersService {
   }
 
   /** docs/16-API-CONTRACT.md PATCH /users/:id/roles — delegates to RolesService. */
-  async updateRoles(targetUserId: string, roleIds: string[], actorUserId: string): Promise<Role[]> {
+  async updateRoles(
+    targetUserId: string,
+    roleIds: string[],
+    actorUserId: string,
+    actorRoleNames: string[],
+  ): Promise<Role[]> {
     const target = await this.usersRepository.findById(targetUserId);
     if (!target) {
       throw new NotFoundException('User not found.');
@@ -132,7 +168,7 @@ export class UsersService {
     if (roleIds.length === 0) {
       throw new BadRequestException('At least one role must remain assigned.');
     }
-    return this.rolesService.assignRolesToUser(targetUserId, roleIds, actorUserId);
+    return this.rolesService.assignRolesToUser(targetUserId, roleIds, actorUserId, actorRoleNames);
   }
 
   private toSafeUser(user: User): SafeUser {

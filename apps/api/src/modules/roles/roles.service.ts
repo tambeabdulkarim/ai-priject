@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { PermissionsService } from '../permissions/permissions.service';
@@ -6,6 +6,15 @@ import { RolesRepository } from './roles.repository';
 
 /** docs/09-PLATFORM-ARCHITECTURE.md §5 — the approved, fully-enumerated role catalog. */
 export const DEFAULT_REGISTRATION_ROLE = 'learner';
+
+/**
+ * docs/16-API-CONTRACT.md PATCH /users/:id/roles: "admin-capable role
+ * grants require the actor to hold superadmin." Scoped narrowly to the
+ * roles that actually reach the admin dashboard (docs/09-PLATFORM-
+ * ARCHITECTURE.md §4/§13) — distinct from SessionsService's broader
+ * MFA-mandatory role list, which serves a different rule.
+ */
+const ADMIN_CAPABLE_ROLE_NAMES = new Set(['admin', 'superadmin']);
 
 @Injectable()
 export class RolesService {
@@ -41,17 +50,26 @@ export class RolesService {
     userId: string,
     roleIds: string[],
     grantedById: string | null,
+    actorRoleNames: string[] = [],
   ): Promise<Role[]> {
     const existingAssignments = await this.rolesRepository.findRoleNamesForUser(userId);
     const beforeRoleIds = existingAssignments.map((a) => a.roleId);
 
+    const allRolesUpfront = await this.rolesRepository.findAll();
     if (roleIds.length > 0) {
-      const roles = await this.rolesRepository.findAll();
-      const validIds = new Set(roles.map((r) => r.id));
+      const validIds = new Set(allRolesUpfront.map((r) => r.id));
       const unknown = roleIds.filter((id) => !validIds.has(id));
       if (unknown.length > 0) {
         throw new BadRequestException(`Unknown role id(s): ${unknown.join(', ')}`);
       }
+    }
+
+    const requestedRoleNames = allRolesUpfront
+      .filter((r) => roleIds.includes(r.id))
+      .map((r) => r.name);
+    const grantsAdminCapableRole = requestedRoleNames.some((name) => ADMIN_CAPABLE_ROLE_NAMES.has(name));
+    if (grantsAdminCapableRole && !actorRoleNames.includes('superadmin')) {
+      throw new ForbiddenException('Only superadmin may grant an admin-capable role.');
     }
 
     await this.rolesRepository.replaceUserRoles(userId, roleIds, grantedById);
@@ -66,8 +84,7 @@ export class RolesService {
       afterState: { roleIds },
     });
 
-    const allRoles = await this.rolesRepository.findAll();
-    return allRoles.filter((r) => roleIds.includes(r.id));
+    return allRolesUpfront.filter((r) => roleIds.includes(r.id));
   }
 
   async findRoleIdByName(name: string): Promise<string | null> {

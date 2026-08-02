@@ -24,6 +24,22 @@ export class RefreshTokensRepository {
     });
   }
 
+  /**
+   * docs/10-SECURITY-BIBLE.md §6/§8: rotation-on-use must not be able to
+   * mark the old token used while failing to issue its replacement (that
+   * would strand the session) — both writes are one atomic transaction.
+   */
+  async markUsedAndCreateNext(
+    oldTokenId: string,
+    newTokenData: Prisma.RefreshTokenCreateInput,
+  ): Promise<RefreshToken> {
+    const [, created] = await this.prisma.$transaction([
+      this.prisma.refreshToken.update({ where: { id: oldTokenId }, data: { usedAt: new Date() } }),
+      this.prisma.refreshToken.create({ data: newTokenData }),
+    ]);
+    return created;
+  }
+
   revoke(id: string, reason: string): Promise<RefreshToken> {
     return this.prisma.refreshToken.update({
       where: { id },

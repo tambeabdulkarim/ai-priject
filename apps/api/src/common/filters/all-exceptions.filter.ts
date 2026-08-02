@@ -52,15 +52,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const payload = exception.getResponse();
 
       if (typeof payload === 'object' && payload !== null && 'message' in payload) {
-        const messagePayload = payload as { message: unknown; error?: string };
+        const messagePayload = payload as { message: unknown; error?: string; details?: unknown };
+        const isValidationArray = Array.isArray(messagePayload.message);
         return {
           status,
           body: {
             code: ERROR_CODE_BY_STATUS[status] ?? 'UNEXPECTED_ERROR',
-            message: Array.isArray(messagePayload.message)
-              ? 'Validation failed'
-              : String(messagePayload.message),
-            details: Array.isArray(messagePayload.message) ? messagePayload.message : undefined,
+            message: isValidationArray ? 'Validation failed' : String(messagePayload.message),
+            // Validation errors surface class-validator's own array as
+            // `details`; any other exception may explicitly set `details`
+            // on its response payload (e.g. docs/16-API-CONTRACT.md's
+            // "409 — returns the existing resource" pattern).
+            details: isValidationArray ? messagePayload.message : messagePayload.details,
           },
         };
       }
@@ -88,10 +91,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
 const ERROR_CODE_BY_STATUS: Record<number, string> = {
   400: 'VALIDATION_ERROR',
   401: 'UNAUTHENTICATED',
+  402: 'PAYMENT_REQUIRED',
   403: 'FORBIDDEN',
   404: 'RESOURCE_NOT_FOUND',
   409: 'CONFLICT',
   422: 'UNPROCESSABLE_ENTITY',
+  425: 'TOO_EARLY',
   429: 'RATE_LIMITED',
   501: 'NOT_IMPLEMENTED',
 };

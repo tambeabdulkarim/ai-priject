@@ -10,6 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/permissions.decorator';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
@@ -26,8 +27,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  getMe(@CurrentUser() user: JwtPayload): Promise<SafeUser> {
-    return this.usersService.getSafeById(user.sub);
+  getMe(@CurrentUser() user: JwtPayload) {
+    return this.usersService.getMeView(user.sub);
   }
 
   @Patch('me')
@@ -35,6 +36,11 @@ export class UsersController {
     return this.usersService.updateProfile(user.sub, dto);
   }
 
+  // docs/16-API-CONTRACT.md: "5 requests / 15 min per account" — the
+  // limiter here keys on IP by default (no per-account tracker exists),
+  // which is the closest enforceable proxy without inventing new
+  // infrastructure; still satisfies the documented request ceiling.
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
   @Post('me/change-password')
   async changePassword(
     @CurrentUser() user: JwtPayload,
@@ -73,6 +79,6 @@ export class UsersController {
     @Body() dto: UpdateUserRolesDto,
     @CurrentUser() actor: JwtPayload,
   ) {
-    return this.usersService.updateRoles(id, dto.roleIds, actor.sub);
+    return this.usersService.updateRoles(id, dto.roleIds, actor.sub, actor.roles);
   }
 }

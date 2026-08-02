@@ -11,7 +11,11 @@ import { AppConfig } from './config/configuration';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  // docs/10-SECURITY-BIBLE.md §13: Stripe webhook signature verification
+  // needs the exact raw request bytes; `rawBody: true` preserves them on
+  // `req.rawBody` for every request while still parsing JSON normally
+  // everywhere else.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const configService = app.get(ConfigService<AppConfig, true>);
 
   // docs/16-API-CONTRACT.md: the refresh token is set via an httpOnly cookie.

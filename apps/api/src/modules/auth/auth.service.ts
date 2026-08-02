@@ -18,7 +18,7 @@
 //    enabled given the current schema, so this is inert rather than a
 //    security gap.
 
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { HttpException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
@@ -57,6 +57,15 @@ const EMAIL_VERIFICATION_TTL_SECONDS = 24 * 60 * 60;
 // docs/10-SECURITY-BIBLE.md §4: "Password-reset tokens expire in 15 minutes."
 const PASSWORD_RESET_TTL_SECONDS = 15 * 60;
 
+// docs/10-SECURITY-BIBLE.md §2: "progressive delays and temporary lockout
+// after repeated failed attempts on a single account." No specific
+// threshold/duration is given anywhere in the approved docs — this is a
+// conservative operational default, same pattern as the concurrent-
+// session-limit constant in SessionsService, not an architectural claim.
+const FAILED_LOGIN_LOCKOUT_THRESHOLD = 5;
+const FAILED_LOGIN_WINDOW_SECONDS = 15 * 60;
+const failedLoginKey = (email: string): string => `login_fail:${email.toLowerCase()}`;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -73,15 +82,22 @@ export class AuthService {
     private readonly configService: ConfigService<AppConfig, true>,
   ) {}
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §1 (Register). */
-  async register(dto: RegisterDto, meta: RequestMeta): Promise<{ message: string }> {
+  /** docs/15-SYSTEM-WORKFLOWS.md §1 (Register). docs/16-API-CONTRACT.md POST /auth/register. */
+  async register(
+    dto: RegisterDto,
+    meta: RequestMeta,
+  ): Promise<{ userId: string; email: string; verificationRequired: true }> {
     const existing = await this.usersService.findByEmail(dto.email);
 
     // docs/10-SECURITY-BIBLE.md §2: identical response whether or not the
-    // email already exists — only the internal branch differs.
+    // email already exists. docs/16-API-CONTRACT.md: "response shape
+    // identical to success per enumeration prevention" — a random,
+    // unlinked UUID is returned in place of the real (already-taken)
+    // account's id, so the body is shape-identical without leaking the
+    // existing account's real identifier.
     if (existing) {
       this.logger.warn(`Registration attempted for an existing email (${meta.ipAddress ?? 'unknown ip'}).`);
-      return { message: 'If this email is available, a verification link has been sent.' };
+      return { userId: randomUUID(), email: dto.email, verificationRequired: true };
     }
 
     const passwordHash = await this.passwordService.hash(dto.password);
@@ -112,7 +128,7 @@ export class AuthService {
       ipAddress: meta.ipAddress,
     });
 
-    return { message: 'If this email is available, a verification link has been sent.' };
+    return { userId: user.id, email: user.email, verificationRequired: true };
   }
 
   private async issueEmailVerificationToken(userId: string, email: string): Promise<void> {
@@ -123,8 +139,8 @@ export class AuthService {
     this.logger.log(`Email verification token for ${email} (delivery BLOCKED — no email provider configured): ${token}`);
   }
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §2 (Verify Email). */
-  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+  /** docs/15-SYSTEM-WORKFLOWS.md §2 (Verify Email). docs/16-API-CONTRACT.md POST /auth/verify-email. */
+  async verifyEmail(dto: VerifyEmailDto): Promise<{ verified: true }> {
     const payload = this.verifyPurposeToken(dto.token, 'email_verification');
     const storedJti = await this.redisService.get(`email_verify:${payload.sub}`);
 
@@ -142,7 +158,7 @@ export class AuthService {
       targetId: payload.sub,
     });
 
-    return { message: 'Email verified.' };
+    return { verified: true };
   }
 
   /** docs/16-API-CONTRACT.md POST /auth/resend-verification — enumeration-safe. */
@@ -154,8 +170,19 @@ export class AuthService {
     return { message: 'If this email exists and is unverified, a new verification link has been sent.' };
   }
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §3 (Login). */
+  /**
+   * docs/15-SYSTEM-WORKFLOWS.md §3 (Login). docs/16-API-CONTRACT.md
+   * POST /auth/login: 423 (account locked) — docs/10-SECURITY-BIBLE.md
+   * §2's "progressive delays and temporary lockout" requirement.
+   */
   async login(dto: LoginDto, meta: RequestMeta): Promise<AuthTokens & { user: { id: string; email: string; roles: string[]; locale: string } }> {
+    const failureKey = failedLoginKey(dto.email);
+    const failureCountRaw = await this.redisService.get(failureKey);
+    const failureCount = failureCountRaw ? parseInt(failureCountRaw, 10) : 0;
+    if (failureCount >= FAILED_LOGIN_LOCKOUT_THRESHOLD) {
+      throw new HttpException('Account temporarily locked due to repeated failed login attempts.', 423);
+    }
+
     const user = await this.usersService.findByEmail(dto.email);
 
     // docs/10-SECURITY-BIBLE.md §2: constant-shape verification whether or
@@ -164,6 +191,7 @@ export class AuthService {
     const passwordValid = await this.passwordService.verify(hashToCheck, dto.password).catch(() => false);
 
     if (!user || !passwordValid) {
+      await this.redisService.set(failureKey, String(failureCount + 1), FAILED_LOGIN_WINDOW_SECONDS);
       await this.auditLogService.record({
         action: 'user.login.failed',
         targetType: 'User',
@@ -178,6 +206,8 @@ export class AuthService {
     }
 
     // mfaCode (dto.mfaCode) intentionally unchecked — BLOCKED, see file header.
+
+    await this.redisService.del(failureKey);
 
     const roleNames = await this.rolesService.getRoleNamesForUser(user.id);
     const session = await this.sessionsService.createForLogin({
@@ -237,8 +267,8 @@ export class AuthService {
     });
   }
 
-  /** docs/16-API-CONTRACT.md POST /auth/logout-all. */
-  async logoutAll(payload: JwtPayload): Promise<void> {
+  /** docs/16-API-CONTRACT.md POST /auth/logout-all — "Response Body: sessions_revoked: number". */
+  async logoutAll(payload: JwtPayload): Promise<{ sessionsRevoked: number }> {
     const sessions = await this.sessionsService.findActiveByUserId(payload.sub);
     await this.sessionsService.revokeAllForUser(payload.sub);
     await Promise.all(
@@ -250,6 +280,7 @@ export class AuthService {
       targetType: 'User',
       targetId: payload.sub,
     });
+    return { sessionsRevoked: sessions.length };
   }
 
   /** docs/15-SYSTEM-WORKFLOWS.md §6 (Forgot Password) — enumeration-safe. */
@@ -269,8 +300,8 @@ export class AuthService {
     return { message: 'If this email exists, a password reset link has been sent.' };
   }
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §6 (Reset Password). */
-  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+  /** docs/15-SYSTEM-WORKFLOWS.md §6 (Reset Password). docs/16-API-CONTRACT.md: "Response Body: success: true". */
+  async resetPassword(dto: ResetPasswordDto): Promise<{ success: true }> {
     const payload = this.verifyPurposeToken(dto.token, 'password_reset');
     const storedJti = await this.redisService.get(`pwd_reset:${payload.sub}`);
 
@@ -297,7 +328,7 @@ export class AuthService {
       targetId: payload.sub,
     });
 
-    return { message: 'Password has been reset.' };
+    return { success: true };
   }
 
   private signAccessToken(userId: string, sessionId: string, roles: string[]): string {

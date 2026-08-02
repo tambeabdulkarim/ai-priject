@@ -19,6 +19,16 @@ export interface AppConfig {
   security: {
     passwordPepper: string;
   };
+  storage: {
+    endpoint: string;
+    bucket: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+  };
+  stripe: {
+    secretKey: string;
+    webhookSecret: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -41,5 +51,18 @@ export default (): AppConfig => ({
   security: {
     // docs/10-SECURITY-BIBLE.md §4: per-install pepper, secrets-manager-held.
     passwordPepper: process.env.PASSWORD_PEPPER ?? '',
+  },
+  storage: {
+    // docs/09-PLATFORM-ARCHITECTURE.md §9 / docs/10-SECURITY-BIBLE.md §14:
+    // presigned-URL direct-to-storage, S3-compatible endpoint.
+    endpoint: process.env.STORAGE_ENDPOINT ?? '',
+    bucket: process.env.STORAGE_BUCKET ?? '',
+    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY ?? '',
+  },
+  stripe: {
+    // docs/10-SECURITY-BIBLE.md §13: payment provider, signature-verified webhooks.
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
   },
 });
