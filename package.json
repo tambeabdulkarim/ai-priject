@@ -1,21 +1,21 @@
 {
-  "name": "ai-productivity-platform",
-  "version": "1.0.0",
+  "name": "phoenix-platform",
+  "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.16.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "14.2.15",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test"
   },
   "devDependencies": {
-    "typescript": "5.6.3",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
-    "@types/node": "22.10.1"
+    "turbo": "^2.1.0",
+    "typescript": "5.6.3"
   }
 }

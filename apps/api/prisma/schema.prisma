@@ -1,0 +1,1091 @@
+// Phoenix Platform — Prisma schema.
+//
+// Implements docs/13-DATABASE-BLUEPRINT.md and docs/14-DATABASE-RELATIONSHIPS.md
+// incrementally, following the table creation order in
+// docs/14-DATABASE-RELATIONSHIPS.md Part 5. Conventions per
+// docs/11-DATABASE-BIBLE.md: snake_case table/column names (via @@map/@map),
+// UUIDv7 primary keys, timestamptz timestamps, status/type columns kept as
+// documented `text` (not native enums) per §4/§26 since these are expected
+// to change occasionally. Postgres schema-per-domain per §3: auth, courses,
+// library, marketplace, ai, news, files, system.
+//
+// LAYER 1 (foundational, no dependencies): Users, Roles, Permissions,
+// Categories, News_Categories, Authors, AI_Providers, Languages, Tags.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "courses", "library", "marketplace", "ai", "news", "files", "system"]
+}
+
+// ===================== auth =====================
+
+/// docs/13-DATABASE-BLUEPRINT.md — Users
+/// avatar_file_id intentionally has no FK constraint yet: Files (files
+/// schema) is created in Layer 2. The constraint is added once Files
+/// exists, per docs/14-DATABASE-RELATIONSHIPS.md Part 6 (additive,
+/// phase-by-phase migrations).
+model User {
+  id                     String            @id @default(uuid(7)) @db.Uuid
+  email                  String            @unique
+  emailVerifiedAt        DateTime?         @map("email_verified_at") @db.Timestamptz
+  passwordHash           String?           @map("password_hash")
+  displayName            String            @map("display_name")
+  avatarFileId           String?           @map("avatar_file_id") @db.Uuid
+  avatarFile             File?             @relation("UserAvatarFile", fields: [avatarFileId], references: [id])
+  locale                 String            @default("ar")
+  timezone               String            @default("UTC")
+  /// active | suspended | deactivated
+  status                 String            @default("active")
+  deletedAt              DateTime?         @map("deleted_at") @db.Timestamptz
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+  authors                Author[]
+  uploadedFiles          File[]            @relation("FileUploadedBy")
+  rolePermissionsGranted RolePermission[]
+  sessions               UserSession[]
+  settingsUpdated        Setting[]
+  refreshTokens          RefreshToken[]
+  notifications          Notification[]
+  uploads                Upload[]
+  versionsReplacedByMe   Version[]         @relation("VersionReplacedBy")
+  coursesTaught          Course[]
+  productsOwned          Product[]
+  newsAuthored           News[]
+  aiRequests             AiRequest[]
+  comments               Comment[]
+  enrollments            Enrollment[]
+  orders                 Order[]
+  downloads              Download[]
+  bookmarks              Bookmark[]
+  aiUsage                AiUsage[]
+  quizAttempts           QuizAttempt[]
+  readingProgress        ReadingProgress[]
+  certificates           Certificate[]
+  auditLogs              AuditLog[]
+  roleAssignments        UserRole[]        @relation("UserRoleAssignments")
+  roleGrantsIssued       UserRole[]        @relation("UserRoleGrantedBy")
+
+  @@index([status])
+  @@map("users")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Roles
+model Role {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  name            String           @unique
+  description     String?
+  isSystemRole    Boolean          @default(false) @map("is_system_role")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Permissions
+model Permission {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  key             String           @unique
+  description     String?
+  domain          String
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Categories (shared taxonomy: courses,
+/// library, marketplace — not news, which has its own News_Categories)
+model Category {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  parentCategoryId String?       @map("parent_category_id") @db.Uuid
+  parent           Category?     @relation("CategoryToParent", fields: [parentCategoryId], references: [id])
+  children         Category[]    @relation("CategoryToParent")
+  name             String
+  slug             String        @unique
+  /// courses | library | marketplace — admin UI grouping only, not an access restriction
+  domain           String
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  courses          Course[]
+  libraryItems     LibraryItem[]
+  products         Product[]
+
+  @@index([parentCategoryId])
+  @@map("categories")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — News_Categories
+model NewsCategory {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  news      News[]
+
+  @@map("news_categories")
+  @@schema("news")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Authors
+/// avatar_file_id: same forward-reference note as User.avatarFileId above.
+model Author {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  linkedUserId String?       @map("linked_user_id") @db.Uuid
+  linkedUser   User?         @relation(fields: [linkedUserId], references: [id])
+  name         String
+  bio          String?
+  avatarFileId String?       @map("avatar_file_id") @db.Uuid
+  avatarFile   File?         @relation("AuthorAvatarFile", fields: [avatarFileId], references: [id])
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  libraryItems LibraryItem[]
+
+  @@index([linkedUserId])
+  @@map("authors")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — AI_Providers
+model AiProvider {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  name      String
+  /// active | degraded | disabled
+  status    String    @default("active")
+  priority  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  aiModels  AiModel[]
+
+  @@index([status])
+  @@map("ai_providers")
+  @@schema("ai")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Languages
+model Language {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  code         String        @unique
+  name         String
+  /// rtl | ltr
+  direction    String
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  translations Translation[]
+
+  @@map("languages")
+  @@schema("system")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Tags
+model Tag {
+  id              String              @id @default(uuid(7)) @db.Uuid
+  name            String              @unique
+  slug            String              @unique
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  newsAssignments NewsTagAssignment[]
+
+  @@map("tags")
+  @@schema("news")
+}
+
+// LAYER 2 (first-level dependents): Role_Permissions, User_Sessions, Files,
+// AI_Models, Translations, Settings. Also wires the FK constraint for
+// User.avatarFileId / Author.avatarFileId → Files, deferred from Layer 1
+// since Files did not exist yet.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Role_Permissions (pure join table, composite PK)
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String     @map("permission_id") @db.Uuid
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  grantedAt    DateTime   @default(now()) @map("granted_at") @db.Timestamptz
+  grantedById  String?    @map("granted_by_id") @db.Uuid
+  grantedBy    User?      @relation(fields: [grantedById], references: [id])
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — User_Roles (pure join table, composite PK)
+/// Added during the Database Documentation Consistency Audit / Phase 3
+/// implementation — Users and Roles always documented this relationship
+/// in prose but no formal table existed. Mirrors Role_Permissions exactly.
+model UserRole {
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation("UserRoleAssignments", fields: [userId], references: [id])
+  roleId      String   @map("role_id") @db.Uuid
+  role        Role     @relation(fields: [roleId], references: [id])
+  grantedAt   DateTime @default(now()) @map("granted_at") @db.Timestamptz
+  grantedById String?  @map("granted_by_id") @db.Uuid
+  grantedBy   User?    @relation("UserRoleGrantedBy", fields: [grantedById], references: [id])
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — User_Sessions
+model UserSession {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  user          User           @relation(fields: [userId], references: [id])
+  deviceLabel   String?        @map("device_label")
+  userAgent     String?        @map("user_agent")
+  ipAddress     String?        @map("ip_address")
+  lastActiveAt  DateTime?      @map("last_active_at") @db.Timestamptz
+  expiresAt     DateTime       @map("expires_at") @db.Timestamptz
+  revokedAt     DateTime?      @map("revoked_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Files (shared infrastructure, files schema)
+model File {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  uploadedById     String   @map("uploaded_by_id") @db.Uuid
+  uploadedBy       User     @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+  storageKey       String   @unique @map("storage_key")
+  originalFilename String   @map("original_filename")
+  mimeType         String   @map("mime_type")
+  sizeBytes        BigInt   @map("size_bytes")
+  /// pending | clean | quarantined
+  scanStatus       String   @default("pending") @map("scan_status")
+  /// private | public
+  visibility       String   @default("private")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  usersWithAvatar    User[]        @relation("UserAvatarFile")
+  authorsWithAvatar  Author[]      @relation("AuthorAvatarFile")
+  upload             Upload?
+  media              Media?
+  versionsAsCurrent  Version[]     @relation("VersionCurrentFile")
+  versionsAsPrevious Version[]     @relation("VersionPreviousFile")
+  libraryItems       LibraryItem[]
+  products           Product[]
+  lessonFiles        LessonFile[]
+  certificates       Certificate[]
+
+  @@index([uploadedById])
+  @@index([scanStatus])
+  @@map("files")
+  @@schema("files")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — AI_Models
+model AiModel {
+  id                    String      @id @default(uuid(7)) @db.Uuid
+  providerId            String      @map("provider_id") @db.Uuid
+  provider              AiProvider  @relation(fields: [providerId], references: [id])
+  modelIdentifier       String      @map("model_identifier")
+  /// chat | completion | embedding
+  capability            String
+  costPer1kInputTokens  Decimal     @map("cost_per_1k_input_tokens") @db.Decimal(10, 6)
+  costPer1kOutputTokens Decimal     @map("cost_per_1k_output_tokens") @db.Decimal(10, 6)
+  isDefault             Boolean     @default(false) @map("is_default")
+  deprecatedAt          DateTime?   @map("deprecated_at") @db.Timestamptz
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  aiRequests            AiRequest[]
+
+  @@index([providerId])
+  @@map("ai_models")
+  @@schema("ai")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Translations
+model Translation {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  languageId String   @map("language_id") @db.Uuid
+  language   Language @relation(fields: [languageId], references: [id])
+  key        String
+  value      String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([languageId, key])
+  @@map("translations")
+  @@schema("system")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Settings
+model Setting {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  key         String   @unique
+  value       String
+  description String?
+  isSensitive Boolean  @default(false) @map("is_sensitive")
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedBy   User?    @relation(fields: [updatedById], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("settings")
+  @@schema("system")
+}
+
+// LAYER 3 (second-level dependents): Refresh_Tokens, Notifications, Uploads,
+// Media, Versions, Prompt_Templates.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Refresh_Tokens
+model RefreshToken {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  user            User           @relation(fields: [userId], references: [id])
+  sessionId       String         @map("session_id") @db.Uuid
+  session         UserSession    @relation(fields: [sessionId], references: [id])
+  tokenHash       String         @unique @map("token_hash")
+  previousTokenId String?        @map("previous_token_id") @db.Uuid
+  previousToken   RefreshToken?  @relation("RefreshTokenChain", fields: [previousTokenId], references: [id])
+  nextTokens      RefreshToken[] @relation("RefreshTokenChain")
+  expiresAt       DateTime       @map("expires_at") @db.Timestamptz
+  usedAt          DateTime?      @map("used_at") @db.Timestamptz
+  revokedAt       DateTime?      @map("revoked_at") @db.Timestamptz
+  revokedReason   String?        @map("revoked_reason")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Notifications
+/// source_event_id intentionally has no FK, per doc: "not a hard foreign
+/// key, to avoid coupling this table to every other domain."
+model Notification {
+  id            String    @id @default(uuid(7)) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  user          User      @relation(fields: [userId], references: [id])
+  type          String
+  title         String
+  body          String?
+  linkUrl       String?   @map("link_url")
+  readAt        DateTime? @map("read_at") @db.Timestamptz
+  /// in_app | email | push
+  channel       String
+  sourceEventId String?   @map("source_event_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Uploads
+model Upload {
+  id                   String   @id @default(uuid(7)) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  user                 User     @relation(fields: [userId], references: [id])
+  fileId               String?  @unique @map("file_id") @db.Uuid
+  file                 File?    @relation(fields: [fileId], references: [id])
+  presignedUrlIssuedAt DateTime @default(now()) @map("presigned_url_issued_at") @db.Timestamptz
+  expectedSizeBytes    BigInt   @map("expected_size_bytes")
+  /// pending | completed | expired | failed
+  status               String   @default("pending")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@index([status])
+  @@map("uploads")
+  @@schema("files")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Media
+model Media {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  fileId            String   @unique @map("file_id") @db.Uuid
+  file              File     @relation(fields: [fileId], references: [id])
+  /// video | image | audio
+  mediaType         String   @map("media_type")
+  durationSeconds   Int?     @map("duration_seconds")
+  /// pending | processing | ready | failed
+  transcodingStatus String   @default("pending") @map("transcoding_status")
+  hlsManifestKey    String?  @map("hls_manifest_key")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  lessons           Lesson[]
+
+  @@index([transcodingStatus])
+  @@map("media")
+  @@schema("files")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Versions
+model Version {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  fileId         String   @map("file_id") @db.Uuid
+  file           File     @relation("VersionCurrentFile", fields: [fileId], references: [id])
+  previousFileId String   @map("previous_file_id") @db.Uuid
+  previousFile   File     @relation("VersionPreviousFile", fields: [previousFileId], references: [id])
+  versionNumber  Int      @map("version_number")
+  replacedAt     DateTime @default(now()) @map("replaced_at") @db.Timestamptz
+  replacedById   String   @map("replaced_by_id") @db.Uuid
+  replacedBy     User     @relation("VersionReplacedBy", fields: [replacedById], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([fileId])
+  @@map("versions")
+  @@schema("files")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Prompt_Templates
+model PromptTemplate {
+  id                 String      @id @default(uuid(7)) @db.Uuid
+  name               String
+  version            String
+  systemInstructions String      @map("system_instructions")
+  userInputSchema    String      @map("user_input_schema")
+  isActive           Boolean     @default(true) @map("is_active")
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  aiRequests         AiRequest[]
+
+  @@unique([name, version])
+  @@map("prompt_templates")
+  @@schema("ai")
+}
+
+// LAYER 4 (content root tables): Courses, Library_Items, Products, News,
+// AI_Requests.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Courses
+model Course {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  instructorId String        @map("instructor_id") @db.Uuid
+  instructor   User          @relation(fields: [instructorId], references: [id])
+  categoryId   String        @map("category_id") @db.Uuid
+  category     Category      @relation(fields: [categoryId], references: [id])
+  title        String
+  slug         String        @unique
+  description  String?
+  /// draft | in_review | published | archived
+  status       String        @default("draft")
+  priceCents   Int           @default(0) @map("price_cents")
+  publishedAt  DateTime?     @map("published_at") @db.Timestamptz
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  modules      Module[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+
+  @@index([status])
+  @@index([instructorId])
+  @@map("courses")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Library_Items
+model LibraryItem {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  authorId        String            @map("author_id") @db.Uuid
+  author          Author            @relation(fields: [authorId], references: [id])
+  categoryId      String            @map("category_id") @db.Uuid
+  category        Category          @relation(fields: [categoryId], references: [id])
+  fileId          String            @map("file_id") @db.Uuid
+  file            File              @relation(fields: [fileId], references: [id])
+  title           String
+  slug            String            @unique
+  description     String?
+  /// draft | published
+  status          String            @default("draft")
+  priceCents      Int?              @map("price_cents")
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+  downloads       Download[]
+  bookmarks       Bookmark[]
+  readingProgress ReadingProgress[]
+
+  @@index([status])
+  @@index([categoryId])
+  @@map("library_items")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Products
+model Product {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  categoryId  String      @map("category_id") @db.Uuid
+  category    Category    @relation(fields: [categoryId], references: [id])
+  ownerId     String?     @map("owner_id") @db.Uuid
+  owner       User?       @relation(fields: [ownerId], references: [id])
+  fileId      String?     @map("file_id") @db.Uuid
+  file        File?       @relation(fields: [fileId], references: [id])
+  title       String
+  slug        String      @unique
+  description String?
+  priceCents  Int         @default(0) @map("price_cents")
+  /// draft | published | archived
+  status      String      @default("draft")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  orderItems  OrderItem[]
+
+  @@index([status])
+  @@map("products")
+  @@schema("marketplace")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — News
+model News {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  authorId       String              @map("author_id") @db.Uuid
+  author         User                @relation(fields: [authorId], references: [id])
+  categoryId     String              @map("category_id") @db.Uuid
+  category       NewsCategory        @relation(fields: [categoryId], references: [id])
+  title          String
+  slug           String              @unique
+  body           String
+  /// draft | in_review | published
+  status         String              @default("draft")
+  publishedAt    DateTime?           @map("published_at") @db.Timestamptz
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  tagAssignments NewsTagAssignment[]
+  comments       Comment[]
+
+  @@index([status])
+  @@index([publishedAt])
+  @@map("news")
+  @@schema("news")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — AI_Requests
+model AiRequest {
+  id               String          @id @default(uuid(7)) @db.Uuid
+  userId           String?         @map("user_id") @db.Uuid
+  user             User?           @relation(fields: [userId], references: [id])
+  modelId          String          @map("model_id") @db.Uuid
+  model            AiModel         @relation(fields: [modelId], references: [id])
+  promptTemplateId String?         @map("prompt_template_id") @db.Uuid
+  promptTemplate   PromptTemplate? @relation(fields: [promptTemplateId], references: [id])
+  feature          String
+  /// success | error | moderation_blocked
+  status           String
+  inputTokens      Int?            @map("input_tokens")
+  outputTokens     Int?            @map("output_tokens")
+  latencyMs        Int?            @map("latency_ms")
+  promptRedacted   String?         @map("prompt_redacted")
+  responseRedacted String?         @map("response_redacted")
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  cost             AiCost?
+
+  @@index([userId])
+  @@index([feature])
+  @@index([createdAt])
+  @@map("ai_requests")
+  @@schema("ai")
+}
+
+// LAYER 5 (content structure tables): Modules, News_Tag_Assignments.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Modules
+model Module {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  courseId    String   @map("course_id") @db.Uuid
+  course      Course   @relation(fields: [courseId], references: [id])
+  title       String
+  position    Int
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  lessons     Lesson[]
+
+  @@index([courseId, position])
+  @@map("modules")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Tags (News_Tag_Assignments join table,
+/// resolves the News ↔ Tags many-to-many per docs/14-DATABASE-RELATIONSHIPS.md)
+model NewsTagAssignment {
+  newsId    String   @map("news_id") @db.Uuid
+  news      News     @relation(fields: [newsId], references: [id])
+  tagId     String   @map("tag_id") @db.Uuid
+  tag       Tag      @relation(fields: [tagId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@id([newsId, tagId])
+  @@index([tagId])
+  @@map("news_tag_assignments")
+  @@schema("news")
+}
+
+// LAYER 6 (content leaf tables): Lessons, Comments.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Lessons
+model Lesson {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  moduleId        String           @map("module_id") @db.Uuid
+  module          Module           @relation(fields: [moduleId], references: [id])
+  title           String
+  position        Int
+  /// video | text | quiz
+  contentType     String           @map("content_type")
+  body            String?
+  videoMediaId    String?          @map("video_media_id") @db.Uuid
+  videoMedia      Media?           @relation(fields: [videoMediaId], references: [id])
+  durationSeconds Int?             @map("duration_seconds")
+  isPreview       Boolean          @default(false) @map("is_preview")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  lessonFiles     LessonFile[]
+  quizzes         Quiz[]
+  progress        LessonProgress[]
+
+  @@index([moduleId, position])
+  @@map("lessons")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Comments
+model Comment {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  user            User      @relation(fields: [userId], references: [id])
+  newsId          String    @map("news_id") @db.Uuid
+  news            News      @relation(fields: [newsId], references: [id])
+  parentCommentId String?   @map("parent_comment_id") @db.Uuid
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies         Comment[] @relation("CommentReplies")
+  body            String
+  /// visible | hidden | flagged
+  status          String    @default("visible")
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([newsId])
+  @@index([parentCommentId])
+  @@index([userId])
+  @@map("comments")
+  @@schema("news")
+}
+
+// LAYER 7 (lesson-dependent tables): Lesson_Files, Quizzes.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Lesson_Files
+model LessonFile {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  lessonId  String   @map("lesson_id") @db.Uuid
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  fileId    String   @map("file_id") @db.Uuid
+  file      File     @relation(fields: [fileId], references: [id])
+  label     String
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([lessonId])
+  @@map("lesson_files")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Quizzes
+model Quiz {
+  id                  String         @id @default(uuid(7)) @db.Uuid
+  lessonId            String         @map("lesson_id") @db.Uuid
+  lesson              Lesson         @relation(fields: [lessonId], references: [id])
+  title               String
+  passingScorePercent Int            @map("passing_score_percent")
+  maxAttempts         Int?           @map("max_attempts")
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+  questions           QuizQuestion[]
+  attempts            QuizAttempt[]
+
+  @@index([lessonId])
+  @@map("quizzes")
+  @@schema("courses")
+}
+
+// LAYER 8 (quiz-dependent tables): Quiz_Questions.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Quiz_Questions
+model QuizQuestion {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  quizId        String   @map("quiz_id") @db.Uuid
+  quiz          Quiz     @relation(fields: [quizId], references: [id])
+  prompt        String
+  /// single | multiple | text
+  questionType  String   @map("question_type")
+  options       Json?
+  correctAnswer Json     @map("correct_answer")
+  position      Int
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([quizId, position])
+  @@map("quiz_questions")
+  @@schema("courses")
+}
+
+// LAYER 9 (transactional/engagement tables): Enrollments, Orders,
+// Downloads, Bookmarks, Coupons, AI_Usage, AI_Costs.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Enrollments
+/// KNOWN DOC INCONSISTENCY: docs/13-DATABASE-BLUEPRINT.md lists a foreign
+/// key "purchase_id → Purchases.id", but no `Purchases` table exists
+/// anywhere in the approved 49-table blueprint (docs/13, docs/14) — the
+/// marketplace domain uses Payments/Order_Items instead. Implemented here
+/// as a plain, unconstrained nullable UUID column (no FK) rather than
+/// inventing an undocumented table or guessing which real table it should
+/// reference. Flagged for clarification before Phase 4 (Backend API).
+model Enrollment {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  user              User             @relation(fields: [userId], references: [id])
+  courseId          String           @map("course_id") @db.Uuid
+  course            Course           @relation(fields: [courseId], references: [id])
+  /// docs/13-DATABASE-BLUEPRINT.md — corrected during the Database
+  /// Documentation Consistency Audit: previously an unconstrained column
+  /// intended for a non-existent "Purchases" table. Now correctly
+  /// references Order_Items (entitlement is granted per purchased line
+  /// item, not per order/payment). Nullable — free courses have no purchase.
+  orderItemId       String?          @map("order_item_id") @db.Uuid
+  orderItem         OrderItem?       @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  enrolledAt        DateTime         @default(now()) @map("enrolled_at") @db.Timestamptz
+  completedAt       DateTime?        @map("completed_at") @db.Timestamptz
+  completionPercent Int              @default(0) @map("completion_percent")
+  /// active | expired | refunded
+  status            String           @default("active")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+  lessonProgress    LessonProgress[]
+  certificate       Certificate?
+
+  @@unique([userId, courseId])
+  @@index([status])
+  @@map("enrollments")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Orders
+model Order {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  user        User        @relation(fields: [userId], references: [id])
+  couponId    String?     @map("coupon_id") @db.Uuid
+  coupon      Coupon?     @relation(fields: [couponId], references: [id])
+  orderNumber String      @unique @map("order_number")
+  /// pending | paid | refunded | cancelled
+  status      String      @default("pending")
+  totalCents  Int         @map("total_cents")
+  currency    String      @default("USD")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  orderItems  OrderItem[]
+  payments    Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+  @@schema("marketplace")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Downloads
+model Download {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  user          User        @relation(fields: [userId], references: [id])
+  libraryItemId String      @map("library_item_id") @db.Uuid
+  libraryItem   LibraryItem @relation(fields: [libraryItemId], references: [id])
+  downloadedAt  DateTime    @default(now()) @map("downloaded_at") @db.Timestamptz
+  ipAddress     String?     @map("ip_address")
+
+  @@index([userId, libraryItemId])
+  @@index([downloadedAt])
+  @@map("downloads")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Bookmarks
+model Bookmark {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  user          User        @relation(fields: [userId], references: [id])
+  libraryItemId String      @map("library_item_id") @db.Uuid
+  libraryItem   LibraryItem @relation(fields: [libraryItemId], references: [id])
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId, libraryItemId])
+  @@map("bookmarks")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Coupons
+model Coupon {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  code           String    @unique
+  /// percent | fixed
+  discountType   String    @map("discount_type")
+  discountValue  Int       @map("discount_value")
+  maxRedemptions Int?      @map("max_redemptions")
+  redeemedCount  Int       @default(0) @map("redeemed_count")
+  expiresAt      DateTime? @map("expires_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  orders Order[]
+
+  @@index([expiresAt])
+  @@map("coupons")
+  @@schema("marketplace")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — AI_Usage
+model AiUsage {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id])
+  periodStart  DateTime @map("period_start") @db.Timestamptz
+  periodEnd    DateTime @map("period_end") @db.Timestamptz
+  requestsUsed Int      @default(0) @map("requests_used")
+  tokensUsed   Int      @default(0) @map("tokens_used")
+  quotaLimit   Int      @map("quota_limit")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([userId, periodStart])
+  @@map("ai_usage")
+  @@schema("ai")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — AI_Costs
+model AiCost {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  aiRequestId     String    @unique @map("ai_request_id") @db.Uuid
+  aiRequest       AiRequest @relation(fields: [aiRequestId], references: [id])
+  providerCostUsd Decimal   @map("provider_cost_usd") @db.Decimal(10, 6)
+  billedAt        DateTime  @default(now()) @map("billed_at") @db.Timestamptz
+
+  @@index([billedAt])
+  @@map("ai_costs")
+  @@schema("ai")
+}
+
+// LAYER 10 (order-dependent tables): Order_Items, Payments.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Order_Items
+model OrderItem {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  orderId        String       @map("order_id") @db.Uuid
+  order          Order        @relation(fields: [orderId], references: [id])
+  productId      String       @map("product_id") @db.Uuid
+  product        Product      @relation(fields: [productId], references: [id])
+  unitPriceCents Int          @map("unit_price_cents")
+  quantity       Int          @default(1)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  enrollments    Enrollment[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+  @@schema("marketplace")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Payments
+model Payment {
+  id                String        @id @default(uuid(7)) @db.Uuid
+  orderId           String        @map("order_id") @db.Uuid
+  order             Order         @relation(fields: [orderId], references: [id])
+  /// Stripe
+  provider          String
+  providerPaymentId String        @unique @map("provider_payment_id")
+  /// pending | succeeded | failed
+  status            String        @default("pending")
+  amountCents       Int           @map("amount_cents")
+  paidAt            DateTime?     @map("paid_at") @db.Timestamptz
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  transactions      Transaction[]
+
+  @@index([orderId])
+  @@map("payments")
+  @@schema("marketplace")
+}
+
+// LAYER 11 (payment-dependent tables): Transactions.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Transactions (immutable financial ledger)
+model Transaction {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  paymentId         String   @map("payment_id") @db.Uuid
+  payment           Payment  @relation(fields: [paymentId], references: [id])
+  /// charge | refund | payout
+  type              String
+  amountCents       Int      @map("amount_cents")
+  currency          String   @default("USD")
+  providerReference String?  @map("provider_reference")
+  recordedAt        DateTime @default(now()) @map("recorded_at") @db.Timestamptz
+
+  @@index([paymentId])
+  @@index([recordedAt])
+  @@map("transactions")
+  @@schema("marketplace")
+}
+
+// LAYER 12 (enrollment/attempt-dependent tables): Lesson_Progress,
+// Quiz_Attempts, Reading_Progress, Certificates.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Lesson_Progress
+model LessonProgress {
+  id                  String     @id @default(uuid(7)) @db.Uuid
+  enrollmentId        String     @map("enrollment_id") @db.Uuid
+  enrollment          Enrollment @relation(fields: [enrollmentId], references: [id])
+  lessonId            String     @map("lesson_id") @db.Uuid
+  lesson              Lesson     @relation(fields: [lessonId], references: [id])
+  progressPercent     Int        @default(0) @map("progress_percent")
+  lastPositionSeconds Int?       @map("last_position_seconds")
+  completedAt         DateTime?  @map("completed_at") @db.Timestamptz
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([enrollmentId, lessonId])
+  @@index([lessonId])
+  @@map("lesson_progress")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Quiz_Attempts
+model QuizAttempt {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  quizId       String   @map("quiz_id") @db.Uuid
+  quiz         Quiz     @relation(fields: [quizId], references: [id])
+  userId       String   @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id])
+  answers      Json
+  scorePercent Int      @map("score_percent")
+  passed       Boolean
+  submittedAt  DateTime @default(now()) @map("submitted_at") @db.Timestamptz
+
+  @@index([userId, quizId])
+  @@map("quiz_attempts")
+  @@schema("courses")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Reading_Progress
+model ReadingProgress {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  user          User        @relation(fields: [userId], references: [id])
+  libraryItemId String      @map("library_item_id") @db.Uuid
+  libraryItem   LibraryItem @relation(fields: [libraryItemId], references: [id])
+  lastPosition  String      @map("last_position")
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId, libraryItemId])
+  @@map("reading_progress")
+  @@schema("library")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Certificates
+model Certificate {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  userId            String     @map("user_id") @db.Uuid
+  user              User       @relation(fields: [userId], references: [id])
+  courseId          String     @map("course_id") @db.Uuid
+  course            Course     @relation(fields: [courseId], references: [id])
+  enrollmentId      String     @unique @map("enrollment_id") @db.Uuid
+  enrollment        Enrollment @relation(fields: [enrollmentId], references: [id])
+  certificateNumber String     @unique @map("certificate_number")
+  issuedAt          DateTime   @default(now()) @map("issued_at") @db.Timestamptz
+  revokedAt         DateTime?  @map("revoked_at") @db.Timestamptz
+  pdfFileId         String?    @map("pdf_file_id") @db.Uuid
+  pdfFile           File?      @relation(fields: [pdfFileId], references: [id])
+
+  @@map("certificates")
+  @@schema("courses")
+}
+
+// LAYER 13 (cross-cutting, created any time after Users exists):
+// Audit_Logs, Logs, Backups. Final layer — completes all 49 tables from
+// docs/13-DATABASE-BLUEPRINT.md.
+
+/// docs/13-DATABASE-BLUEPRINT.md — Audit_Logs (append-only; no update/delete
+/// grant exists for this table at the application role level, per
+/// docs/10-SECURITY-BIBLE.md §18 — enforced operationally, not by this
+/// schema definition alone)
+model AuditLog {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  actorUser   User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id") @db.Uuid
+  beforeState Json?    @map("before_state")
+  afterState  Json?    @map("after_state")
+  ipAddress   String?  @map("ip_address")
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([occurredAt])
+  @@map("audit_logs")
+  @@schema("auth")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Logs
+model Log {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  level         String
+  sourceService String   @map("source_service")
+  message       String
+  context       Json?
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz
+
+  @@index([occurredAt])
+  @@index([sourceService])
+  @@map("logs")
+  @@schema("system")
+}
+
+/// docs/13-DATABASE-BLUEPRINT.md — Backups
+model Backup {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  /// full | incremental | wal
+  backupType         String    @map("backup_type")
+  /// database | object-storage
+  target             String
+  storageLocation    String    @map("storage_location")
+  takenAt            DateTime  @default(now()) @map("taken_at") @db.Timestamptz
+  verifiedAt         DateTime? @map("verified_at") @db.Timestamptz
+  /// pending | verified | failed
+  verificationStatus String    @default("pending") @map("verification_status")
+
+  @@index([takenAt])
+  @@index([verificationStatus])
+  @@map("backups")
+  @@schema("system")
+}

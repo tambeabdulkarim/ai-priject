@@ -1,6 +1,8 @@
 node_modules
 .next
 out
+dist
+.turbo
 .env
 .env.local
 .env.development.local
@@ -11,3 +13,4 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 .vercel
+tsconfig.tsbuildinfo
