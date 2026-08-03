@@ -72,6 +72,30 @@ export class PaymentsRepository {
   }
 
   /**
+   * Read-only pre-check used by PaymentsService.refund() BEFORE calling
+   * the real Stripe Refunds API — avoids sending an obviously-invalid
+   * (already fully refunded / over-limit) request to Stripe at all. This
+   * does NOT replace `processRefund`'s own atomic recheck below (a
+   * Serializable transaction is still required to make the *local*
+   * commit race-safe); it only saves a doomed round-trip to Stripe on the
+   * common path.
+   */
+  async getRefundableBalance(paymentId: string): Promise<number> {
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment) {
+      throw new Error('Payment not found.');
+    }
+    const alreadyRefunded =
+      (
+        await this.prisma.transaction.aggregate({
+          where: { paymentId, type: 'refund' },
+          _sum: { amountCents: true },
+        })
+      )._sum.amountCents ?? 0;
+    return payment.amountCents - alreadyRefunded;
+  }
+
+  /**
    * docs/16-API-CONTRACT.md POST /admin/payments/:id/refund.
    *
    * Fixed during the Phase 13 final audit — three bugs, all stemming from
@@ -95,12 +119,19 @@ export class PaymentsRepository {
    *     refund was applied — stale relative to doc16's documented
    *     response body ("refund Transactions entry, updated order/payment
    *     status"). Now returns the post-update row.
+   *
+   * Phase 10.1: `providerReference` now carries the real Stripe Refund
+   * object id (`re_...`), returned by `StripeService.refundPayment` and
+   * passed in by `PaymentsService.refund` — stored in the existing
+   * `Transaction.providerReference` column (already used the same way by
+   * `recordSuccessfulPayment` for the charge side), no schema change.
    */
   async processRefund(params: {
     paymentId: string;
     requestedAmountCents: number | undefined;
     currency: string;
     orderId: string;
+    providerReference: string;
   }): Promise<{ payment: Payment; transaction: Transaction; isFullRefund: boolean }> {
     return this.prisma.$transaction(
       async (tx) => {
@@ -132,6 +163,7 @@ export class PaymentsRepository {
             type: 'refund',
             amountCents: refundAmount,
             currency: params.currency,
+            providerReference: params.providerReference,
           },
         });
 

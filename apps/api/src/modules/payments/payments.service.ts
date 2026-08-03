@@ -159,11 +159,62 @@ export class PaymentsService {
     return payment;
   }
 
-  /** docs/16-API-CONTRACT.md POST /admin/payments/:id/refund — `order:refund` (admin/support). */
+  /**
+   * docs/16-API-CONTRACT.md POST /admin/payments/:id/refund — `order:refund`
+   * (admin/support).
+   *
+   * Phase 10.1: previously only updated local ledger rows — no money ever
+   * actually moved back to the buyer. Now calls the real Stripe Refunds
+   * API (`StripeService.refundPayment`) using the payment's own
+   * `providerPaymentId`, no new column needed. Sequencing:
+   *  1. A cheap, read-only balance pre-check (`getRefundableBalance`)
+   *     rejects an obviously-invalid request (already fully refunded /
+   *     over the remaining balance) BEFORE ever calling Stripe — same
+   *     validation, same exception types as before this change.
+   *  2. Stripe is called with a deterministic idempotency key
+   *     (`refund:<paymentId>:<amountCents|full>`), so a retried request
+   *     (e.g. after a network timeout) cannot double-refund at the
+   *     provider even if this handler runs twice.
+   *  3. The existing atomic, Serializable local transaction
+   *     (`processRefund`) still re-validates the balance and commits the
+   *     ledger — this is the layer that makes concurrent *local* refund
+   *     requests race-safe, which a Stripe-side idempotency key alone
+   *     does not guarantee (two different amounts under the same balance
+   *     are two different Stripe calls). The Stripe Refund's real id is
+   *     stored as `Transaction.providerReference` (existing column, same
+   *     as the charge side already does).
+   *  4. If step 3 loses a race despite the step-1 pre-check (a narrow
+   *     window between the two), the Stripe refund has already succeeded
+   *     but the local commit has not — logged at ERROR for manual
+   *     reconciliation rather than silently dropped, since inventing an
+   *     automatic Stripe-side compensating action is out of this phase's
+   *     scope.
+   */
   async refund(id: string, amountCents: number | undefined, reason: string, actorId: string): Promise<Payment> {
     const payment = await this.paymentsRepository.findByIdWithOrder(id);
     if (!payment) {
       throw new NotFoundException('Payment not found.');
+    }
+
+    const refundable = await this.paymentsRepository.getRefundableBalance(id);
+    if (refundable <= 0) {
+      throw new ConflictException('This payment has already been fully refunded.');
+    }
+    const requestedAmount = amountCents ?? refundable;
+    if (requestedAmount > refundable) {
+      throw new BadRequestException(`Refund amount exceeds the refundable balance of ${refundable} cents.`);
+    }
+
+    const idempotencyKey = `refund:${id}:${amountCents ?? 'full'}`;
+    let stripeRefund: { id: string; amountCents: number; status: string };
+    try {
+      stripeRefund = await this.stripeService.refundPayment({
+        paymentIntentId: payment.providerPaymentId,
+        amountCents,
+        idempotencyKey,
+      });
+    } catch (error) {
+      throw new BadRequestException(`Stripe refund failed: ${(error as Error).message}`);
     }
 
     let result: { payment: Payment; isFullRefund: boolean; transaction: { amountCents: number } };
@@ -173,6 +224,7 @@ export class PaymentsService {
         requestedAmountCents: amountCents,
         currency: payment.order.currency,
         orderId: payment.orderId,
+        providerReference: stripeRefund.id,
       });
     } catch (error) {
       // Concurrent refund requests racing the same payment: Postgres
@@ -180,6 +232,10 @@ export class PaymentsService {
       // as 409 rather than an opaque 500 — the caller can safely retry
       // and will see the balance the other request already committed.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+        this.logger.error(
+          `Stripe refund ${stripeRefund.id} succeeded for payment ${id} but the local ledger commit lost a ` +
+            'concurrent race (P2034) — manual reconciliation required.',
+        );
         throw new ConflictException('This payment is being refunded concurrently — please retry.');
       }
       throw error;
@@ -192,7 +248,12 @@ export class PaymentsService {
       action: 'payment.refunded',
       targetType: 'Payment',
       targetId: id,
-      afterState: { refundAmount: transaction.amountCents, reason, fullRefund: isFullRefund },
+      afterState: {
+        refundAmount: transaction.amountCents,
+        reason,
+        fullRefund: isFullRefund,
+        stripeRefundId: stripeRefund.id,
+      },
     });
 
     await this.notificationsService.create({

@@ -78,4 +78,32 @@ export class StripeService {
     }
     return client.webhooks.constructEvent(rawBody, signature, this.webhookSecret);
   }
+
+  /**
+   * docs/16-API-CONTRACT.md POST /admin/payments/:id/refund. Phase 10.1 gap
+   * fix: this previously had no counterpart at all — PaymentsService.refund
+   * only ever updated local ledger rows, so a "refund" never actually
+   * returned money to the buyer via Stripe. `paymentIntentId` is the same
+   * `Payment.providerPaymentId` already stored at checkout time (no new
+   * column). `idempotencyKey` is passed straight through to Stripe's own
+   * idempotency mechanism so a retried request (e.g. after a timeout)
+   * cannot double-refund at the provider — this is in addition to, not a
+   * replacement for, `PaymentsRepository.processRefund`'s own local
+   * Serializable-transaction balance guard.
+   */
+  async refundPayment(params: {
+    paymentIntentId: string;
+    amountCents?: number;
+    idempotencyKey: string;
+  }): Promise<{ id: string; amountCents: number; status: string }> {
+    const client = this.assertConfigured();
+    const refund = await client.refunds.create(
+      {
+        payment_intent: params.paymentIntentId,
+        ...(params.amountCents !== undefined ? { amount: params.amountCents } : {}),
+      },
+      { idempotencyKey: params.idempotencyKey },
+    );
+    return { id: refund.id, amountCents: refund.amount, status: refund.status ?? 'unknown' };
+  }
 }
