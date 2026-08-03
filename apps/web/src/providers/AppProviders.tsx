@@ -6,11 +6,14 @@
 
 import { AuthProvider } from './AuthProvider';
 import { QueryProvider } from './QueryProvider';
+import { CartProvider } from './CartProvider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <CartProvider>{children}</CartProvider>
+      </AuthProvider>
     </QueryProvider>
   );
 }

@@ -28,3 +28,5 @@ export * from './src/modules';
 export * from './src/moderation';
 export * from './src/settings';
 export * from './src/analytics';
+export * from './src/marketplace';
+export * from './src/ai';

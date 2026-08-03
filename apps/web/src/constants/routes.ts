@@ -48,7 +48,28 @@ export const ROUTES = {
   adminSettings: '/[lang]/admin/settings',
   adminUsers: '/[lang]/admin/users',
   adminUserDetail: '/[lang]/admin/users/[id]',
+  marketplaceHome: '/[lang]/marketplace',
+  marketplaceProductDetail: '/[lang]/marketplace/[slug]',
+  checkout: '/[lang]/checkout',
+  ordersList: '/[lang]/orders',
+  orderDetail: '/[lang]/orders/[id]',
+  aiDashboard: '/[lang]/ai',
+  aiQuota: '/[lang]/ai/quota',
+  aiRequestDetail: '/[lang]/ai/requests/[id]',
 } as const;
+
+/**
+ * `POST /orders`'s real success/cancel URLs (orders.service.ts) are
+ * hardcoded server-side as `${NEXT_PUBLIC_SITE_URL}/checkout/success` /
+ * `.../checkout/cancel` — NOT locale-prefixed, unlike every other route
+ * in this app. These are deliberately NOT part of `ROUTES`/`withLang`
+ * (which assume a `[lang]` segment) — the actual pages live at
+ * `app/checkout/success/page.tsx` and `app/checkout/cancel/page.tsx`,
+ * outside the `[lang]` segment, to match the backend's real redirect
+ * target exactly.
+ */
+export const CHECKOUT_SUCCESS_PATH = '/checkout/success';
+export const CHECKOUT_CANCEL_PATH = '/checkout/cancel';
 
 export type RouteKey = keyof typeof ROUTES;
 
@@ -88,6 +109,12 @@ export const AUTH_REQUIRED_ROUTES: readonly (typeof ROUTES)[RouteKey][] = [
   ROUTES.adminSettings,
   ROUTES.adminUsers,
   ROUTES.adminUserDetail,
+  ROUTES.checkout,
+  ROUTES.ordersList,
+  ROUTES.orderDetail,
+  ROUTES.aiDashboard,
+  ROUTES.aiQuota,
+  ROUTES.aiRequestDetail,
 ];
 
 /**

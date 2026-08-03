@@ -27,6 +27,10 @@ import { createCertificatesResource } from './src/resources/certificates';
 import { createMediaResource } from './src/resources/media';
 import { createAdminResource } from './src/resources/admin';
 import { createSettingsResource } from './src/resources/settings';
+import { createMarketplaceResource } from './src/resources/marketplace';
+import { createOrdersResource } from './src/resources/orders';
+import { createPaymentsResource } from './src/resources/payments';
+import { createAiResource } from './src/resources/ai';
 
 export type { ApiClientConfig, ApiResult, RequestOptions } from './src/core/client-config';
 export { ApiError, NetworkError, TimeoutError } from './src/core/errors';
@@ -45,6 +49,10 @@ export type { CertificatesResource } from './src/resources/certificates';
 export type { MediaResource } from './src/resources/media';
 export type { AdminResource } from './src/resources/admin';
 export type { SettingsResource } from './src/resources/settings';
+export type { MarketplaceResource } from './src/resources/marketplace';
+export type { OrdersResource } from './src/resources/orders';
+export type { PaymentsResource } from './src/resources/payments';
+export type { AiResource } from './src/resources/ai';
 
 export function createApiClient(config: ApiClientConfig) {
   const request = createRequestFn(config);
@@ -63,6 +71,10 @@ export function createApiClient(config: ApiClientConfig) {
     media: createMediaResource(request),
     admin: createAdminResource(request),
     settings: createSettingsResource(request),
+    marketplace: createMarketplaceResource(request),
+    orders: createOrdersResource(request),
+    payments: createPaymentsResource(request),
+    ai: createAiResource(request),
   };
 }
 

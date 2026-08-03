@@ -12,16 +12,17 @@ type NavigationProps = { locale: Locale };
 // point at the real, now-implemented public pages — previously pointed
 // at leftover generic-scaffold routes (/workspace, /projects, /analytics,
 // /files, /dashboard) that had nothing to do with the labels shown.
-// "أدوات الذكاء التدريبي" (AI tools) and "المنتجات الرقمية" (digital
-// products/Marketplace) are left pointing at their prior targets — AI and
-// Marketplace are explicitly out of scope this phase, not yet real pages.
+// "أدوات الذكاء التدريبي" (AI tools) now points at the real AI Workspace
+// (Frontend Phase 9) — auth-gated by the page itself via RequireAuth,
+// same as every other authenticated section linked from this nav bar.
+// "المنتجات الرقمية" now points at the real Marketplace (Frontend Phase 8).
 const NAV_ITEMS = (locale: Locale) => [
   { href: `/${locale}`, label: 'الرئيسية', active: true },
-  { href: `/${locale}/workspace`, label: 'أدوات الذكاء التدريبي', active: false },
+  { href: `/${locale}/ai`, label: 'أدوات الذكاء التدريبي', active: false },
   { href: `/${locale}/courses`, label: 'المسارات المهنية', active: false },
   { href: `/${locale}/news`, label: 'الأخبار', active: false },
   { href: `/${locale}/library`, label: 'الكتب الإلكترونية', active: false },
-  { href: `/${locale}/dashboard`, label: 'المنتجات الرقمية', active: false },
+  { href: `/${locale}/marketplace`, label: 'المنتجات الرقمية', active: false },
 ];
 
 export default function Navigation({ locale }: NavigationProps) {

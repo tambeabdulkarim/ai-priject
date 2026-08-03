@@ -55,4 +55,22 @@ export const queryKeys = {
       list: () => ['admin', 'settings', 'list'] as const,
     },
   },
+  marketplace: {
+    products: {
+      list: (query: Record<string, unknown> = {}) => ['marketplace', 'products', 'list', query] as const,
+      detail: (slug: string) => ['marketplace', 'products', 'detail', slug] as const,
+    },
+    categories: () => ['marketplace', 'categories'] as const,
+  },
+  orders: {
+    list: (query: Record<string, unknown> = {}) => ['orders', 'list', query] as const,
+    detail: (id: string) => ['orders', 'detail', id] as const,
+  },
+  payments: {
+    detail: (id: string) => ['payments', 'detail', id] as const,
+  },
+  ai: {
+    requestDetail: (id: string) => ['ai', 'requests', 'detail', id] as const,
+    usage: () => ['ai', 'usage', 'me'] as const,
+  },
 } as const;
