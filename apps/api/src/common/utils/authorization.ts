@@ -34,7 +34,11 @@ export function assertOwnerOrRole(
 // the Courses/Lessons-specific instance of the pattern above.
 const EDITORIAL_ROLES = ['content_editor', 'admin', 'superadmin'];
 
-export function isOwnerOrEditorial(ownerId: string, actorId: string, actorRoles: string[]): boolean {
+export function isOwnerOrEditorial(
+  ownerId: string,
+  actorId: string,
+  actorRoles: string[],
+): boolean {
   return isOwnerOrRole(ownerId, actorId, actorRoles, EDITORIAL_ROLES);
 }
 
@@ -44,4 +48,18 @@ export function assertOwnerOrEditorial(
   actorRoles: string[],
 ): void {
   assertOwnerOrRole(ownerId, actorId, actorRoles, EDITORIAL_ROLES);
+}
+
+/**
+ * Phase 11.7.2: `moderator` deliberately is NOT in EDITORIAL_ROLES — that
+ * set governs edit/archive rights (assertOwnerOrEditorial), and a
+ * moderator must never gain those (least privilege — moderators review,
+ * they don't edit, publish, or own). But the moderation workflow does
+ * require moderators to be able to VIEW a non-published course under
+ * review (docs/15-SYSTEM-WORKFLOWS.md §9's review queue), which is a
+ * strictly narrower, read-only allowance. Kept as its own function so it
+ * can never be accidentally reused for a write-authorization check.
+ */
+export function canViewAsModerator(actorRoles: string[]): boolean {
+  return actorRoles.includes('moderator');
 }

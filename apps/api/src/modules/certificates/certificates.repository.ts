@@ -37,7 +37,9 @@ export class CertificatesRepository {
 
   /** docs/13-DATABASE-BLUEPRINT.md Quiz_Attempts: userId + quizId + passed. */
   async hasPassingAttempt(userId: string, quizId: string): Promise<boolean> {
-    const attempt = await this.prisma.quizAttempt.findFirst({ where: { userId, quizId, passed: true } });
+    const attempt = await this.prisma.quizAttempt.findFirst({
+      where: { userId, quizId, passed: true },
+    });
     return attempt !== null;
   }
 

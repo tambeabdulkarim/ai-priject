@@ -26,7 +26,9 @@ export function reorderTasks(tasks, taskId, targetIndex) {
 export function getReminderAlerts(tasks) {
   const today = new Date();
   const todayString = today.toISOString().slice(0, 10);
-  const upcomingLimit = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const upcomingLimit = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
   return tasks
     .filter((task) => task.dueDate)
@@ -37,7 +39,7 @@ export function getReminderAlerts(tasks) {
       title: task.title,
       dueDate: task.dueDate,
       priority: task.priority,
-      type: task.dueDate < todayString ? 'overdue' : 'upcoming'
+      type: task.dueDate < todayString ? 'overdue' : 'upcoming',
     }))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }

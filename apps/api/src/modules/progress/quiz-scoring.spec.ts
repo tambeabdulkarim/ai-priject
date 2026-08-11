@@ -9,6 +9,18 @@ describe('isAnswerCorrect', () => {
     it('rejects a different single value', () => {
       expect(isAnswerCorrect('single', 'b', 'a')).toBe(false);
     });
+
+    it('matches when correctAnswer is stored as a one-element array (real seed data shape) and submittedAnswer is a bare string', () => {
+      expect(isAnswerCorrect('single', ['b'], 'b')).toBe(true);
+    });
+
+    it('matches when both correctAnswer and submittedAnswer are one-element arrays', () => {
+      expect(isAnswerCorrect('single', ['b'], ['b'])).toBe(true);
+    });
+
+    it('still rejects a different value when correctAnswer is array-wrapped', () => {
+      expect(isAnswerCorrect('single', ['b'], 'a')).toBe(false);
+    });
   });
 
   describe('multiple', () => {

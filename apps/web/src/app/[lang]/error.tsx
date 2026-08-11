@@ -9,7 +9,13 @@
 
 import { useEffect } from 'react';
 
-export default function LocaleError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function LocaleError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error('[app error boundary]', error);
@@ -19,7 +25,9 @@ export default function LocaleError({ error, reset }: { error: Error & { digest?
     <div className="ph-error-page">
       <div className="ph-error-code">500</div>
       <h1 className="ph-error-title">حدث خطأ غير متوقع</h1>
-      <p className="ph-error-desc">نأسف على الإزعاج. يمكنك المحاولة مرة أخرى أو العودة إلى الصفحة الرئيسية.</p>
+      <p className="ph-error-desc">
+        نأسف على الإزعاج. يمكنك المحاولة مرة أخرى أو العودة إلى الصفحة الرئيسية.
+      </p>
       <div style={{ display: 'flex', gap: '1rem' }}>
         <button type="button" className="ph-btn-grad" onClick={() => reset()}>
           إعادة المحاولة

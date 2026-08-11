@@ -10,6 +10,8 @@ import { SessionsModule } from '../sessions/sessions.module';
 import { RefreshTokensModule } from '../refresh-tokens/refresh-tokens.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
+import { MfaRecoveryCodesRepository } from './mfa-recovery-codes.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -39,6 +41,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     RefreshTokensModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, MfaService, MfaRecoveryCodesRepository],
 })
 export class AuthModule {}

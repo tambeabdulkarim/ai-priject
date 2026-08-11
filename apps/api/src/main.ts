@@ -1,41 +1,23 @@
 // Application bootstrap. docs/16-API-CONTRACT.md "Versioning Strategy":
 // every endpoint is served under /api/v1 — no unversioned endpoint is
 // ever exposed.
+//
+// Phase 43 (Deployment Readiness): the actual middleware/config setup
+// (helmet, CORS, cookies, validation, global prefix, interceptors) now
+// lives in ./create-app.ts so the serverless entrypoint (api/index.ts,
+// used for a Vercel Functions deployment) uses the exact same real
+// bootstrap logic instead of a second, diverging copy. This file keeps
+// only what's specific to a traditional long-running Node process:
+// reading the configured port and calling app.listen().
 
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
-import cookieParser from 'cookie-parser';
-import { AppModule } from './app.module';
+import { createApp } from './create-app';
 import { AppConfig } from './config/configuration';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap(): Promise<void> {
-  // docs/10-SECURITY-BIBLE.md §13: Stripe webhook signature verification
-  // needs the exact raw request bytes; `rawBody: true` preserves them on
-  // `req.rawBody` for every request while still parsing JSON normally
-  // everywhere else.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await createApp();
   const configService = app.get(ConfigService<AppConfig, true>);
-
-  // docs/16-API-CONTRACT.md: the refresh token is set via an httpOnly cookie.
-  app.use(cookieParser());
-
-  app.setGlobalPrefix('api/v1');
-
-  // docs/16-API-CONTRACT.md Validation Rules: every request body is
-  // validated against a strict schema; unknown fields are rejected, not
-  // silently ignored (whitelist + forbidNonWhitelisted).
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  app.useGlobalInterceptors(new LoggingInterceptor());
 
   const port = configService.get('port', { infer: true });
   await app.listen(port);

@@ -1,6 +1,13 @@
 ﻿// docs/16-API-CONTRACT.md §5 (Lessons). docs/15-SYSTEM-WORKFLOWS.md §9.
 
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Lesson, Module as ModuleModel } from '@prisma/client';
 import { assertOwnerOrEditorial, isOwnerOrEditorial } from '../../common/utils/authorization';
 import { CreateLessonDto } from './dto/create-lesson.dto';
@@ -26,7 +33,12 @@ export class LessonsService {
    * post-publish (content edited in place, not restructured)" — a
    * published course's module structure is fixed.
    */
-  async createModule(courseId: string, dto: CreateModuleDto, actorId: string, actorRoles: string[]): Promise<ModuleModel> {
+  async createModule(
+    courseId: string,
+    dto: CreateModuleDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<ModuleModel> {
     const course = await this.coursesRepository.findById(courseId);
     if (!course) {
       throw new NotFoundException('Course not found.');
@@ -45,7 +57,12 @@ export class LessonsService {
     });
   }
 
-  async updateModule(id: string, dto: CreateModuleDto, actorId: string, actorRoles: string[]): Promise<ModuleModel> {
+  async updateModule(
+    id: string,
+    dto: CreateModuleDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<ModuleModel> {
     const module_ = await this.lessonsRepository.findModuleWithCourse(id);
     if (!module_) {
       throw new NotFoundException('Module not found.');
@@ -89,8 +106,16 @@ export class LessonsService {
     if (!lesson) {
       throw new NotFoundException('Lesson not found.');
     }
+    // Phase 28: reshape `quizzes: [{id}]` (query-level, id-only) into a
+    // single `quizId` — a quiz-type Lesson has at most one Quiz in every
+    // real record seeded so far; if a lesson ever had more than one,
+    // this deliberately surfaces only the first rather than guessing
+    // which one the frontend should use.
+    const { quizzes, ...rest } = lesson;
+    const shaped = { ...rest, quizId: quizzes[0]?.id ?? null };
+
     if (lesson.isPreview) {
-      return lesson;
+      return shaped;
     }
     if (!viewerId) {
       throw new UnauthorizedException('Authentication required to view this lesson.');
@@ -98,14 +123,14 @@ export class LessonsService {
 
     const course = lesson.module.course;
     if (isOwnerOrEditorial(course.instructorId, viewerId, viewerRoles)) {
-      return lesson;
+      return shaped;
     }
 
     const enrolled = await this.lessonsRepository.hasActiveEnrollment(viewerId, course.id);
     if (!enrolled) {
       throw new ForbiddenException('An active enrollment is required to view this lesson.');
     }
-    return lesson;
+    return shaped;
   }
 
   /** docs/16-API-CONTRACT.md POST .../lessons — owning instructor / content_editor. */
@@ -140,7 +165,12 @@ export class LessonsService {
   }
 
   /** docs/16-API-CONTRACT.md PATCH /lessons/:id — owning instructor / content_editor. */
-  async update(id: string, dto: UpdateLessonDto, actorId: string, actorRoles: string[]): Promise<Lesson> {
+  async update(
+    id: string,
+    dto: UpdateLessonDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<Lesson> {
     const lesson = await this.lessonsRepository.findByIdWithModuleCourse(id);
     if (!lesson) {
       throw new NotFoundException('Lesson not found.');
@@ -175,8 +205,13 @@ export class LessonsService {
     const existingIds = new Set(existing.map((l) => l.id));
     const submittedIds = new Set(dto.lessonIds);
 
-    if (existingIds.size !== submittedIds.size || [...existingIds].some((id) => !submittedIds.has(id))) {
-      throw new BadRequestException('Submitted lesson set must exactly match the module’s existing lessons.');
+    if (
+      existingIds.size !== submittedIds.size ||
+      [...existingIds].some((id) => !submittedIds.has(id))
+    ) {
+      throw new BadRequestException(
+        'Submitted lesson set must exactly match the module’s existing lessons.',
+      );
     }
 
     await this.lessonsRepository.reorder(dto.lessonIds);

@@ -1,6 +1,12 @@
 // docs/16-API-CONTRACT.md §16 (News). docs/10-SECURITY-BIBLE.md §10 (XSS Protection).
 
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { News } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
@@ -68,14 +74,22 @@ export class NewsService {
 
     if (dto.tags && dto.tags.length > 0) {
       const tags = await this.newsRepository.resolveTagsByName(dto.tags);
-      await this.newsRepository.replaceTagAssignments(article.id, tags.map((t) => t.id));
+      await this.newsRepository.replaceTagAssignments(
+        article.id,
+        tags.map((t) => t.id),
+      );
     }
 
     return article;
   }
 
   /** docs/16-API-CONTRACT.md PATCH /news/:id — `news:edit` (author/content_editor/admin). */
-  async update(id: string, dto: UpdateNewsDto, actorId: string, actorRoles: string[]): Promise<News> {
+  async update(
+    id: string,
+    dto: UpdateNewsDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<News> {
     const article = await this.newsRepository.findById(id);
     if (!article) {
       throw new NotFoundException('Article not found.');
@@ -100,7 +114,10 @@ export class NewsService {
 
     if (dto.tags) {
       const tags = await this.newsRepository.resolveTagsByName(dto.tags);
-      await this.newsRepository.replaceTagAssignments(id, tags.map((t) => t.id));
+      await this.newsRepository.replaceTagAssignments(
+        id,
+        tags.map((t) => t.id),
+      );
     }
 
     return updated;
@@ -116,7 +133,10 @@ export class NewsService {
       throw new ConflictException('Article is already published.');
     }
 
-    const updated = await this.newsRepository.update(id, { status: 'published', publishedAt: new Date() });
+    const updated = await this.newsRepository.update(id, {
+      status: 'published',
+      publishedAt: new Date(),
+    });
 
     await this.auditLogService.record({
       actorUserId: actorId,

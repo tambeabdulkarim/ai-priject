@@ -52,7 +52,10 @@ describe('RefreshTokensService', () => {
     });
 
     await expect(service.rotate('reused-token')).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(refreshTokensRepository.revokeAllForSession).toHaveBeenCalledWith('s1', 'reuse_detected');
+    expect(refreshTokensRepository.revokeAllForSession).toHaveBeenCalledWith(
+      's1',
+      'reuse_detected',
+    );
     expect(sessionsRepository.revoke).toHaveBeenCalledWith('s1');
   });
 

@@ -83,7 +83,11 @@ export class LibraryService {
   }
 
   /** docs/16-API-CONTRACT.md POST /library/items/:id/access */
-  async grantAccess(id: string, userId: string, ipAddress?: string): Promise<{ downloadUrl: string }> {
+  async grantAccess(
+    id: string,
+    userId: string,
+    ipAddress?: string,
+  ): Promise<{ downloadUrl: string }> {
     const item = await this.loadPublishedItemOrThrow(id);
     await this.assertEntitled(item, userId);
 

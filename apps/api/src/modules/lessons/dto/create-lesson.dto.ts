@@ -1,6 +1,15 @@
 // docs/16-API-CONTRACT.md POST /courses/:courseId/modules/:moduleId/lessons
 
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 const CONTENT_TYPES = ['video', 'text', 'quiz'] as const;
 

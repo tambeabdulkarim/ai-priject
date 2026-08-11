@@ -1,11 +1,21 @@
 // docs/16-API-CONTRACT.md §4 (Courses). docs/15-SYSTEM-WORKFLOWS.md course
 // authoring/publish workflow.
 
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Course } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
-import { assertOwnerOrEditorial, isOwnerOrEditorial } from '../../common/utils/authorization';
+import {
+  assertOwnerOrEditorial,
+  canViewAsModerator,
+  isOwnerOrEditorial,
+} from '../../common/utils/authorization';
 import { slugify } from '../../common/utils/slugify';
 import { CategoriesService } from '../categories/categories.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -55,14 +65,22 @@ export class CoursesService {
       throw new NotFoundException('Course not found.');
     }
 
-    const canSeeDraft = viewerId !== undefined && isOwnerOrEditorial(course.instructorId, viewerId, viewerRoles);
+    // Phase 11.7.2: moderators reviewing a course under review must be
+    // able to view it (and its real lesson content, below) — a read-only
+    // allowance kept separate from isOwnerOrEditorial, which governs
+    // edit/archive rights and must never include `moderator`.
+    const canSeeDraft =
+      viewerId !== undefined &&
+      (isOwnerOrEditorial(course.instructorId, viewerId, viewerRoles) ||
+        canViewAsModerator(viewerRoles));
     if (course.status !== 'published' && !canSeeDraft) {
       throw new NotFoundException('Course not found.');
     }
 
     const isEntitledToFullContent =
       canSeeDraft ||
-      (viewerId !== undefined && (await this.coursesRepository.hasActiveEnrollment(viewerId, course.id)));
+      (viewerId !== undefined &&
+        (await this.coursesRepository.hasActiveEnrollment(viewerId, course.id)));
 
     return {
       ...course,
@@ -101,7 +119,12 @@ export class CoursesService {
   }
 
   /** docs/16-API-CONTRACT.md PATCH /courses/:id */
-  async update(id: string, dto: UpdateCourseDto, actorId: string, actorRoles: string[]): Promise<Course> {
+  async update(
+    id: string,
+    dto: UpdateCourseDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<Course> {
     const course = await this.coursesRepository.findById(id);
     if (!course) {
       throw new NotFoundException('Course not found.');
@@ -134,12 +157,16 @@ export class CoursesService {
       throw new ForbiddenException('Only the owning instructor may submit this course for review.');
     }
     if (course.status !== 'draft') {
-      throw new ConflictException(`Cannot submit a course in status "${course.status}" for review.`);
+      throw new ConflictException(
+        `Cannot submit a course in status "${course.status}" for review.`,
+      );
     }
 
     const moduleCount = await this.countModulesWithLessons(id);
     if (moduleCount === 0) {
-      throw new ConflictException('Course must have at least one module with a lesson before review.');
+      throw new ConflictException(
+        'Course must have at least one module with a lesson before review.',
+      );
     }
 
     const updated = await this.coursesRepository.update(id, { status: 'in_review' });

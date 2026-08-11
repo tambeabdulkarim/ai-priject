@@ -30,10 +30,18 @@ export function createLessonsResource(request: RequestFn) {
       request<ModuleRecord>({ method: 'POST', path: `/courses/${courseId}/modules`, body }),
 
     updateModule: (courseId: string, moduleId: string, body: CreateModuleRequest) =>
-      request<ModuleRecord>({ method: 'PATCH', path: `/courses/${courseId}/modules/${moduleId}`, body }),
+      request<ModuleRecord>({
+        method: 'PATCH',
+        path: `/courses/${courseId}/modules/${moduleId}`,
+        body,
+      }),
 
     createLesson: (courseId: string, moduleId: string, body: CreateLessonRequest) =>
-      request<LessonRecord>({ method: 'POST', path: `/courses/${courseId}/modules/${moduleId}/lessons`, body }),
+      request<LessonRecord>({
+        method: 'POST',
+        path: `/courses/${courseId}/modules/${moduleId}/lessons`,
+        body,
+      }),
 
     updateLesson: (id: string, body: UpdateLessonRequest) =>
       request<LessonRecord>({ method: 'PATCH', path: `/lessons/${id}`, body }),

@@ -32,13 +32,17 @@ export class BreachedPasswordService {
         headers: { 'Add-Padding': 'true' },
       });
       if (!response.ok) {
-        this.logger.warn(`HIBP range API returned ${response.status} — breached-password check skipped.`);
+        this.logger.warn(
+          `HIBP range API returned ${response.status} — breached-password check skipped.`,
+        );
         return false;
       }
       const body = await response.text();
       return body.split('\n').some((line) => line.trim().split(':')[0] === suffix);
     } catch (error) {
-      this.logger.warn(`HIBP range API unreachable — breached-password check skipped: ${(error as Error).message}`);
+      this.logger.warn(
+        `HIBP range API unreachable — breached-password check skipped: ${(error as Error).message}`,
+      );
       return false;
     }
   }

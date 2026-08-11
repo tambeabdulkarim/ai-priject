@@ -16,9 +16,9 @@ describe('AnalyticsService', () => {
   it('throws 400 when from is after to', async () => {
     const { service } = makeService();
 
-    await expect(service.getOverview({ from: '2026-02-01', to: '2026-01-01' })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.getOverview({ from: '2026-02-01', to: '2026-01-01' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('computes completion_rate as completed/total over the range', async () => {

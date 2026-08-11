@@ -5,8 +5,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { Newspaper } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { type Locale } from '@/lib/i18n';
 import { useNewsList } from '../../../hooks/useNews';
 import { ROUTES, withLang } from '../../../constants/routes';
@@ -65,7 +67,9 @@ export default function NewsListPage() {
 
         {isLoading && <p className="ph-state">{t.loading}</p>}
         {isError && <p className="ph-state">{t.error}</p>}
-        {!isLoading && !isError && articles.length === 0 && <p className="ph-state">{t.empty}</p>}
+        {!isLoading && !isError && articles.length === 0 && (
+          <EmptyState icon={<Newspaper size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         <div className="ph-grid">
           {articles.map((article) => (
@@ -75,9 +79,14 @@ export default function NewsListPage() {
               className="ph-catalogue-card"
             >
               <h2 className="ph-catalogue-card-title">{article.title}</h2>
-              <p className="ph-catalogue-card-desc">{article.body.slice(0, 140)}{article.body.length > 140 ? '…' : ''}</p>
+              <p className="ph-catalogue-card-desc">
+                {article.body.slice(0, 140)}
+                {article.body.length > 140 ? '…' : ''}
+              </p>
               <div className="ph-catalogue-card-meta">
-                <span>{new Date(article.publishedAt ?? article.createdAt).toLocaleDateString(locale)}</span>
+                <span>
+                  {new Date(article.publishedAt ?? article.createdAt).toLocaleDateString(locale)}
+                </span>
               </div>
             </Link>
           ))}
@@ -85,7 +94,12 @@ export default function NewsListPage() {
 
         {hasNextPage && (
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button type="button" className="ph-btn-outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            <button
+              type="button"
+              className="ph-btn-outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
               {isFetchingNextPage ? t.loadingMore : t.loadMore}
             </button>
           </div>

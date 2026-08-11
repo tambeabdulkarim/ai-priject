@@ -24,7 +24,8 @@ import { ROUTES, withLang } from '../../../constants/routes';
 
 const COPY = {
   title: 'Checkout',
-  pending: 'Payment is still processing — this can take a few seconds after Stripe redirects you back.',
+  pending:
+    'Payment is still processing — this can take a few seconds after Stripe redirects you back.',
   paid: 'Payment confirmed. Your order is paid.',
   refunded: 'This order has been refunded.',
   cancelled: 'This order was cancelled.',
@@ -63,9 +64,16 @@ function CheckoutSuccessContent() {
 
         {order && (
           <>
-            <p className="ph-form-success" role="status">{STATUS_COPY[order.status] ?? order.status}</p>
-            <p>Order #{order.orderNumber} — status: <strong>{order.status}</strong></p>
-            <a href={withLang(ROUTES.orderDetail, defaultLocale).replace('[id]', order.id)} className="ph-btn-grad">
+            <p className="ph-form-success" role="status">
+              {STATUS_COPY[order.status] ?? order.status}
+            </p>
+            <p>
+              Order #{order.orderNumber} — status: <strong>{order.status}</strong>
+            </p>
+            <a
+              href={withLang(ROUTES.orderDetail, defaultLocale).replace('[id]', order.id)}
+              className="ph-btn-grad"
+            >
               {COPY.viewOrder}
             </a>
           </>

@@ -8,8 +8,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { BookOpen } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { type Locale } from '@/lib/i18n';
 import { useLibraryList } from '../../../hooks/useLibrary';
 import { ROUTES, withLang } from '../../../constants/routes';
@@ -49,9 +51,10 @@ export default function LibraryListPage() {
   const locale = (params.lang as Locale) ?? 'ar';
   const t = COPY[locale] ?? COPY.ar;
   const [q, setQ] = useState('');
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useLibraryList({
-    q: q || undefined,
-  });
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useLibraryList({
+      q: q || undefined,
+    });
 
   const items = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -75,7 +78,9 @@ export default function LibraryListPage() {
 
         {isLoading && <p className="ph-state">{t.loading}</p>}
         {isError && <p className="ph-state">{t.error}</p>}
-        {!isLoading && !isError && items.length === 0 && <p className="ph-state">{t.empty}</p>}
+        {!isLoading && !isError && items.length === 0 && (
+          <EmptyState icon={<BookOpen size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         <div className="ph-grid">
           {items.map((item) => (
@@ -95,7 +100,12 @@ export default function LibraryListPage() {
 
         {hasNextPage && (
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button type="button" className="ph-btn-outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            <button
+              type="button"
+              className="ph-btn-outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
               {isFetchingNextPage ? t.loadingMore : t.loadMore}
             </button>
           </div>

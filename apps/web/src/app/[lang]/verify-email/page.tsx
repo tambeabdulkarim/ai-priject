@@ -55,7 +55,11 @@ export default function VerifyEmailPage() {
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{t.title}</h1>
 
-        {!token && <div className="ph-form-error" role="alert">{t.missingToken}</div>}
+        {!token && (
+          <div className="ph-form-error" role="alert">
+            {t.missingToken}
+          </div>
+        )}
 
         {token && (isPending || isIdle) && <p className="ph-state">{t.verifying}</p>}
 
@@ -69,10 +73,14 @@ export default function VerifyEmailPage() {
         )}
 
         {token && data?.error && (
-          <div className="ph-form-error" role="alert">{getErrorMessage(data.error)}</div>
+          <div className="ph-form-error" role="alert">
+            {getErrorMessage(data.error)}
+          </div>
         )}
         {token && mutationError && (
-          <div className="ph-form-error" role="alert">{getErrorMessage(mutationError)}</div>
+          <div className="ph-form-error" role="alert">
+            {getErrorMessage(mutationError)}
+          </div>
         )}
       </main>
       <Footer locale={locale} />

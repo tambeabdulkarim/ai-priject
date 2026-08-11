@@ -1,10 +1,26 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, Moon, Bird, Menu, X } from 'lucide-react';
+import { Search, Moon, Bird, Menu, X, Bell, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 import { locales, type Locale } from '@/lib/i18n';
+import { useAuth } from '@/hooks/useAuth';
+import { useNotificationsList } from '@/hooks/useNotifications';
+import { ROUTES, withLang } from '@/constants/routes';
+
+// Phase 14.7: this component previously never called useAuth() at all —
+// it unconditionally rendered the logged-out Login/Create Account
+// buttons on every page, regardless of session state. That was the root
+// cause of the Critical "header never reflects logged-in state" finding
+// in docs/platform-pixel-audit.md, reproduced identically across every
+// authenticated screenshot and every role tested. Fix is to read real
+// auth state here, once, since all 38 pages that render <Navigation>
+// share this one component.
+const AUTH_COPY = {
+  ar: { login: 'تسجيل الدخول', register: 'إنشاء حساب', dashboard: 'لوحة التحكم', settings: 'الإعدادات', logout: 'تسجيل الخروج' },
+  en: { login: 'Log in', register: 'Create account', dashboard: 'Dashboard', settings: 'Settings', logout: 'Log out' },
+} as const;
 
 type NavigationProps = { locale: Locale };
 
@@ -29,7 +45,69 @@ export default function Navigation({ locale }: NavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
   const menuId = useId();
+  const userMenuId = useId();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const t = AUTH_COPY[locale] ?? AUTH_COPY.ar;
+
+  const { status, user, profile, logout } = useAuth();
+  const isAuthenticated = status === 'authenticated';
+
+  // services/auth-client.ts's getCurrentAuthUser() — used by
+  // recoverSession() on every FRESH page load/refresh while
+  // authenticated, which is the common case, not an edge case —
+  // deliberately returns `email: ''` (its own comment: a "lighter-weight
+  // fallback derived purely from the token" since the JWT itself carries
+  // no email claim). `user.email` is only ever populated immediately
+  // after an in-app login submission. `profile` (GET /users/me, fetched
+  // fresh via React Query whenever a session exists) reliably has the
+  // real email regardless of which path authenticated the session — use
+  // it first, with `user.email` only as the brief pre-profile-load
+  // fallback so the header isn't fully blank for that one fetch.
+  const displayEmail = profile?.email || user?.email || '';
+
+  // Real unread count (docs/16-API-CONTRACT.md GET /notifications/me),
+  // only fetched once a session exists — this is the "Notifications
+  // indicator" the phase brief asks for on the header itself, reusing
+  // the same endpoint the Notifications page already reads instead of a
+  // new one.
+  const { data: notifData } = useNotificationsList({ limit: 1 }, { enabled: isAuthenticated });
+  const unreadCount = isAuthenticated ? (notifData?.unreadCount ?? 0) : 0;
+
+  // AuthUser (packages/types/src/auth.ts) has no displayName — the real
+  // GET /users/me response is exactly id/email/roles/status/locale/
+  // createdAt/mfaEnabled (see MeProfile's own comment). Email is the only
+  // real identity string available here; not inventing a name field.
+  const initial = (displayEmail[0] ?? '?').toUpperCase();
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isUserMenuOpen]);
+
+  useEffect(() => {
+    setIsUserMenuOpen(false);
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    await logout();
+    router.push(`/${locale}`);
+  };
 
   const switchLocale = (nextLocale: Locale) => {
     const segments = pathname.split('/').filter(Boolean);
@@ -66,69 +144,147 @@ export default function Navigation({ locale }: NavigationProps) {
   return (
     <>
       <header className="ph-topbar">
-      <div className="ph-topbar-inner">
+        <div className="ph-topbar-inner">
+          {/* Brand */}
+          <Link href={`/${locale}`} className="ph-brand">
+            <span className="ph-brand-icon" aria-hidden="true">
+              <Bird size={16} strokeWidth={2} />
+            </span>
+            <div>
+              <div className="ph-brand-name">Phoenix Project</div>
+              <div className="ph-brand-tag">منصة تبني مهاراتك، خطوة بخطوة</div>
+            </div>
+          </Link>
 
-        {/* Brand */}
-        <Link href={`/${locale}`} className="ph-brand">
-          <span className="ph-brand-icon" aria-hidden="true"><Bird size={16} strokeWidth={2} /></span>
-          <div>
-            <div className="ph-brand-name">Phoenix Project</div>
-            <div className="ph-brand-tag">منصة تبني مهاراتك، خطوة بخطوة</div>
-          </div>
-        </Link>
-
-        {/* Desktop nav links — unchanged */}
-        <nav className="ph-nav" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`ph-nav-link${item.active ? ' ph-nav-active' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <span className="ph-nav-link ph-nav-more">المزيد ▾</span>
-        </nav>
-
-        {/* Actions */}
-        <div className="ph-nav-actions">
-          <button type="button" className="ph-icon-btn" aria-label="Search">
-            <Search size={16} strokeWidth={2} aria-hidden="true" />
-          </button>
-          <button type="button" className="ph-icon-btn" aria-label="Toggle theme">
-            <Moon size={16} strokeWidth={2} aria-hidden="true" />
-          </button>
-          <div className="ph-lang-pill">
-            {locales.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => switchLocale(l)}
-                aria-pressed={locale === l}
-                className={`ph-lang-btn${locale === l ? ' ph-lang-active' : ''}`}
+          {/* Desktop nav links — unchanged */}
+          <nav className="ph-nav" aria-label="Primary navigation">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`ph-nav-link${item.active ? ' ph-nav-active' : ''}`}
               >
-                {l.toUpperCase()}
-              </button>
+                {item.label}
+              </Link>
             ))}
+            <span className="ph-nav-link ph-nav-more">المزيد ▾</span>
+          </nav>
+
+          {/* Actions */}
+          <div className="ph-nav-actions">
+            <button type="button" className="ph-icon-btn" aria-label="Search">
+              <Search size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+            {isAuthenticated && (
+              <Link
+                href={withLang(ROUTES.notifications, locale)}
+                className="ph-icon-btn"
+                aria-label={locale === 'ar' ? 'الإشعارات' : 'Notifications'}
+                style={{ position: 'relative' }}
+              >
+                <Bell size={16} strokeWidth={2} aria-hidden="true" />
+                {unreadCount > 0 && (
+                  <span className="ph-notif-dot" aria-hidden="true">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+            <button type="button" className="ph-icon-btn" aria-label="Toggle theme">
+              <Moon size={16} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <div className="ph-lang-pill">
+              {locales.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => switchLocale(l)}
+                  aria-pressed={locale === l}
+                  className={`ph-lang-btn${locale === l ? ' ph-lang-active' : ''}`}
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            {isAuthenticated ? (
+              <div className="ph-user-menu" ref={userMenuRef}>
+                <button
+                  type="button"
+                  className="ph-user-trigger"
+                  aria-haspopup="menu"
+                  aria-expanded={isUserMenuOpen}
+                  aria-controls={userMenuId}
+                  onClick={() => setIsUserMenuOpen((open) => !open)}
+                >
+                  <span className="ph-user-avatar" aria-hidden="true">
+                    {initial}
+                  </span>
+                  <span>{displayEmail}</span>
+                </button>
+                {isUserMenuOpen && (
+                  <div id={userMenuId} className="ph-user-dropdown" role="menu">
+                    <div className="ph-user-dropdown-header">
+                      <div className="ph-user-dropdown-email">{displayEmail}</div>
+                    </div>
+                    <Link
+                      href={withLang(ROUTES.dashboard, locale)}
+                      className="ph-user-dropdown-item"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <LayoutDashboard size={15} strokeWidth={2} aria-hidden="true" />
+                      {t.dashboard}
+                    </Link>
+                    <Link
+                      href={withLang(ROUTES.settings, locale)}
+                      className="ph-user-dropdown-item"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <Settings size={15} strokeWidth={2} aria-hidden="true" />
+                      {t.settings}
+                    </Link>
+                    <button
+                      type="button"
+                      className="ph-user-dropdown-item ph-danger"
+                      role="menuitem"
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={15} strokeWidth={2} aria-hidden="true" />
+                      {t.logout}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link href={`/${locale}/login`} className="ph-btn-outline">
+                  {t.login}
+                </Link>
+                <Link href={`/${locale}/register`} className="ph-btn-grad">
+                  {t.register}
+                </Link>
+              </>
+            )}
+
+            {/* Mobile hamburger — only visible below the tablet breakpoint */}
+            <button
+              type="button"
+              className="ph-menu-btn ph-icon-btn"
+              aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+              aria-expanded={isMenuOpen}
+              aria-controls={menuId}
+              onClick={() => setIsMenuOpen((open) => !open)}
+            >
+              {isMenuOpen ? (
+                <X size={20} strokeWidth={2} aria-hidden="true" />
+              ) : (
+                <Menu size={20} strokeWidth={2} aria-hidden="true" />
+              )}
+            </button>
           </div>
-          <Link href={`/${locale}/login`} className="ph-btn-outline">تسجيل الدخول</Link>
-          <Link href={`/${locale}/register`} className="ph-btn-grad">إنشاء حساب</Link>
-
-          {/* Mobile hamburger — only visible below the tablet breakpoint */}
-          <button
-            type="button"
-            className="ph-menu-btn ph-icon-btn"
-            aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-            aria-expanded={isMenuOpen}
-            aria-controls={menuId}
-            onClick={() => setIsMenuOpen((open) => !open)}
-          >
-            {isMenuOpen ? <X size={20} strokeWidth={2} aria-hidden="true" /> : <Menu size={20} strokeWidth={2} aria-hidden="true" />}
-          </button>
         </div>
-
-      </div>
       </header>
 
       {/* Mobile navigation drawer — rendered outside <header> because its
@@ -156,8 +312,44 @@ export default function Navigation({ locale }: NavigationProps) {
           ))}
         </nav>
         <div className="ph-mobile-menu-actions">
-          <Link href={`/${locale}/login`} className="ph-btn-outline" onClick={() => setIsMenuOpen(false)}>تسجيل الدخول</Link>
-          <Link href={`/${locale}/register`} className="ph-btn-grad" onClick={() => setIsMenuOpen(false)}>إنشاء حساب</Link>
+          {isAuthenticated ? (
+            <>
+              <Link
+                href={withLang(ROUTES.dashboard, locale)}
+                className="ph-btn-outline"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.dashboard}
+              </Link>
+              <button
+                type="button"
+                className="ph-btn-grad"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  void handleLogout();
+                }}
+              >
+                {t.logout}
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/${locale}/login`}
+                className="ph-btn-outline"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.login}
+              </Link>
+              <Link
+                href={`/${locale}/register`}
+                className="ph-btn-grad"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t.register}
+              </Link>
+            </>
+          )}
         </div>
       </div>
 

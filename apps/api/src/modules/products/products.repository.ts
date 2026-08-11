@@ -17,7 +17,9 @@ export interface ListProductsParams {
 export class ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMany(params: ListProductsParams): Promise<{ items: Product[]; nextCursor: string | null }> {
+  async findMany(
+    params: ListProductsParams,
+  ): Promise<{ items: Product[]; nextCursor: string | null }> {
     const priceFilter =
       params.minPriceCents !== undefined || params.maxPriceCents !== undefined
         ? {

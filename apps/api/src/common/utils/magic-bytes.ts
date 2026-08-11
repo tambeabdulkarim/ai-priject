@@ -14,7 +14,10 @@
 // 4-7, the actual robust MP4 signature.
 const SIGNATURES: { mimeType: string; checks: { offset: number; bytes: number[] }[] }[] = [
   { mimeType: 'image/jpeg', checks: [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }] },
-  { mimeType: 'image/png', checks: [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] }] },
+  {
+    mimeType: 'image/png',
+    checks: [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] }],
+  },
   {
     mimeType: 'image/webp',
     checks: [
@@ -32,7 +35,8 @@ export function detectMimeTypeFromMagicBytes(buffer: Buffer): string | null {
   for (const signature of SIGNATURES) {
     const matches = signature.checks.every(
       ({ offset, bytes }) =>
-        buffer.length >= offset + bytes.length && bytes.every((byte, i) => buffer[offset + i] === byte),
+        buffer.length >= offset + bytes.length &&
+        bytes.every((byte, i) => buffer[offset + i] === byte),
     );
     if (matches) {
       return signature.mimeType;

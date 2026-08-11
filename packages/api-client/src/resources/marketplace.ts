@@ -1,4 +1,9 @@
-import type { ListProductsQuery, MarketplaceCategoryNode, PaginatedResponse, ProductRecord } from '@phoenix/types';
+import type {
+  ListProductsQuery,
+  MarketplaceCategoryNode,
+  PaginatedResponse,
+  ProductRecord,
+} from '@phoenix/types';
 import type { RequestFn } from '../core/request';
 
 /**
@@ -27,7 +32,8 @@ export function createMarketplaceResource(request: RequestFn) {
     getProductBySlug: (slug: string) =>
       request<ProductRecord>({ method: 'GET', path: `/marketplace/products/${slug}` }),
 
-    getCategoryTree: () => request<MarketplaceCategoryNode[]>({ method: 'GET', path: '/marketplace/categories' }),
+    getCategoryTree: () =>
+      request<MarketplaceCategoryNode[]>({ method: 'GET', path: '/marketplace/categories' }),
   };
 }
 

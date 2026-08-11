@@ -60,7 +60,10 @@ export class CertificatesService {
 
     const quizzes = await this.certificatesRepository.findQuizIdsForCourse(enrollment.courseId);
     for (const quiz of quizzes) {
-      const passed = await this.certificatesRepository.hasPassingAttempt(enrollment.userId, quiz.id);
+      const passed = await this.certificatesRepository.hasPassingAttempt(
+        enrollment.userId,
+        quiz.id,
+      );
       if (!passed) {
         // Not audit-logged, not an error: this is an expected, frequent
         // state (completion percent reached 100% via non-quiz lessons,
@@ -112,7 +115,9 @@ export class CertificatesService {
       userId: enrollment.userId,
       type: 'certificate.issued',
       title: 'Certificate earned',
-      body: course ? `Your certificate for "${course.title}" is ready.` : 'Your certificate is ready.',
+      body: course
+        ? `Your certificate for "${course.title}" is ready.`
+        : 'Your certificate is ready.',
       sourceEventId: certificate.id,
     });
 
@@ -124,12 +129,19 @@ export class CertificatesService {
   }
 
   /** docs/16-API-CONTRACT.md GET /certificates/me */
-  listMine(userId: string, cursor: string | undefined, limit: number): Promise<PaginatedResult<Certificate>> {
+  listMine(
+    userId: string,
+    cursor: string | undefined,
+    limit: number,
+  ): Promise<PaginatedResult<Certificate>> {
     return this.certificatesRepository.findManyForUser({ userId, cursor, limit });
   }
 
   /** docs/16-API-CONTRACT.md GET /certificates/:id */
-  async getById(id: string, viewerId: string): Promise<{ certificate: Certificate; pdfUrl: string | null }> {
+  async getById(
+    id: string,
+    viewerId: string,
+  ): Promise<{ certificate: Certificate; pdfUrl: string | null }> {
     const certificate = await this.certificatesRepository.findById(id);
     if (!certificate) {
       throw new NotFoundException('Certificate not found.');
@@ -142,7 +154,9 @@ export class CertificatesService {
       return { certificate, pdfUrl: null };
     }
     const file = await this.filesRepository.findFileById(certificate.pdfFileId);
-    const pdfUrl = file ? await this.storageService.createPresignedDownloadUrl(file.storageKey) : null;
+    const pdfUrl = file
+      ? await this.storageService.createPresignedDownloadUrl(file.storageKey)
+      : null;
     return { certificate, pdfUrl };
   }
 
@@ -152,7 +166,8 @@ export class CertificatesService {
    * Security Notes ("no other user data").
    */
   async verifyPublic(certificateNumber: string) {
-    const certificate = await this.certificatesRepository.findByCertificateNumber(certificateNumber);
+    const certificate =
+      await this.certificatesRepository.findByCertificateNumber(certificateNumber);
     if (!certificate || certificate.revokedAt) {
       throw new NotFoundException('Certificate not found or invalid.');
     }

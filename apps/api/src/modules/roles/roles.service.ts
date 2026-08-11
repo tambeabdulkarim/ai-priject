@@ -67,7 +67,9 @@ export class RolesService {
     const requestedRoleNames = allRolesUpfront
       .filter((r) => roleIds.includes(r.id))
       .map((r) => r.name);
-    const grantsAdminCapableRole = requestedRoleNames.some((name) => ADMIN_CAPABLE_ROLE_NAMES.has(name));
+    const grantsAdminCapableRole = requestedRoleNames.some((name) =>
+      ADMIN_CAPABLE_ROLE_NAMES.has(name),
+    );
     if (grantsAdminCapableRole && !actorRoleNames.includes('superadmin')) {
       throw new ForbiddenException('Only superadmin may grant an admin-capable role.');
     }

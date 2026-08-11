@@ -25,7 +25,8 @@ export function createUsersResource(request: RequestFn) {
     getMe: () => request<MeProfile>({ method: 'GET', path: '/users/me' }),
 
     /** Real backend only accepts `locale`/`timezone` — see packages/types/src/users.ts's UpdateMeRequest comment for why displayName/bio/avatar aren't here (no Profiles module exists). */
-    updateMe: (body: UpdateMeRequest) => request<SafeUser>({ method: 'PATCH', path: '/users/me', body }),
+    updateMe: (body: UpdateMeRequest) =>
+      request<SafeUser>({ method: 'PATCH', path: '/users/me', body }),
 
     changePassword: (body: ChangePasswordRequest) =>
       request<ChangePasswordResponse>({ method: 'POST', path: '/users/me/change-password', body }),
@@ -35,7 +36,13 @@ export function createUsersResource(request: RequestFn) {
       request<PaginatedResponse<SafeUser>>({
         method: 'GET',
         path: '/users',
-        query: { cursor: query.cursor, limit: query.limit, status: query.status, role: query.role, q: query.q },
+        query: {
+          cursor: query.cursor,
+          limit: query.limit,
+          status: query.status,
+          role: query.role,
+          q: query.q,
+        },
       }),
 
     /** `user:read` (admin/support/superadmin). */

@@ -82,8 +82,28 @@ export async function recoverSession(): Promise<AuthUser | null> {
   return token ? getCurrentAuthUser() : null;
 }
 
+/**
+ * docs/10-SECURITY-BIBLE.md §5 (Phase 14.2): the real backend may return
+ * `{ mfaRequired: true, challengeToken }` instead of real tokens — that
+ * case is passed straight through (unmodified `result`) rather than
+ * treated as an error, since it isn't one; the caller (AuthProvider)
+ * decides what to render next.
+ */
 export async function login(email: string, password: string) {
   const result = await authApi.auth.login({ email, password });
+  if (result.error) {
+    return result;
+  }
+  if ('mfaRequired' in result.data) {
+    return result;
+  }
+  setAccessToken(result.data.accessToken);
+  return result;
+}
+
+/** Step 2 of the MFA challenge/response flow — only this call actually sets the access token for an MFA-enabled account. */
+export async function verifyMfa(challengeToken: string, code: string) {
+  const result = await authApi.auth.mfaVerify({ challengeToken, code });
   if (result.error) {
     return result;
   }
@@ -91,7 +111,28 @@ export async function login(email: string, password: string) {
   return result;
 }
 
-export async function register(params: { email: string; password: string; displayName: string; locale?: 'ar' | 'en' }) {
+export async function mfaEnrollBegin() {
+  return authApi.auth.mfaEnrollBegin();
+}
+
+export async function mfaEnrollConfirm(code: string) {
+  return authApi.auth.mfaEnrollConfirm({ code });
+}
+
+export async function mfaDisable(password: string) {
+  return authApi.auth.mfaDisable({ password });
+}
+
+export async function mfaRegenerateRecoveryCodes() {
+  return authApi.auth.mfaRegenerateRecoveryCodes();
+}
+
+export async function register(params: {
+  email: string;
+  password: string;
+  displayName: string;
+  locale?: 'ar' | 'en';
+}) {
   return authApi.auth.register(params);
 }
 

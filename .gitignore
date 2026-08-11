@@ -8,9 +8,23 @@ dist
 .env.development.local
 .env.test.local
 .env.production.local
+# Phase 18 (release rehearsal): the 5 explicit names above don't cover
+# .env.production (no ".local" suffix) — a very plausible filename for
+# anyone following common hosting-provider conventions to stage
+# production secrets locally, and NOT one of the 5 exact patterns above.
+# Found by a real newcomer dry-run of docs/phase17-deployment-launch-guide.md,
+# which had claimed .gitignore coverage was already complete. Fixed as a
+# genuine launch-blocking risk (a real path to committing live secrets),
+# not a style/refactor change — every pattern above is additive and
+# unchanged, this only adds coverage.
+.env.*
+!.env.example
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .DS_Store
 .vercel
 tsconfig.tsbuildinfo
+test-results
+playwright-report
+playwright/.cache

@@ -2,9 +2,10 @@ import type { ApiError } from './errors';
 
 /**
  * Injected at construction time (createApiClient(config)) rather than
- * read from global state — this is what lets apps/web, apps/admin, and a
- * future apps/mobile each supply their own token storage / refresh
- * strategy without forking this package.
+ * read from global state — this is what lets apps/web and a future
+ * apps/mobile (apps/admin is retired, see
+ * docs/09-PLATFORM-ARCHITECTURE.md §16) each supply their own token
+ * storage / refresh strategy without forking this package.
  * (docs/FRONTEND-PHASE-1-API-ARCHITECTURE.md §2.2)
  */
 export interface ApiClientConfig {

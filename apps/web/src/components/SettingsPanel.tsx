@@ -11,11 +11,19 @@ export default function SettingsPanel() {
       <h2>Preferences</h2>
       <label className="toggle-row">
         <span>Enable notifications</span>
-        <input type="checkbox" checked={notificationsEnabled} onChange={() => setNotificationsEnabled((value) => !value)} />
+        <input
+          type="checkbox"
+          checked={notificationsEnabled}
+          onChange={() => setNotificationsEnabled((value) => !value)}
+        />
       </label>
       <label className="toggle-row">
         <span>Compact view</span>
-        <input type="checkbox" checked={compactMode} onChange={() => setCompactMode((value) => !value)} />
+        <input
+          type="checkbox"
+          checked={compactMode}
+          onChange={() => setCompactMode((value) => !value)}
+        />
       </label>
     </section>
   );

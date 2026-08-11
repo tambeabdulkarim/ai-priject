@@ -25,7 +25,7 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
 
   const toggleTask = (id: number) => {
     setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task))
+      current.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)),
     );
   };
 
@@ -64,13 +64,25 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
           <p>Organize your next actions with simple priority tracking.</p>
         </div>
         <div className="task-filters">
-          <button type="button" className={status === 'all' ? 'active' : ''} onClick={() => setStatus('all')}>
+          <button
+            type="button"
+            className={status === 'all' ? 'active' : ''}
+            onClick={() => setStatus('all')}
+          >
             All
           </button>
-          <button type="button" className={status === 'active' ? 'active' : ''} onClick={() => setStatus('active')}>
+          <button
+            type="button"
+            className={status === 'active' ? 'active' : ''}
+            onClick={() => setStatus('active')}
+          >
             Active
           </button>
-          <button type="button" className={status === 'completed' ? 'active' : ''} onClick={() => setStatus('completed')}>
+          <button
+            type="button"
+            className={status === 'completed' ? 'active' : ''}
+            onClick={() => setStatus('completed')}
+          >
             Completed
           </button>
         </div>
@@ -104,7 +116,10 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
           placeholder="Add a new task"
           className="secondary-button"
         />
-        <select value={priority} onChange={(event) => setPriority(event.target.value as Task['priority'])}>
+        <select
+          value={priority}
+          onChange={(event) => setPriority(event.target.value as Task['priority'])}
+        >
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
@@ -118,12 +133,19 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
         <div className="auth-card">
           <strong>Reminders</strong>
           <ul className="task-list">
-            {reminders.map((reminder: { id: number; title: string; priority: Task['priority']; type: string }) => (
-              <li key={reminder.id}>
-                <span>{reminder.title}</span>
-                <span className={`priority-pill ${reminder.priority}`}>{reminder.type}</span>
-              </li>
-            ))}
+            {reminders.map(
+              (reminder: {
+                id: number;
+                title: string;
+                priority: Task['priority'];
+                type: string;
+              }) => (
+                <li key={reminder.id}>
+                  <span>{reminder.title}</span>
+                  <span className={`priority-pill ${reminder.priority}`}>{reminder.type}</span>
+                </li>
+              ),
+            )}
           </ul>
         </div>
       )}
@@ -132,7 +154,11 @@ export default function TasksSection({ initialTasks }: TasksSectionProps) {
         {visibleTasks.map((task: Task) => (
           <li key={task.id}>
             <label>
-              <input type="checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} />
+              <input
+                type="checkbox"
+                checked={task.completed}
+                onChange={() => toggleTask(task.id)}
+              />
               <span className={task.completed ? 'task-completed' : ''}>{task.title}</span>
             </label>
             <div className="task-filters">

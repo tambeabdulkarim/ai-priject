@@ -8,3 +8,47 @@ export interface MediaPlayback {
   transcodingStatus: 'pending' | 'processing' | 'ready' | 'failed';
   manifestUrl: string | null;
 }
+
+/**
+ * Phase 13.2/13.3: the raw `Media` row as returned directly by
+ * `POST /files/:uploadId/complete`'s new `media` field
+ * (`FilesService.completeUpload` → `MediaService.createFromFile`, which
+ * returns the Prisma `Media` record as-is — no File join, unlike
+ * `MediaListItem` below). Kept as a distinct type rather than reusing
+ * `MediaListItem` because the two endpoints genuinely return different
+ * shapes.
+ */
+export interface MediaRecord {
+  id: string;
+  fileId: string;
+  mediaType: 'video' | 'image' | 'audio';
+  durationSeconds: number | null;
+  transcodingStatus: 'pending' | 'processing' | 'ready' | 'failed';
+  hlsManifestKey: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Phase 13.3 (Media Frontend) — GET /media/me. Verified against
+ * MediaService.listMine's real mapped shape (metadata only, no signed
+ * URL — see that method's own comment on why: signed URLs are minted
+ * on demand, never pre-fetched for a whole list page).
+ */
+export interface MediaListItem {
+  id: string;
+  fileId: string;
+  mediaType: 'video' | 'image' | 'audio';
+  transcodingStatus: 'pending' | 'processing' | 'ready' | 'failed';
+  originalFilename: string;
+  mimeType: string;
+  sizeBytes: string;
+  createdAt: string;
+}
+
+export interface ListMediaQuery {
+  cursor?: string;
+  limit?: number;
+  mediaType?: 'video' | 'image' | 'audio';
+  q?: string;
+}

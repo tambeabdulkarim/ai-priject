@@ -24,7 +24,10 @@ export function AdminBreadcrumbs({ locale }: { locale: Locale }) {
   const segments = pathname.split('/').filter(Boolean).slice(1); // drop the leading [lang] segment
 
   return (
-    <nav aria-label="breadcrumb" style={{ marginBottom: '1rem', fontSize: '0.875rem', opacity: 0.8 }}>
+    <nav
+      aria-label="breadcrumb"
+      style={{ marginBottom: '1rem', fontSize: '0.875rem', opacity: 0.8 }}
+    >
       <Link href={withLang(ROUTES.adminDashboard, locale)}>{SEGMENT_LABELS.admin[locale]}</Link>
       {segments.slice(1).map((segment, index) => {
         const fullHref = `/${locale}/${segments.slice(0, index + 2).join('/')}`;

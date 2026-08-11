@@ -23,7 +23,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <RequireRole roles={[...ADMIN_ROLES]}>
       <div className={locale === 'ar' ? 'rtl' : 'ltr'}>
         <Navigation locale={locale} />
-        <main className="ph-page" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <main
+          className="ph-page"
+          style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
+        >
           <AdminSidebar locale={locale} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <AdminBreadcrumbs locale={locale} />

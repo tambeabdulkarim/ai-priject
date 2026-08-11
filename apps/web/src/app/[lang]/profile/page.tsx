@@ -37,7 +37,8 @@ const COPY = {
     save: 'حفظ',
     saving: 'جارٍ الحفظ...',
     saved: 'تم الحفظ.',
-    blockedNote: 'تعديل الاسم والصورة الشخصية غير متاح حاليًا (لا يوجد نظام ملفات شخصية في الخادم بعد).',
+    blockedNote:
+      'تعديل الاسم والصورة الشخصية غير متاح حاليًا (لا يوجد نظام ملفات شخصية في الخادم بعد).',
   },
   en: {
     title: 'Profile',
@@ -53,7 +54,8 @@ const COPY = {
     save: 'Save',
     saving: 'Saving...',
     saved: 'Saved.',
-    blockedNote: 'Editing your display name and avatar isn’t available yet (no profile system exists on the backend).',
+    blockedNote:
+      'Editing your display name and avatar isn’t available yet (no profile system exists on the backend).',
   },
 } as const;
 
@@ -79,14 +81,23 @@ function ProfileContent() {
         <h1 className="ph-page-title">{t.title}</h1>
 
         {profile && (
-          <div className="ph-module">
-            <div className="ph-lesson-row"><span>{t.email}</span><span>{profile.email}</span></div>
+          <div className="ph-module ph-form-card">
+            <div className="ph-lesson-row">
+              <span>{t.email}</span>
+              <span>{profile.email}</span>
+            </div>
             <div className="ph-lesson-row">
               <span>{t.email === 'Email' ? 'Email verified' : 'تأكيد البريد'}</span>
               <span>{profile.emailVerified ? t.verified : t.notVerified}</span>
             </div>
-            <div className="ph-lesson-row"><span>{t.status}</span><span>{profile.status}</span></div>
-            <div className="ph-lesson-row"><span>{t.roles}</span><span>{profile.roles.join(', ')}</span></div>
+            <div className="ph-lesson-row">
+              <span>{t.status}</span>
+              <span>{profile.status}</span>
+            </div>
+            <div className="ph-lesson-row">
+              <span>{t.roles}</span>
+              <span>{profile.roles.join(', ')}</span>
+            </div>
             <div className="ph-lesson-row">
               <span>{t.memberSince}</span>
               <span>{new Date(profile.createdAt).toLocaleDateString(locale)}</span>
@@ -94,44 +105,64 @@ function ProfileContent() {
           </div>
         )}
 
-        <h2 className="ph-catalogue-card-title" style={{ marginTop: '2rem' }}>{t.editTitle}</h2>
-        <p className="ph-page-subtitle">{t.blockedNote}</p>
+        <div className="ph-form-card" style={{ marginTop: 'var(--ph-space-5)' }}>
+          <h2 className="ph-catalogue-card-title" style={{ marginTop: 0 }}>
+            {t.editTitle}
+          </h2>
+          <p className="ph-page-subtitle">{t.blockedNote}</p>
 
-        <form className="ph-form" onSubmit={handleSubmit} noValidate>
-          {data?.error && <div className="ph-form-error" role="alert">{getErrorMessage(data.error)}</div>}
-          {mutationError && <div className="ph-form-error" role="alert">{getErrorMessage(mutationError)}</div>}
-          {data && !data.error && <div className="ph-form-success" role="status">{t.saved}</div>}
+          <form className="ph-form" onSubmit={handleSubmit} noValidate>
+            {data?.error && (
+              <div className="ph-form-error" role="alert">
+                {getErrorMessage(data.error)}
+              </div>
+            )}
+            {mutationError && (
+              <div className="ph-form-error" role="alert">
+                {getErrorMessage(mutationError)}
+              </div>
+            )}
+            {data && !data.error && (
+              <div className="ph-form-success" role="status">
+                {t.saved}
+              </div>
+            )}
 
-          <div className="ph-field">
-            <label className="ph-label" htmlFor="locale">{t.locale}</label>
-            <select
-              id="locale"
-              className="ph-input"
-              value={formLocale}
-              onChange={(e) => setFormLocale(e.target.value as 'ar' | 'en')}
-            >
-              <option value="ar">العربية</option>
-              <option value="en">English</option>
-            </select>
-          </div>
+            <div className="ph-field">
+              <label className="ph-label" htmlFor="locale">
+                {t.locale}
+              </label>
+              <select
+                id="locale"
+                className="ph-input"
+                value={formLocale}
+                onChange={(e) => setFormLocale(e.target.value as 'ar' | 'en')}
+              >
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
+            </div>
 
-          <div className="ph-field">
-            <label className="ph-label" htmlFor="timezone">{t.timezone}</label>
-            <input
-              id="timezone"
-              type="text"
-              className="ph-input"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              placeholder="e.g. Asia/Riyadh"
-              maxLength={64}
-            />
-          </div>
+            <div className="ph-field">
+              <label className="ph-label" htmlFor="timezone">
+                {t.timezone}
+              </label>
+              <input
+                id="timezone"
+                type="text"
+                className="ph-input"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                placeholder="e.g. Asia/Riyadh"
+                maxLength={64}
+              />
+            </div>
 
-          <button type="submit" className="ph-btn-grad" disabled={isPending}>
-            {isPending ? t.saving : t.save}
-          </button>
-        </form>
+            <button type="submit" className="ph-btn-grad" disabled={isPending}>
+              {isPending ? t.saving : t.save}
+            </button>
+          </form>
+        </div>
       </main>
       <Footer locale={locale} />
     </div>

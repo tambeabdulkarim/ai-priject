@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Prisma, Role, User } from '@prisma/client';
 import { AuditLogService } from '../../common/services/audit-log.service';
 import { PasswordService } from '../../common/services/password.service';
@@ -12,7 +17,10 @@ import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { UsersRepository } from './users.repository';
 
-export type SafeUser = Omit<User, 'passwordHash'>;
+// mfaSecret excluded for the same reason passwordHash is: it must never
+// leave the server, even encrypted (encryption protects the DB at rest,
+// not a response body) — docs/10-SECURITY-BIBLE.md §5.
+export type SafeUser = Omit<User, 'passwordHash' | 'mfaSecret'>;
 
 @Injectable()
 export class UsersService {
@@ -47,6 +55,21 @@ export class UsersService {
   /** Used by AuthService (password reset — no currentPassword to verify, unlike ChangePasswordDto's flow). */
   async setPasswordHash(userId: string, passwordHash: string): Promise<void> {
     await this.usersRepository.update(userId, { passwordHash });
+  }
+
+  /** docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — used by AuthService.beginMfaEnrollment. Stores the encrypted secret without enabling MFA (see AuthService.confirmMfaEnrollment for why those are separate steps). */
+  async setMfaSecret(userId: string, encryptedSecret: string): Promise<void> {
+    await this.usersRepository.update(userId, { mfaSecret: encryptedSecret });
+  }
+
+  /** Used by AuthService.confirmMfaEnrollment, after a real code is verified. */
+  async setMfaEnabled(userId: string, enabled: boolean): Promise<void> {
+    await this.usersRepository.update(userId, { mfaEnabled: enabled });
+  }
+
+  /** Used by AuthService.disableMfa — clears both the flag and the stored secret (not just the flag) so a re-enrollment always starts from a fresh secret, never a stale decrypted one. */
+  async disableMfa(userId: string): Promise<void> {
+    await this.usersRepository.update(userId, { mfaEnabled: false, mfaSecret: null });
   }
 
   /**
@@ -87,6 +110,7 @@ export class UsersService {
     status: string;
     locale: string;
     createdAt: Date;
+    mfaEnabled: boolean;
   }> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
@@ -101,6 +125,9 @@ export class UsersService {
       status: user.status,
       locale: user.locale,
       createdAt: user.createdAt,
+      // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — the boolean flag only;
+      // mfaSecret itself is never returned from any endpoint (see SafeUser).
+      mfaEnabled: user.mfaEnabled,
     };
   }
 
@@ -119,7 +146,11 @@ export class UsersService {
    * session (the one used to make this authenticated request) survives —
    * "other sessions", not all sessions.
    */
-  async changePassword(userId: string, currentSessionId: string, dto: ChangePasswordDto): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentSessionId: string,
+    dto: ChangePasswordDto,
+  ): Promise<void> {
     const user = await this.usersRepository.findById(userId);
     if (!user || !user.passwordHash) {
       throw new NotFoundException('User not found.');
@@ -134,16 +165,23 @@ export class UsersService {
     // registration and password-change time". Fixed during the Phase 13
     // final audit alongside the same gap in AuthService.register.
     if (await this.breachedPasswordService.isBreached(dto.newPassword)) {
-      throw new BadRequestException('This password has appeared in a known data breach — please choose another.');
+      throw new BadRequestException(
+        'This password has appeared in a known data breach — please choose another.',
+      );
     }
 
     const newHash = await this.passwordService.hash(dto.newPassword);
     await this.usersRepository.update(userId, { passwordHash: newHash });
 
-    const otherSessions = await this.sessionsService.findActiveByUserIdExcept(userId, currentSessionId);
+    const otherSessions = await this.sessionsService.findActiveByUserIdExcept(
+      userId,
+      currentSessionId,
+    );
     await this.sessionsService.revokeAllForUserExcept(userId, currentSessionId);
     await Promise.all(
-      otherSessions.map((s) => this.refreshTokensService.revokeAllForSession(s.id, 'password_changed')),
+      otherSessions.map((s) =>
+        this.refreshTokensService.revokeAllForSession(s.id, 'password_changed'),
+      ),
     );
 
     await this.auditLogService.record({
@@ -213,7 +251,7 @@ export class UsersService {
   }
 
   private toSafeUser(user: User): SafeUser {
-    const { passwordHash: _passwordHash, ...safe } = user;
+    const { passwordHash: _passwordHash, mfaSecret: _mfaSecret, ...safe } = user;
     return safe;
   }
 }

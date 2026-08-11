@@ -10,10 +10,24 @@
 import DOMPurify from 'isomorphic-dompurify';
 
 const ALLOWED_TAGS = [
-  'p', 'br', 'strong', 'em', 'u', 's',
-  'h1', 'h2', 'h3', 'h4',
-  'ul', 'ol', 'li',
-  'a', 'blockquote', 'code', 'pre', 'img',
+  'p',
+  'br',
+  'strong',
+  'em',
+  'u',
+  's',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'ul',
+  'ol',
+  'li',
+  'a',
+  'blockquote',
+  'code',
+  'pre',
+  'img',
 ];
 const ALLOWED_ATTR = ['href', 'src', 'alt', 'title'];
 

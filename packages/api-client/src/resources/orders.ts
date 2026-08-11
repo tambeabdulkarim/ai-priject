@@ -1,4 +1,11 @@
-import type { CreateOrderRequest, CreateOrderResponse, ListOrdersQuery, OrderRecord, OrderWithItems, PaginatedResponse } from '@phoenix/types';
+import type {
+  CreateOrderRequest,
+  CreateOrderResponse,
+  ListOrdersQuery,
+  OrderRecord,
+  OrderWithItems,
+  PaginatedResponse,
+} from '@phoenix/types';
 import type { RequestFn } from '../core/request';
 
 /**
@@ -11,7 +18,8 @@ import type { RequestFn } from '../core/request';
  */
 export function createOrdersResource(request: RequestFn) {
   return {
-    create: (body: CreateOrderRequest) => request<CreateOrderResponse>({ method: 'POST', path: '/orders', body }),
+    create: (body: CreateOrderRequest) =>
+      request<CreateOrderResponse>({ method: 'POST', path: '/orders', body }),
 
     listMine: (query: ListOrdersQuery = {}) =>
       request<PaginatedResponse<OrderRecord>>({

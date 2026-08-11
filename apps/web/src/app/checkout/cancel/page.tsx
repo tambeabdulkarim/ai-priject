@@ -35,15 +35,26 @@ function CheckoutCancelContent() {
       <Navigation locale={defaultLocale} />
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{COPY.title}</h1>
-        <p className="ph-form-error" role="note">{COPY.body}</p>
-        {order && <p>Order #{order.orderNumber} — status: <strong>{order.status}</strong></p>}
+        <p className="ph-form-error" role="note">
+          {COPY.body}
+        </p>
+        {order && (
+          <p>
+            Order #{order.orderNumber} — status: <strong>{order.status}</strong>
+          </p>
+        )}
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
           {order && (
-            <a href={withLang(ROUTES.orderDetail, defaultLocale).replace('[id]', order.id)} className="ph-btn-grad">
+            <a
+              href={withLang(ROUTES.orderDetail, defaultLocale).replace('[id]', order.id)}
+              className="ph-btn-grad"
+            >
               {COPY.viewOrder}
             </a>
           )}
-          <a href={withLang(ROUTES.marketplaceHome, defaultLocale)} className="ph-btn-outline">{COPY.backToMarketplace}</a>
+          <a href={withLang(ROUTES.marketplaceHome, defaultLocale)} className="ph-btn-outline">
+            {COPY.backToMarketplace}
+          </a>
         </div>
       </main>
       <Footer locale={defaultLocale} />

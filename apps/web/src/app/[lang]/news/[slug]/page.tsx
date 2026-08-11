@@ -43,12 +43,18 @@ export default function NewsDetailPage() {
                 <span>·</span>
                 <span>{article.category.name}</span>
                 <span>·</span>
-                <span>{new Date(article.publishedAt ?? article.createdAt).toLocaleDateString(locale)}</span>
+                <span>
+                  {new Date(article.publishedAt ?? article.createdAt).toLocaleDateString(locale)}
+                </span>
               </div>
               {article.tagAssignments.length > 0 && (
                 <div className="ph-detail-meta">
                   {article.tagAssignments.map((assignment) => (
-                    <span key={assignment.tagId} className="ph-pill" style={{ background: 'var(--accent-purple)' }}>
+                    <span
+                      key={assignment.tagId}
+                      className="ph-pill"
+                      style={{ background: 'var(--accent-purple)' }}
+                    >
                       {assignment.tag.name}
                     </span>
                   ))}

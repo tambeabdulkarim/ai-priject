@@ -1,5 +1,9 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListAuditLogsQuery, ModerationContentType, ModerationDecisionRequest } from '@phoenix/types';
+import type {
+  ListAuditLogsQuery,
+  ModerationContentType,
+  ModerationDecisionRequest,
+} from '@phoenix/types';
 import { apiClient } from '../services/api-client';
 import { queryKeys } from './queryKeys';
 
@@ -17,12 +21,17 @@ export function useModerationQueue(contentType?: ModerationContentType) {
   return useInfiniteQuery({
     queryKey: queryKeys.moderation.queue(contentType),
     queryFn: async ({ pageParam }: { pageParam?: string }) => {
-      const result = await apiClient.admin.listModerationQueue({ content_type: contentType, cursor: pageParam, limit: 20 });
+      const result = await apiClient.admin.listModerationQueue({
+        content_type: contentType,
+        cursor: pageParam,
+        limit: 20,
+      });
       if (result.error) throw result.error;
       return result.data;
     },
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.courses?.nextCursor ?? lastPage.comments?.nextCursor ?? undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.courses?.nextCursor ?? lastPage.comments?.nextCursor ?? undefined,
   });
 }
 
@@ -30,7 +39,8 @@ export function useModerationQueue(contentType?: ModerationContentType) {
 export function useDecideComment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: ModerationDecisionRequest & { id: string }) => apiClient.admin.decideComment(id, body),
+    mutationFn: ({ id, ...body }: ModerationDecisionRequest & { id: string }) =>
+      apiClient.admin.decideComment(id, body),
     onSuccess: (result) => {
       if (!result.error) queryClient.invalidateQueries({ queryKey: ['moderation', 'queue'] });
     },
@@ -77,7 +87,11 @@ export function useAuditLogsInfinite(filters: Omit<ListAuditLogsQuery, 'cursor' 
   return useInfiniteQuery({
     queryKey: ['admin', 'audit-logs', 'infinite', filters],
     queryFn: async ({ pageParam }: { pageParam?: string }) => {
-      const result = await apiClient.admin.listAuditLogs({ ...filters, cursor: pageParam, limit: 20 });
+      const result = await apiClient.admin.listAuditLogs({
+        ...filters,
+        cursor: pageParam,
+        limit: 20,
+      });
       if (result.error) throw result.error;
       return result.data;
     },

@@ -12,7 +12,9 @@ export default function RootNotFound() {
       <div className="ph-error-code">404</div>
       <h1 className="ph-error-title">الصفحة غير موجودة</h1>
       <p className="ph-error-desc">الصفحة التي تبحث عنها غير موجودة أو تم نقلها.</p>
-      <Link href="/ar" className="ph-btn-grad">العودة إلى الرئيسية</Link>
+      <Link href="/ar" className="ph-btn-grad">
+        العودة إلى الرئيسية
+      </Link>
     </div>
   );
 }

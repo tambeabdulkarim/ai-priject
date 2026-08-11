@@ -32,7 +32,13 @@ export default function NotesPanel() {
     }
 
     if (editingId) {
-      setNotes((current) => current.map((note) => (note.id === editingId ? updateNote(note, { title: trimmedTitle, content: trimmedContent }) : note)));
+      setNotes((current) =>
+        current.map((note) =>
+          note.id === editingId
+            ? updateNote(note, { title: trimmedTitle, content: trimmedContent })
+            : note,
+        ),
+      );
       setEditingId(null);
     } else {
       const note = createNote(trimmedTitle, trimmedContent);

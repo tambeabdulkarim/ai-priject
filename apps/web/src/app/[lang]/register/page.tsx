@@ -79,76 +79,88 @@ function RegisterPageContent() {
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{t.title}</h1>
 
-        {submitted ? (
-          <div className="ph-form-success" role="status">
-            <strong>{t.successTitle}</strong>
-            <p style={{ marginTop: '0.5rem' }}>{t.successBody}</p>
-          </div>
-        ) : (
-          <>
-            <p className="ph-page-subtitle">{t.subtitle}</p>
-            <form className="ph-form" onSubmit={handleSubmit} noValidate>
-              {error && (
-                <div className="ph-form-error" role="alert">
-                  {error}
+        <div className="ph-form-card">
+          {submitted ? (
+            <div className="ph-form-success" role="status">
+              <strong>{t.successTitle}</strong>
+              <p style={{ marginTop: '0.5rem' }}>{t.successBody}</p>
+            </div>
+          ) : (
+            <>
+              <p className="ph-page-subtitle">{t.subtitle}</p>
+              <form className="ph-form" onSubmit={handleSubmit} noValidate>
+                {error && (
+                  <div className="ph-form-error" role="alert">
+                    {error}
+                  </div>
+                )}
+
+                <div className="ph-field">
+                  <label className="ph-label" htmlFor="displayName">
+                    {t.name}
+                  </label>
+                  <input
+                    id="displayName"
+                    type="text"
+                    className="ph-input"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required
+                    maxLength={120}
+                    autoComplete="name"
+                  />
                 </div>
-              )}
 
-              <div className="ph-field">
-                <label className="ph-label" htmlFor="displayName">{t.name}</label>
-                <input
-                  id="displayName"
-                  type="text"
-                  className="ph-input"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                  maxLength={120}
-                  autoComplete="name"
-                />
-              </div>
+                <div className="ph-field">
+                  <label className="ph-label" htmlFor="email">
+                    {t.email}
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    className="ph-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
 
-              <div className="ph-field">
-                <label className="ph-label" htmlFor="email">{t.email}</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="ph-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
+                <div className="ph-field">
+                  <label className="ph-label" htmlFor="password">
+                    {t.password}
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    className="ph-input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={10}
+                    autoComplete="new-password"
+                    aria-describedby="password-hint"
+                  />
+                  <span
+                    id="password-hint"
+                    className="ph-field-error"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {t.passwordHint}
+                  </span>
+                </div>
 
-              <div className="ph-field">
-                <label className="ph-label" htmlFor="password">{t.password}</label>
-                <input
-                  id="password"
-                  type="password"
-                  className="ph-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={10}
-                  autoComplete="new-password"
-                  aria-describedby="password-hint"
-                />
-                <span id="password-hint" className="ph-field-error" style={{ color: 'var(--text-secondary)' }}>
-                  {t.passwordHint}
-                </span>
-              </div>
+                <button type="submit" className="ph-btn-grad" disabled={isSubmitting}>
+                  {isSubmitting ? t.submitting : t.submit}
+                </button>
+              </form>
+            </>
+          )}
 
-              <button type="submit" className="ph-btn-grad" disabled={isSubmitting}>
-                {isSubmitting ? t.submitting : t.submit}
-              </button>
-            </form>
-          </>
-        )}
-
-        <p className="ph-form-footer">
-          {t.haveAccount} <Link href={withLang(ROUTES.login, locale)}>{t.login}</Link>
-        </p>
+          <p className="ph-form-footer">
+            {t.haveAccount} <Link href={withLang(ROUTES.login, locale)}>{t.login}</Link>
+          </p>
+        </div>
       </main>
       <Footer locale={locale} />
     </div>

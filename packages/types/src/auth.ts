@@ -21,8 +21,21 @@ export interface RegisterResponse {
 export interface LoginRequest {
   email: string;
   password: string;
-  /** Accepted by the DTO but never checked server-side yet — MFA is BLOCKED BY DOCUMENTATION in the real backend (no TOTP-secret column exists). Sending it is harmless but has no effect. */
-  mfaCode?: string;
+}
+
+/**
+ * docs/10-SECURITY-BIBLE.md §5 (Phase 14.2). `POST /auth/login` returns
+ * this instead of `LoginResponse` when the account has MFA enabled — no
+ * refresh cookie is set, no real tokens exist yet. The client must then
+ * call `POST /auth/mfa/verify` with this `challengeToken` + the user's
+ * code to complete login. See the MFA Security Architecture Review for
+ * why this two-step shape was chosen over an inline `mfaCode` field on
+ * `LoginRequest` (the old field — removed, it was never checked
+ * server-side and the two-step flow replaces it entirely).
+ */
+export interface MfaChallengeResponse {
+  mfaRequired: true;
+  challengeToken: string;
 }
 
 /** JWT claims as actually signed by AuthService (common/interfaces/jwt-payload.interface.ts) — decoded client-side for role checks, never re-verified (no secret on the client). */
@@ -55,6 +68,45 @@ export interface AuthUser {
 export interface LoginResponse {
   accessToken: string;
   user: AuthUser;
+}
+
+/** What `POST /auth/login` actually returns — either real tokens, or an MFA challenge to resolve via `POST /auth/mfa/verify`. */
+export type LoginResult = LoginResponse | MfaChallengeResponse;
+
+// --- MFA (docs/10-SECURITY-BIBLE.md §5, Phase 14.2) ---
+
+/** POST /auth/mfa/verify — step 2 of the login challenge/response flow. `code` accepts either a 6-digit TOTP code or an XXXXX-XXXXX recovery code; the server tries both. */
+export interface MfaVerifyRequest {
+  challengeToken: string;
+  code: string;
+}
+
+/** POST /auth/mfa/enroll/begin. `secret` is shown for manual entry; `otpauthUri` is rendered as a QR code. Neither is stored client-side beyond the enrollment screen's lifetime. */
+export interface MfaEnrollBeginResponse {
+  secret: string;
+  otpauthUri: string;
+}
+
+export interface MfaEnrollConfirmRequest {
+  code: string;
+}
+
+/**
+ * `recoveryCodes` is the ONLY time these codes are ever visible in
+ * plaintext — the server stores only their hashes (docs/10-SECURITY-
+ * BIBLE.md §5) — the UI must make the user save them now, with no way to
+ * view them again short of regenerating (which invalidates these).
+ */
+export interface MfaEnrollConfirmResponse {
+  recoveryCodes: string[];
+}
+
+export interface MfaDisableRequest {
+  password: string;
+}
+
+export interface MfaRegenerateRecoveryCodesResponse {
+  recoveryCodes: string[];
 }
 
 export interface RefreshResponse {

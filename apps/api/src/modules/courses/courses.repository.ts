@@ -19,7 +19,9 @@ export interface ListCoursesParams {
 export class CoursesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMany(params: ListCoursesParams): Promise<{ items: Course[]; nextCursor: string | null }> {
+  async findMany(
+    params: ListCoursesParams,
+  ): Promise<{ items: Course[]; nextCursor: string | null }> {
     const priceFilter =
       params.minPriceCents !== undefined || params.maxPriceCents !== undefined
         ? {

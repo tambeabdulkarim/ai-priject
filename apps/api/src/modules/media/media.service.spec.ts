@@ -5,11 +5,16 @@ describe('MediaService', () => {
   const makeService = () => {
     const mediaRepository = {
       findById: jest.fn(),
+      findByFileId: jest.fn(),
       findLessonsWithCourseByMediaId: jest.fn(),
       update: jest.fn(),
+      createForFile: jest.fn(),
+      findManyForOwner: jest.fn(),
     };
     const lessonsRepository = { hasActiveEnrollment: jest.fn() };
-    const storageService = { createPresignedDownloadUrl: jest.fn().mockResolvedValue('https://cdn.test/manifest.m3u8') };
+    const storageService = {
+      createPresignedDownloadUrl: jest.fn().mockResolvedValue('https://cdn.test/manifest.m3u8'),
+    };
     const auditLogService = { record: jest.fn() };
 
     const service = new MediaService(
@@ -49,7 +54,11 @@ describe('MediaService', () => {
 
     it('grants access to the owning instructor without an enrollment', async () => {
       const { service, mediaRepository } = makeService();
-      mediaRepository.findById.mockResolvedValue({ id: 'm1', transcodingStatus: 'ready', hlsManifestKey: null });
+      mediaRepository.findById.mockResolvedValue({
+        id: 'm1',
+        transcodingStatus: 'ready',
+        hlsManifestKey: null,
+      });
       mediaRepository.findLessonsWithCourseByMediaId.mockResolvedValue([
         { isPreview: false, module: { course: { id: 'c1', instructorId: 'owner1' } } },
       ]);
@@ -85,6 +94,146 @@ describe('MediaService', () => {
         caught = error as HttpException;
       }
       expect(caught?.getStatus()).toBe(425);
+    });
+  });
+
+  describe('createFromFile', () => {
+    const videoFile = { id: 'f1', uploadedById: 'u1', mimeType: 'video/mp4' };
+
+    it('returns null for a mime type that does not need Media (e.g. a document) without touching the repository', async () => {
+      const { service, mediaRepository } = makeService();
+
+      const result = await service.createFromFile({
+        id: 'f1',
+        uploadedById: 'u1',
+        mimeType: 'application/pdf',
+      } as never);
+
+      expect(result).toBeNull();
+      expect(mediaRepository.findByFileId).not.toHaveBeenCalled();
+      expect(mediaRepository.createForFile).not.toHaveBeenCalled();
+    });
+
+    it('creates a Media row for a transcodable mime type and records the audit log', async () => {
+      const { service, mediaRepository, auditLogService } = makeService();
+      mediaRepository.findByFileId.mockResolvedValue(null);
+      mediaRepository.createForFile.mockResolvedValue({
+        id: 'm1',
+        fileId: 'f1',
+        mediaType: 'video',
+        transcodingStatus: 'pending',
+      });
+
+      const result = await service.createFromFile(videoFile as never);
+
+      expect(mediaRepository.createForFile).toHaveBeenCalledWith({
+        file: { connect: { id: 'f1' } },
+        mediaType: 'video',
+      });
+      expect(result).toEqual({
+        id: 'm1',
+        fileId: 'f1',
+        mediaType: 'video',
+        transcodingStatus: 'pending',
+      });
+      expect(auditLogService.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'media.created', actorUserId: 'u1', targetId: 'm1' }),
+      );
+    });
+
+    it('is idempotent: returns the existing Media row instead of creating a duplicate', async () => {
+      const { service, mediaRepository, auditLogService } = makeService();
+      mediaRepository.findByFileId.mockResolvedValue({
+        id: 'existing-m1',
+        fileId: 'f1',
+        mediaType: 'video',
+      });
+
+      const result = await service.createFromFile(videoFile as never);
+
+      expect(mediaRepository.createForFile).not.toHaveBeenCalled();
+      expect(auditLogService.record).not.toHaveBeenCalled();
+      expect(result).toEqual({ id: 'existing-m1', fileId: 'f1', mediaType: 'video' });
+    });
+
+    it.each(['image/jpeg', 'image/png', 'image/webp', 'audio/mpeg'])(
+      'treats %s as transcodable',
+      async (mimeType) => {
+        const { service, mediaRepository } = makeService();
+        mediaRepository.findByFileId.mockResolvedValue(null);
+        mediaRepository.createForFile.mockResolvedValue({ id: 'm1', fileId: 'f1' });
+
+        await service.createFromFile({ id: 'f1', uploadedById: 'u1', mimeType } as never);
+
+        expect(mediaRepository.createForFile).toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('listMine', () => {
+    it('maps repository rows into flat list items, converting sizeBytes to a string', async () => {
+      const { service, mediaRepository } = makeService();
+      mediaRepository.findManyForOwner.mockResolvedValue({
+        items: [
+          {
+            id: 'm1',
+            fileId: 'f1',
+            mediaType: 'video',
+            transcodingStatus: 'pending',
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+            file: {
+              originalFilename: 'clip.mp4',
+              mimeType: 'video/mp4',
+              sizeBytes: 1024n,
+              visibility: 'private',
+              deletedAt: null,
+            },
+          },
+        ],
+        nextCursor: null,
+      });
+
+      const result = await service.listMine('u1', { cursor: undefined, limit: 20 } as never);
+
+      expect(mediaRepository.findManyForOwner).toHaveBeenCalledWith({
+        ownerId: 'u1',
+        cursor: undefined,
+        limit: 20,
+        mediaType: undefined,
+        search: undefined,
+      });
+      expect(result.items).toEqual([
+        {
+          id: 'm1',
+          fileId: 'f1',
+          mediaType: 'video',
+          transcodingStatus: 'pending',
+          originalFilename: 'clip.mp4',
+          mimeType: 'video/mp4',
+          sizeBytes: '1024',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]);
+    });
+
+    it('passes mediaType and q through as mediaType/search filters', async () => {
+      const { service, mediaRepository } = makeService();
+      mediaRepository.findManyForOwner.mockResolvedValue({ items: [], nextCursor: null });
+
+      await service.listMine('u1', {
+        cursor: 'c1',
+        limit: 10,
+        mediaType: 'image',
+        q: 'logo',
+      } as never);
+
+      expect(mediaRepository.findManyForOwner).toHaveBeenCalledWith({
+        ownerId: 'u1',
+        cursor: 'c1',
+        limit: 10,
+        mediaType: 'image',
+        search: 'logo',
+      });
     });
   });
 

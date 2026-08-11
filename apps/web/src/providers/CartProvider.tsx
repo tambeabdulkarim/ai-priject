@@ -30,7 +30,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((current) => {
       const existing = current.find((i) => i.productId === item.productId);
       if (existing) {
-        return current.map((i) => (i.productId === item.productId ? { ...i, quantity: i.quantity + quantity } : i));
+        return current.map((i) =>
+          i.productId === item.productId ? { ...i, quantity: i.quantity + quantity } : i,
+        );
       }
       return [...current, { ...item, quantity }];
     });
@@ -50,7 +52,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clear = useCallback(() => setItems([]), []);
 
-  const totalCents = useMemo(() => items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0), [items]);
+  const totalCents = useMemo(
+    () => items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0),
+    [items],
+  );
 
   const value = useMemo(
     () => ({ items, addItem, removeItem, updateQuantity, clear, totalCents }),

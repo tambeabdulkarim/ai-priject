@@ -24,14 +24,24 @@ describe('CoursesService status machine', () => {
 
   it('rejects submit-for-review from a non-owner', async () => {
     const { service, coursesRepository } = makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', instructorId: 'owner', status: 'draft' });
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      instructorId: 'owner',
+      status: 'draft',
+    });
 
-    await expect(service.submitForReview('c1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.submitForReview('c1', 'someone-else')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('rejects submit-for-review with no modules/lessons', async () => {
     const { service, coursesRepository } = makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', instructorId: 'owner', status: 'draft' });
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      instructorId: 'owner',
+      status: 'draft',
+    });
     coursesRepository.findByIdWithModules.mockResolvedValue({ modules: [] });
 
     await expect(service.submitForReview('c1', 'owner')).rejects.toBeInstanceOf(ConflictException);
@@ -39,7 +49,11 @@ describe('CoursesService status machine', () => {
 
   it('allows submit-for-review when a module has at least one lesson', async () => {
     const { service, coursesRepository, auditLogService } = makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', instructorId: 'owner', status: 'draft' });
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      instructorId: 'owner',
+      status: 'draft',
+    });
     coursesRepository.findByIdWithModules.mockResolvedValue({
       modules: [{ lessons: [{ id: 'l1' }] }],
     });

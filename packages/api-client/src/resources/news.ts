@@ -8,7 +8,13 @@ export function createNewsResource(request: RequestFn) {
       request<PaginatedResponse<NewsSummary>>({
         method: 'GET',
         path: '/news',
-        query: { cursor: query.cursor, limit: query.limit, category: query.category, tag: query.tag, q: query.q },
+        query: {
+          cursor: query.cursor,
+          limit: query.limit,
+          category: query.category,
+          tag: query.tag,
+          q: query.q,
+        },
       }),
 
     getBySlug: (slug: string) => request<NewsDetail>({ method: 'GET', path: `/news/${slug}` }),

@@ -6,7 +6,7 @@ export function createNote(title, content) {
     id: Date.now(),
     title: safeTitle,
     content: safeContent,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -14,7 +14,7 @@ export function updateNote(note, updates) {
   return {
     ...note,
     title: updates.title?.trim() || note.title,
-    content: updates.content?.trim() || note.content
+    content: updates.content?.trim() || note.content,
   };
 }
 
@@ -33,6 +33,6 @@ export function getNoteStats(notes) {
 
   return {
     total: notes.length,
-    latestTitle: latest ? latest.title : 'No notes yet'
+    latestTitle: latest ? latest.title : 'No notes yet',
   };
 }

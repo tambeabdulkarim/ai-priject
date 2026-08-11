@@ -1,5 +1,7 @@
 # Phase 12 — Closure Note (File Management)
 
+> **Naming disambiguation (added during Phase 12A Documentation Canonicalization):** this "Phase 12" refers to the backend-module build-out numbering scheme (File Management) and is unrelated to the *frontend/E2E track's* "Phase 12 — Documentation Freeze" that follows Phase 11 (see `docs/documentation-index.md`). This project has used more than one phase-numbering convention across its history; see the index for the full map. Both are correctly closed/in-progress in their own tracks — neither supersedes the other.
+
 **Status: CLOSED — no new implementation scope. Coverage already complete via prior phases.**
 
 ## Conclusion
@@ -34,7 +36,7 @@ in the documentation — both forbidden by the session's standing rules.
    the only File-related *workflow* beyond the CRUD endpoints: presigned-URL upload, magic-byte
    content inspection, malware-scan quarantine, and async transcoding — all explicitly async via
    `apps/workers`. No such worker/queue infrastructure exists in this codebase
-   (`docs/SESSION-HANDOFF.md`), a pre-existing, already-accepted infrastructure gap — not new
+   (`docs/archive/backend-build-handoff/SESSION-HANDOFF.md`), a pre-existing, already-accepted infrastructure gap — not new
    Phase 12 scope, and not something to invent a workaround for.
 
 4. **`docs/09-PLATFORM-ARCHITECTURE.md`, `docs/10-SECURITY-BIBLE.md`, `docs/13-DATABASE-BLUEPRINT.md`,

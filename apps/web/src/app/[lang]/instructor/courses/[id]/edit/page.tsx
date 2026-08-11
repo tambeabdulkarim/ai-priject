@@ -17,16 +17,15 @@
 // REAL BACKEND GAPS surfaced and deliberately NOT worked around:
 //  - No module-reorder endpoint — Module Management is create/edit only.
 //  - No LessonFile-attach endpoint — no downloadable-attachment UI.
-//  - No endpoint anywhere creates a Media row, so a real playable
-//    `videoMediaId` can never be produced by any real user flow. Upload
-//    (POST /files/upload-url + PUT + POST /files/:id/complete) and the
-//    Attach action (PATCH /lessons/:id { videoMediaId }) are both wired
-//    against real endpoints, but the bridge from an uploaded File to a
-//    usable Media id does not exist server-side. Explained inline, not
-//    hidden behind a fake "Attach Video" success state.
 //  - Instructor per-course Progress View (enrollment count, completion
 //    %, certificates issued) has no backend endpoint at all — shown as
 //    an explicit BLOCKED notice, no invented numbers.
+//
+// Phase 13.3 (Media Frontend): video-lesson media attachment now goes
+// through <MediaPicker /> (POST /files/... → real Media row →
+// PATCH /lessons/:id { videoMediaId }) instead of the old inline
+// upload-only flow — the File→Media gap this used to document (Phase
+// 13.2) is closed. See media-implementation-plan.md Phase 13.4.
 
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'next/navigation';
@@ -45,7 +44,7 @@ import {
 } from '../../../../../../hooks/useInstructorCourses';
 import { useCreateModule, useUpdateModule } from '../../../../../../hooks/useModules';
 import { useCreateLesson, useUpdateLesson } from '../../../../../../hooks/useInstructorLessons';
-import { apiClient } from '../../../../../../services/api-client';
+import { MediaPicker } from '../../../../../../components/media/MediaPicker';
 import { getErrorMessage } from '../../../../../../utils/errors';
 import { INSTRUCTOR_ROLES, COURSE_PUBLISH_ROLES } from '../../../../../../constants/routes';
 
@@ -78,10 +77,12 @@ const COPY = {
     lessonBody: 'محتوى الدرس (نصي)',
     contentType: 'نوع المحتوى',
     media: 'الوسائط',
-    uploadVideo: 'رفع فيديو',
-    uploading: 'جارٍ الرفع...',
-    attachNote: 'تحذير: لا توجد واجهة برمجية في الخادم تُنشئ سجل وسائط (Media) قابل للتشغيل من أي ملف مرفوع — رفع فيديو والصاقه لن ينتج محتوى قابلًا للتشغيل فعليًا مهما نجحت هذه الخطوات ظاهريًا. هذه فجوة حقيقية في الخادم، وليست قصورًا في الواجهة.',
-    progressBlocked: 'لا توجد واجهة برمجية في الخادم لعرض عدد المسجّلين أو نسبة الإكمال أو الشهادات الصادرة لهذه الدورة.',
+    attachVideo: 'إرفاق فيديو',
+    changeVideo: 'تغيير الفيديو',
+    videoAttached: 'تم إرفاق فيديو',
+    noVideoAttached: 'لم يُرفق أي فيديو بعد',
+    progressBlocked:
+      'لا توجد واجهة برمجية في الخادم لعرض عدد المسجّلين أو نسبة الإكمال أو الشهادات الصادرة لهذه الدورة.',
     cancel: 'إلغاء',
   },
   en: {
@@ -96,7 +97,12 @@ const COPY = {
     saving: 'Saving...',
     saved: 'Saved.',
     workflow: 'Workflow status',
-    status: { draft: 'Draft', in_review: 'In review', published: 'Published', archived: 'Archived' },
+    status: {
+      draft: 'Draft',
+      in_review: 'In review',
+      published: 'Published',
+      archived: 'Archived',
+    },
     submitReview: 'Submit for review',
     publish: 'Publish',
     archive: 'Archive',
@@ -112,10 +118,12 @@ const COPY = {
     lessonBody: 'Lesson body (text)',
     contentType: 'Content type',
     media: 'Media',
-    uploadVideo: 'Upload video',
-    uploading: 'Uploading...',
-    attachNote: 'Warning: no backend endpoint creates a playable Media record from any uploaded file — uploading and attaching a video will not produce real playable content no matter how these steps appear to succeed. This is a real backend gap, not a frontend shortcoming.',
-    progressBlocked: 'No backend endpoint exposes enrollment count, completion percentage, or certificates issued for this course.',
+    attachVideo: 'Attach video',
+    changeVideo: 'Change video',
+    videoAttached: 'Video attached',
+    noVideoAttached: 'No video attached yet',
+    progressBlocked:
+      'No backend endpoint exposes enrollment count, completion percentage, or certificates issued for this course.',
     cancel: 'Cancel',
   },
 } as const;
@@ -162,14 +170,20 @@ function CourseEditContent() {
 
   const [newLessonModuleId, setNewLessonModuleId] = useState<string | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState('');
-  const [newLessonContentType, setNewLessonContentType] = useState<'video' | 'text' | 'quiz'>('text');
+  const [newLessonContentType, setNewLessonContentType] = useState<'video' | 'text' | 'quiz'>(
+    'text',
+  );
+  const [newLessonBody, setNewLessonBody] = useState('');
+  const [newLessonMediaId, setNewLessonMediaId] = useState<string | null>(null);
 
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editLessonTitle, setEditLessonTitle] = useState('');
   const [editLessonBody, setEditLessonBody] = useState('');
 
-  const [uploadingLessonId, setUploadingLessonId] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // `pickerLessonId === 'new'` means the picker is selecting media for
+  // the not-yet-created lesson in the "Add lesson" form below; any real
+  // id means it's attaching to that already-existing lesson.
+  const [pickerLessonId, setPickerLessonId] = useState<string | 'new' | null>(null);
 
   if (ownedLoading || (owned && courseLoading)) {
     return <p className="ph-state">{t.loading}</p>;
@@ -194,7 +208,11 @@ function CourseEditContent() {
     if (!newModuleTitle.trim()) return;
     createModule.mutate(
       { courseId, title: newModuleTitle },
-      { onSuccess: (result) => { if (!result.error) setNewModuleTitle(''); } },
+      {
+        onSuccess: (result) => {
+          if (!result.error) setNewModuleTitle('');
+        },
+      },
     );
   }
 
@@ -207,19 +225,40 @@ function CourseEditContent() {
     event.preventDefault();
     updateModule.mutate(
       { courseId, moduleId, title: editModuleTitle },
-      { onSuccess: (result) => { if (!result.error) setEditingModuleId(null); } },
+      {
+        onSuccess: (result) => {
+          if (!result.error) setEditingModuleId(null);
+        },
+      },
     );
   }
 
   function handleAddLesson(event: FormEvent, moduleId: string) {
     event.preventDefault();
     if (!newLessonTitle.trim()) return;
+    if (newLessonContentType === 'text' && !newLessonBody.trim()) return;
+    // Phase 13.3: the real backend requires videoMediaId for a video
+    // lesson at creation time (LessonsService.create — the same class of
+    // rule as text lessons requiring body, fixed for text in Phase
+    // 11.7). Guard here matches that rule instead of round-tripping a
+    // real 400.
+    if (newLessonContentType === 'video' && !newLessonMediaId) return;
     createLesson.mutate(
-      { courseId, moduleId, title: newLessonTitle, contentType: newLessonContentType },
+      {
+        courseId,
+        moduleId,
+        title: newLessonTitle,
+        contentType: newLessonContentType,
+        body: newLessonContentType === 'text' ? newLessonBody : undefined,
+        videoMediaId:
+          newLessonContentType === 'video' ? (newLessonMediaId ?? undefined) : undefined,
+      },
       {
         onSuccess: (result) => {
           if (!result.error) {
             setNewLessonTitle('');
+            setNewLessonBody('');
+            setNewLessonMediaId(null);
             setNewLessonModuleId(null);
           }
         },
@@ -237,22 +276,17 @@ function CourseEditContent() {
     event.preventDefault();
     updateLesson.mutate(
       { id: lessonId, title: editLessonTitle, body: editLessonBody || undefined },
-      { onSuccess: (result) => { if (!result.error) setEditingLessonId(null); } },
+      {
+        onSuccess: (result) => {
+          if (!result.error) setEditingLessonId(null);
+        },
+      },
     );
   }
 
-  async function handleUploadVideo(lessonId: string, file: File) {
-    setUploadingLessonId(lessonId);
-    setUploadError(null);
-    const result = await apiClient.files.uploadFile({
-      file,
-      filename: file.name,
-      contentType: 'video/mp4',
-    });
-    setUploadingLessonId(null);
-    if (result.error) {
-      setUploadError(getErrorMessage(result.error));
-    }
+  function handleAttachMedia(lessonId: string, mediaId: string) {
+    updateLesson.mutate({ id: lessonId, videoMediaId: mediaId });
+    setPickerLessonId(null);
   }
 
   const canPublish = COURSE_PUBLISH_ROLES.some((role) => user?.roles.includes(role));
@@ -268,17 +302,32 @@ function CourseEditContent() {
           <p className="ph-page-subtitle">{t.status[owned.status]}</p>
           <div className="ph-form" style={{ flexDirection: 'row', gap: '1rem' }}>
             {owned.status === 'draft' && (
-              <button type="button" className="ph-btn-outline" onClick={() => submitForReview.mutate(courseId)} disabled={submitForReview.isPending}>
+              <button
+                type="button"
+                className="ph-btn-outline"
+                onClick={() => submitForReview.mutate(courseId)}
+                disabled={submitForReview.isPending}
+              >
                 {t.submitReview}
               </button>
             )}
             {owned.status === 'in_review' && canPublish && (
-              <button type="button" className="ph-btn-outline" onClick={() => publishCourse.mutate(courseId)} disabled={publishCourse.isPending}>
+              <button
+                type="button"
+                className="ph-btn-outline"
+                onClick={() => publishCourse.mutate(courseId)}
+                disabled={publishCourse.isPending}
+              >
                 {t.publish}
               </button>
             )}
             {owned.status !== 'archived' && (
-              <button type="button" className="ph-btn-outline" onClick={() => archiveCourse.mutate(courseId)} disabled={archiveCourse.isPending}>
+              <button
+                type="button"
+                className="ph-btn-outline"
+                onClick={() => archiveCourse.mutate(courseId)}
+                disabled={archiveCourse.isPending}
+              >
                 {t.archive}
               </button>
             )}
@@ -288,24 +337,65 @@ function CourseEditContent() {
         <section style={{ marginTop: '2rem' }}>
           <h2 className="ph-catalogue-card-title">{t.details}</h2>
           <form className="ph-form" onSubmit={handleSaveDetails} noValidate>
-            {updateCourse.error && <div className="ph-form-error" role="alert">{getErrorMessage(updateCourse.error)}</div>}
-            {updateCourse.isSuccess && !updateCourse.data?.error && <div className="ph-form-success" role="status">{t.saved}</div>}
+            {updateCourse.error && (
+              <div className="ph-form-error" role="alert">
+                {getErrorMessage(updateCourse.error)}
+              </div>
+            )}
+            {updateCourse.isSuccess && !updateCourse.data?.error && (
+              <div className="ph-form-success" role="status">
+                {t.saved}
+              </div>
+            )}
 
             <div className="ph-field">
-              <label className="ph-label" htmlFor="title">{t.courseTitle}</label>
-              <input id="title" className="ph-input" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <label className="ph-label" htmlFor="title">
+                {t.courseTitle}
+              </label>
+              <input
+                id="title"
+                className="ph-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
             </div>
             <div className="ph-field">
-              <label className="ph-label" htmlFor="description">{t.description}</label>
-              <textarea id="description" className="ph-input" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <label className="ph-label" htmlFor="description">
+                {t.description}
+              </label>
+              <textarea
+                id="description"
+                className="ph-input"
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
             <div className="ph-field">
-              <label className="ph-label" htmlFor="categoryId">{t.categoryId}</label>
-              <input id="categoryId" className="ph-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required />
+              <label className="ph-label" htmlFor="categoryId">
+                {t.categoryId}
+              </label>
+              <input
+                id="categoryId"
+                className="ph-input"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                required
+              />
             </div>
             <div className="ph-field">
-              <label className="ph-label" htmlFor="priceCents">{t.priceCents}</label>
-              <input id="priceCents" type="number" min={0} className="ph-input" value={priceCents} onChange={(e) => setPriceCents(e.target.value)} />
+              <label className="ph-label" htmlFor="priceCents">
+                {t.priceCents}
+              </label>
+              <input
+                id="priceCents"
+                type="number"
+                min={0}
+                className="ph-input"
+                value={priceCents}
+                onChange={(e) => setPriceCents(e.target.value)}
+              />
             </div>
             <button type="submit" className="ph-btn-grad" disabled={updateCourse.isPending}>
               {updateCourse.isPending ? t.saving : t.save}
@@ -317,74 +407,217 @@ function CourseEditContent() {
           <h2 className="ph-catalogue-card-title">{t.modules}</h2>
 
           {course?.modules.map((mod) => (
-            <div key={mod.id} className="ph-catalogue-card" style={{ cursor: 'default', marginBottom: '1rem' }}>
+            <div
+              key={mod.id}
+              className="ph-catalogue-card"
+              style={{ cursor: 'default', marginBottom: '1rem' }}
+            >
               {editingModuleId === mod.id ? (
                 <form className="ph-form" onSubmit={(e) => handleSaveModule(e, mod.id)} noValidate>
-                  <input className="ph-input" value={editModuleTitle} onChange={(e) => setEditModuleTitle(e.target.value)} required />
+                  <input
+                    className="ph-input"
+                    value={editModuleTitle}
+                    onChange={(e) => setEditModuleTitle(e.target.value)}
+                    required
+                  />
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button type="submit" className="ph-btn-grad" disabled={updateModule.isPending}>{t.save}</button>
-                    <button type="button" className="ph-btn-outline" onClick={() => setEditingModuleId(null)}>{t.cancel}</button>
+                    <button type="submit" className="ph-btn-grad" disabled={updateModule.isPending}>
+                      {t.save}
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-btn-outline"
+                      onClick={() => setEditingModuleId(null)}
+                    >
+                      {t.cancel}
+                    </button>
                   </div>
                 </form>
               ) : (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
                   <h3 className="ph-catalogue-card-title">{mod.title}</h3>
-                  <button type="button" className="ph-btn-outline" onClick={() => startEditModule(mod.id, mod.title)}>{t.editModule}</button>
+                  <button
+                    type="button"
+                    className="ph-btn-outline"
+                    onClick={() => startEditModule(mod.id, mod.title)}
+                  >
+                    {t.editModule}
+                  </button>
                 </div>
               )}
 
               <h4 style={{ marginTop: '1rem' }}>{t.lessons}</h4>
               {mod.lessons.map((lesson) => (
-                <div key={lesson.id} style={{ borderTop: '1px solid var(--ph-border, #333)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
+                <div
+                  key={lesson.id}
+                  style={{
+                    borderTop: '1px solid var(--ph-border, #333)',
+                    paddingTop: '0.75rem',
+                    marginTop: '0.75rem',
+                  }}
+                >
                   {editingLessonId === lesson.id ? (
-                    <form className="ph-form" onSubmit={(e) => handleSaveLesson(e, lesson.id)} noValidate>
-                      <input className="ph-input" value={editLessonTitle} onChange={(e) => setEditLessonTitle(e.target.value)} required />
+                    <form
+                      className="ph-form"
+                      onSubmit={(e) => handleSaveLesson(e, lesson.id)}
+                      noValidate
+                    >
+                      <input
+                        className="ph-input"
+                        value={editLessonTitle}
+                        onChange={(e) => setEditLessonTitle(e.target.value)}
+                        required
+                      />
                       {lesson.contentType === 'text' && (
-                        <textarea className="ph-input" rows={4} value={editLessonBody} onChange={(e) => setEditLessonBody(e.target.value)} placeholder={t.lessonBody} />
+                        <textarea
+                          className="ph-input"
+                          rows={4}
+                          value={editLessonBody}
+                          onChange={(e) => setEditLessonBody(e.target.value)}
+                          placeholder={t.lessonBody}
+                        />
                       )}
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button type="submit" className="ph-btn-grad" disabled={updateLesson.isPending}>{t.save}</button>
-                        <button type="button" className="ph-btn-outline" onClick={() => setEditingLessonId(null)}>{t.cancel}</button>
+                        <button
+                          type="submit"
+                          className="ph-btn-grad"
+                          disabled={updateLesson.isPending}
+                        >
+                          {t.save}
+                        </button>
+                        <button
+                          type="button"
+                          className="ph-btn-outline"
+                          onClick={() => setEditingLessonId(null)}
+                        >
+                          {t.cancel}
+                        </button>
                       </div>
                     </form>
                   ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{lesson.title} <em>({lesson.contentType})</em></span>
-                      <button type="button" className="ph-btn-outline" onClick={() => startEditLesson(lesson.id, lesson.title, lesson.body)}>{t.editLesson}</button>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span>
+                        {lesson.title} <em>({lesson.contentType})</em>
+                      </span>
+                      <button
+                        type="button"
+                        className="ph-btn-outline"
+                        onClick={() => startEditLesson(lesson.id, lesson.title, lesson.body)}
+                      >
+                        {t.editLesson}
+                      </button>
                     </div>
                   )}
 
                   {lesson.contentType === 'video' && (
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <input
-                        type="file"
-                        accept="video/mp4"
-                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleUploadVideo(lesson.id, file); }}
-                        disabled={uploadingLessonId === lesson.id}
-                      />
-                      {uploadingLessonId === lesson.id && <span> {t.uploading}</span>}
-                      <p className="ph-form-error" style={{ marginTop: '0.5rem' }} role="note">{t.attachNote}</p>
-                      {uploadError && <p className="ph-form-error" role="alert">{uploadError}</p>}
+                    <div
+                      style={{
+                        marginTop: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                      }}
+                    >
+                      <span className="ph-catalogue-card-meta">
+                        {lesson.videoMediaId ? t.videoAttached : t.noVideoAttached}
+                      </span>
+                      <button
+                        type="button"
+                        className="ph-btn-outline"
+                        onClick={() => setPickerLessonId(lesson.id)}
+                      >
+                        {lesson.videoMediaId ? t.changeVideo : t.attachVideo}
+                      </button>
                     </div>
                   )}
+                  {updateLesson.isError &&
+                    editingLessonId !== lesson.id &&
+                    lesson.contentType === 'video' && (
+                      <div className="ph-form-error" role="alert" style={{ marginTop: '0.5rem' }}>
+                        {getErrorMessage(updateLesson.error)}
+                      </div>
+                    )}
                 </div>
               ))}
 
               {newLessonModuleId === mod.id ? (
-                <form className="ph-form" onSubmit={(e) => handleAddLesson(e, mod.id)} noValidate style={{ marginTop: '1rem' }}>
-                  <input className="ph-input" placeholder={t.newLessonTitle} value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} required />
-                  <select className="ph-input" value={newLessonContentType} onChange={(e) => setNewLessonContentType(e.target.value as 'video' | 'text' | 'quiz')}>
+                <form
+                  className="ph-form"
+                  onSubmit={(e) => handleAddLesson(e, mod.id)}
+                  noValidate
+                  style={{ marginTop: '1rem' }}
+                >
+                  <input
+                    className="ph-input"
+                    placeholder={t.newLessonTitle}
+                    value={newLessonTitle}
+                    onChange={(e) => setNewLessonTitle(e.target.value)}
+                    required
+                  />
+                  <select
+                    className="ph-input"
+                    value={newLessonContentType}
+                    onChange={(e) => {
+                      setNewLessonContentType(e.target.value as 'video' | 'text' | 'quiz');
+                      setNewLessonMediaId(null);
+                    }}
+                  >
                     <option value="text">text</option>
                     <option value="video">video</option>
                     <option value="quiz">quiz</option>
                   </select>
+                  {newLessonContentType === 'text' && (
+                    <textarea
+                      className="ph-input"
+                      rows={4}
+                      value={newLessonBody}
+                      onChange={(e) => setNewLessonBody(e.target.value)}
+                      placeholder={t.lessonBody}
+                      required
+                    />
+                  )}
+                  {newLessonContentType === 'video' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span className="ph-catalogue-card-meta">
+                        {newLessonMediaId ? t.videoAttached : t.noVideoAttached}
+                      </span>
+                      <button
+                        type="button"
+                        className="ph-btn-outline"
+                        onClick={() => setPickerLessonId('new')}
+                      >
+                        {newLessonMediaId ? t.changeVideo : t.attachVideo}
+                      </button>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button type="submit" className="ph-btn-grad" disabled={createLesson.isPending}>{t.addLesson}</button>
-                    <button type="button" className="ph-btn-outline" onClick={() => setNewLessonModuleId(null)}>{t.cancel}</button>
+                    <button type="submit" className="ph-btn-grad" disabled={createLesson.isPending}>
+                      {t.addLesson}
+                    </button>
+                    <button
+                      type="button"
+                      className="ph-btn-outline"
+                      onClick={() => setNewLessonModuleId(null)}
+                    >
+                      {t.cancel}
+                    </button>
                   </div>
                 </form>
               ) : (
-                <button type="button" className="ph-btn-outline" style={{ marginTop: '1rem' }} onClick={() => setNewLessonModuleId(mod.id)}>
+                <button
+                  type="button"
+                  className="ph-btn-outline"
+                  style={{ marginTop: '1rem' }}
+                  onClick={() => setNewLessonModuleId(mod.id)}
+                >
                   {t.addLesson}
                 </button>
               )}
@@ -392,18 +625,48 @@ function CourseEditContent() {
           ))}
 
           <form className="ph-form" onSubmit={handleAddModule} noValidate>
-            {createModule.error && <div className="ph-form-error" role="alert">{getErrorMessage(createModule.error)}</div>}
-            <input className="ph-input" placeholder={t.newModuleTitle} value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} required />
-            <button type="submit" className="ph-btn-grad" disabled={createModule.isPending}>{t.addModule}</button>
+            {createModule.error && (
+              <div className="ph-form-error" role="alert">
+                {getErrorMessage(createModule.error)}
+              </div>
+            )}
+            <input
+              className="ph-input"
+              placeholder={t.newModuleTitle}
+              value={newModuleTitle}
+              onChange={(e) => setNewModuleTitle(e.target.value)}
+              required
+            />
+            <button type="submit" className="ph-btn-grad" disabled={createModule.isPending}>
+              {t.addModule}
+            </button>
           </form>
         </section>
 
         <section style={{ marginTop: '2rem' }}>
           <h2 className="ph-catalogue-card-title">{t.progressTitle}</h2>
-          <p className="ph-form-error" role="note">{t.progressBlocked}</p>
+          <p className="ph-form-error" role="note">
+            {t.progressBlocked}
+          </p>
         </section>
       </main>
       <Footer locale={locale} />
+
+      <MediaPicker
+        open={pickerLessonId !== null}
+        onClose={() => setPickerLessonId(null)}
+        onSelect={(media) => {
+          if (pickerLessonId === 'new') {
+            setNewLessonMediaId(media.id);
+            setPickerLessonId(null);
+          } else if (pickerLessonId) {
+            handleAttachMedia(pickerLessonId, media.id);
+          }
+        }}
+        locale={locale}
+        mediaType="video"
+        uploadAccept={['video/mp4']}
+      />
     </div>
   );
 }

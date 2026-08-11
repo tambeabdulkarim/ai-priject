@@ -68,10 +68,15 @@ export class ProgressRepository {
     return this.prisma.lessonProgress.findMany({ where: { enrollmentId } });
   }
 
+  // Phase 29: module.course is now included (was module only) so
+  // ProgressService can mark a passed quiz's lesson complete using the
+  // same courseId + course title that updateLessonProgress already uses
+  // via lessonsRepository.findByIdWithModuleCourse — purely additive,
+  // getQuizForLearner's existing field access is unaffected.
   findQuizWithQuestions(quizId: string) {
     return this.prisma.quiz.findUnique({
       where: { id: quizId },
-      include: { questions: true, lesson: { include: { module: true } } },
+      include: { questions: true, lesson: { include: { module: { include: { course: true } } } } },
     });
   }
 

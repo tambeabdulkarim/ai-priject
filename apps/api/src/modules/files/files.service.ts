@@ -5,14 +5,16 @@ import {
   ForbiddenException,
   HttpException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { File } from '@prisma/client';
+import { File, Media } from '@prisma/client';
 import { RedisService } from '../../redis/redis.service';
 import { StorageService } from '../../storage/storage.service';
 import { detectMimeTypeFromMagicBytes } from '../../common/utils/magic-bytes';
 import { isOwnerOrEditorial } from '../../common/utils/authorization';
 import { SessionsService } from '../sessions/sessions.service';
+import { MediaService } from '../media/media.service';
 import { FilesRepository } from './files.repository';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
 
@@ -30,10 +32,17 @@ const uploadMetadataKey = (uploadId: string): string => `upload_meta:${uploadId}
 
 @Injectable()
 export class FilesService {
+  // Same local-Logger pattern already established by StorageService, for
+  // the same reason: an internal, non-fatal operational failure that must
+  // be logged loudly (no silent failures) without becoming the caller's
+  // problem.
+  private readonly logger = new Logger(FilesService.name);
+
   constructor(
     private readonly filesRepository: FilesRepository,
     private readonly storageService: StorageService,
     private readonly redisService: RedisService,
+    private readonly mediaService: MediaService,
   ) {}
 
   /** docs/16-API-CONTRACT.md POST /files/upload-url */
@@ -74,8 +83,17 @@ export class FilesService {
     return { uploadUrl, uploadId: upload.id };
   }
 
-  /** docs/16-API-CONTRACT.md POST /files/:uploadId/complete */
-  async completeUpload(uploadId: string, userId: string): Promise<File> {
+  /**
+   * docs/16-API-CONTRACT.md POST /files/:uploadId/complete.
+   *
+   * docs/media-architecture-report.md §1/§2/§8 (Phase 13.2): once the
+   * File record exists, hands off to MediaService to create the Media
+   * extension for transcodable types (video/image/audio) — the missing
+   * link this phase closes. Additive to the response shape only (`media`
+   * is a new field alongside the unchanged `File` fields already
+   * returned) — no existing field is renamed or removed.
+   */
+  async completeUpload(uploadId: string, userId: string): Promise<File & { media: Media | null }> {
     const upload = await this.filesRepository.findUploadById(uploadId);
     if (!upload) {
       throw new NotFoundException('Upload not found.');
@@ -125,7 +143,19 @@ export class FilesService {
     });
     await this.redisService.del(uploadMetadataKey(uploadId));
 
-    return file;
+    // Media creation is a real, loudly-logged failure if it happens (no
+    // silent failures) but must not fail this response: the File itself
+    // was created and finalized successfully, which is this endpoint's
+    // primary, already-fulfilled contract. A failed Media creation is
+    // retryable/diagnosable from the log; it is not the uploader's error.
+    let media: Media | null = null;
+    try {
+      media = await this.mediaService.createFromFile(file);
+    } catch (error) {
+      this.logger.error(`Media creation failed for file ${file.id}`, error as Error);
+    }
+
+    return { ...file, media };
   }
 
   /**
@@ -165,9 +195,16 @@ export class FilesService {
    *     to allow through, and guessing one is exactly what this pass is
    *     told not to do.
    */
-  async getById(id: string, viewerId: string, viewerRoles: string[]): Promise<{ file: File; signedUrl: string }> {
+  async getById(
+    id: string,
+    viewerId: string,
+    viewerRoles: string[],
+  ): Promise<{ file: File; signedUrl: string }> {
     const file = await this.filesRepository.findFileById(id);
-    if (!file) {
+    // Phase 13.3: a soft-deleted file (see deleteFile) is treated exactly
+    // like a nonexistent one — same 404, no distinct "this was deleted"
+    // signal leaked to a caller who may not be entitled to know that.
+    if (!file || file.deletedAt) {
       throw new NotFoundException('File not found.');
     }
 
@@ -189,6 +226,29 @@ export class FilesService {
     return { file, signedUrl };
   }
 
+  /**
+   * Phase 13.3 (Media Frontend) — DELETE /files/:id, per
+   * media-architecture-report.md §3/§8: owner or admin-capable role;
+   * soft delete (sets `deletedAt`, matching the pre-existing
+   * `User.deletedAt` convention) rather than a hard delete, so existing
+   * relations (LessonFile/Product/LibraryItem/Certificate/avatar) are
+   * left completely untouched — a deleted file simply stops being
+   * servable (see the new check in getById below), not retroactively
+   * removed from whatever it was attached to. That's a real, separate,
+   * out-of-scope decision this phase does not make.
+   */
+  async deleteFile(id: string, userId: string, userRoles: string[]): Promise<void> {
+    const file = await this.filesRepository.findFileById(id);
+    if (!file || file.deletedAt) {
+      throw new NotFoundException('File not found.');
+    }
+    if (file.uploadedById !== userId && !SessionsService.isAdminCapable(userRoles)) {
+      throw new ForbiddenException('Not authorized to delete this file.');
+    }
+
+    await this.filesRepository.updateFile(id, { deletedAt: new Date() });
+  }
+
   private async isEntitled(
     context: Awaited<ReturnType<FilesRepository['findEntitlementContext']>>,
     viewerId: string,
@@ -205,14 +265,17 @@ export class FilesService {
     }
 
     if (context.libraryItem) {
-      const isFree = context.libraryItem.priceCents === null || context.libraryItem.priceCents === 0;
+      const isFree =
+        context.libraryItem.priceCents === null || context.libraryItem.priceCents === 0;
       if (isFree) return true;
-      if (await this.filesRepository.hasLibraryDownloadRecord(viewerId, context.libraryItem.id)) return true;
+      if (await this.filesRepository.hasLibraryDownloadRecord(viewerId, context.libraryItem.id))
+        return true;
     }
 
     if (context.product) {
       if (context.product.ownerId === viewerId) return true;
-      if (await this.filesRepository.hasPaidOrderForProduct(viewerId, context.product.id)) return true;
+      if (await this.filesRepository.hasPaidOrderForProduct(viewerId, context.product.id))
+        return true;
     }
 
     if (context.certificate) {

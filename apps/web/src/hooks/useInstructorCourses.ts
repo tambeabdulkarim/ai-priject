@@ -48,7 +48,9 @@ export function useCreateCourse() {
   const invalidate = useInvalidateInstructorCourses();
   return useMutation({
     mutationFn: (body: CreateCourseRequest) => apiClient.courses.create(body),
-    onSuccess: (result) => { if (!result.error) invalidate(); },
+    onSuccess: (result) => {
+      if (!result.error) invalidate();
+    },
   });
 }
 
@@ -56,8 +58,11 @@ export function useCreateCourse() {
 export function useUpdateCourse() {
   const invalidate = useInvalidateInstructorCourses();
   return useMutation({
-    mutationFn: ({ id, ...body }: UpdateCourseRequest & { id: string }) => apiClient.courses.update(id, body),
-    onSuccess: (result) => { if (!result.error) invalidate(); },
+    mutationFn: ({ id, ...body }: UpdateCourseRequest & { id: string }) =>
+      apiClient.courses.update(id, body),
+    onSuccess: (result) => {
+      if (!result.error) invalidate();
+    },
   });
 }
 
@@ -66,7 +71,9 @@ export function useSubmitForReview() {
   const invalidate = useInvalidateInstructorCourses();
   return useMutation({
     mutationFn: (id: string) => apiClient.courses.submitForReview(id),
-    onSuccess: (result) => { if (!result.error) invalidate(); },
+    onSuccess: (result) => {
+      if (!result.error) invalidate();
+    },
   });
 }
 
@@ -75,7 +82,9 @@ export function usePublishCourse() {
   const invalidate = useInvalidateInstructorCourses();
   return useMutation({
     mutationFn: (id: string) => apiClient.courses.publish(id),
-    onSuccess: (result) => { if (!result.error) invalidate(); },
+    onSuccess: (result) => {
+      if (!result.error) invalidate();
+    },
   });
 }
 
@@ -84,6 +93,8 @@ export function useArchiveCourse() {
   const invalidate = useInvalidateInstructorCourses();
   return useMutation({
     mutationFn: (id: string) => apiClient.courses.archive(id),
-    onSuccess: (result) => { if (!result.error) invalidate(); },
+    onSuccess: (result) => {
+      if (!result.error) invalidate();
+    },
   });
 }

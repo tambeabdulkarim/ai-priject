@@ -23,7 +23,8 @@ import { SETTINGS_ROLES } from '../../../../constants/routes';
 
 const COPY = {
   title: 'الإعدادات',
-  blocked: 'هذه الصفحة تتطلب صلاحية "superadmin". صلاحيات settings:read وsettings:write غير مُمنوحة صراحةً لدور admin في الخادم الحقيقي (prisma/seed.ts) — فقط superadmin يملكها ضمنيًا.',
+  blocked:
+    'هذه الصفحة تتطلب صلاحية "superadmin". صلاحيات settings:read وsettings:write غير مُمنوحة صراحةً لدور admin في الخادم الحقيقي (prisma/seed.ts) — فقط superadmin يملكها ضمنيًا.',
   loading: 'جارٍ التحميل...',
   error: 'تعذّر التحميل.',
   hidden: 'قيمة محجوبة (حساسة)',
@@ -33,19 +34,36 @@ const COPY = {
   editPlaceholder: 'قيمة جديدة',
 } as const;
 
-function SettingRow({ setting, onSaved }: { setting: { key: string; value: string | null; description: string | null; isSensitive: boolean }; onSaved: () => void }) {
+function SettingRow({
+  setting,
+  onSaved,
+}: {
+  setting: { key: string; value: string | null; description: string | null; isSensitive: boolean };
+  onSaved: () => void;
+}) {
   const [value, setValue] = useState(setting.value ?? '');
   const update = useUpdateSetting();
 
   function handleSave() {
-    update.mutate({ key: setting.key, value }, { onSuccess: (result) => { if (!result.error) onSaved(); } });
+    update.mutate(
+      { key: setting.key, value },
+      {
+        onSuccess: (result) => {
+          if (!result.error) onSaved();
+        },
+      },
+    );
   }
 
   return (
     <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
       <h3 className="ph-catalogue-card-title">{setting.key}</h3>
       {setting.description && <p className="ph-catalogue-card-desc">{setting.description}</p>}
-      {update.error && <div className="ph-form-error" role="alert">{getErrorMessage(update.error)}</div>}
+      {update.error && (
+        <div className="ph-form-error" role="alert">
+          {getErrorMessage(update.error)}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.5rem' }}>
         {setting.isSensitive && setting.value === null && (
@@ -59,7 +77,12 @@ function SettingRow({ setting, onSaved }: { setting: { key: string; value: strin
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
-        <button type="button" className="ph-btn-grad" onClick={handleSave} disabled={update.isPending || !value}>
+        <button
+          type="button"
+          className="ph-btn-grad"
+          onClick={handleSave}
+          disabled={update.isPending || !value}
+        >
           {update.isPending ? COPY.saving : COPY.save}
         </button>
       </div>
@@ -77,7 +100,9 @@ export default function AdminSettingsPage() {
     return (
       <div>
         <h1 className="ph-page-title">{COPY.title}</h1>
-        <p className="ph-form-error" role="note">{COPY.blocked}</p>
+        <p className="ph-form-error" role="note">
+          {COPY.blocked}
+        </p>
       </div>
     );
   }
@@ -88,7 +113,11 @@ export default function AdminSettingsPage() {
 
       {isLoading && <p className="ph-state">{COPY.loading}</p>}
       {isError && <p className="ph-state">{COPY.error}</p>}
-      {savedKey && <div className="ph-form-success" role="status">{COPY.saved}</div>}
+      {savedKey && (
+        <div className="ph-form-success" role="status">
+          {COPY.saved}
+        </div>
+      )}
 
       <div className="ph-form" style={{ gap: '1rem' }}>
         {data?.map((setting) => (

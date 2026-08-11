@@ -13,6 +13,8 @@ import { RolesGuard } from './guards/roles.guard';
 import { PasswordService } from './services/password.service';
 import { AuditLogService } from './services/audit-log.service';
 import { BreachedPasswordService } from './services/breached-password.service';
+import { MfaCryptoService } from './services/mfa-crypto.service';
+import { EmailService } from './services/email.service';
 
 @Module({
   imports: [PermissionsModule],
@@ -25,7 +27,15 @@ import { BreachedPasswordService } from './services/breached-password.service';
     PasswordService,
     AuditLogService,
     BreachedPasswordService,
+    MfaCryptoService,
+    EmailService,
   ],
-  exports: [PasswordService, AuditLogService, BreachedPasswordService],
+  exports: [
+    PasswordService,
+    AuditLogService,
+    BreachedPasswordService,
+    MfaCryptoService,
+    EmailService,
+  ],
 })
 export class CommonModule {}

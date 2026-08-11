@@ -20,7 +20,12 @@
 // gap (they read already-shaped rows from the existing AiRequest/AiUsage
 // tables) and are fully implemented.
 
-import { ForbiddenException, Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  NotImplementedException,
+} from '@nestjs/common';
 import { AiRequest, AiUsage } from '@prisma/client';
 import { AiRepository } from './ai.repository';
 
@@ -51,13 +56,14 @@ export class AiService {
 
   /** docs/16-API-CONTRACT.md GET /ai/usage/me — resource owner. */
   async getMyUsage(userId: string): Promise<
-    Pick<AiUsage, 'periodStart' | 'periodEnd' | 'requestsUsed' | 'tokensUsed' | 'quotaLimit'> | {
-      periodStart: null;
-      periodEnd: null;
-      requestsUsed: 0;
-      tokensUsed: 0;
-      quotaLimit: null;
-    }
+    | Pick<AiUsage, 'periodStart' | 'periodEnd' | 'requestsUsed' | 'tokensUsed' | 'quotaLimit'>
+    | {
+        periodStart: null;
+        periodEnd: null;
+        requestsUsed: 0;
+        tokensUsed: 0;
+        quotaLimit: null;
+      }
   > {
     const usage = await this.aiRepository.findCurrentUsage(userId, new Date());
     if (!usage) {
@@ -65,7 +71,13 @@ export class AiService {
       // usage has been tracked yet (nothing provisions one automatically;
       // see ai.repository.ts). Reporting a real zero state rather than
       // inventing a quota_limit value that appears nowhere in the docs.
-      return { periodStart: null, periodEnd: null, requestsUsed: 0, tokensUsed: 0, quotaLimit: null };
+      return {
+        periodStart: null,
+        periodEnd: null,
+        requestsUsed: 0,
+        tokensUsed: 0,
+        quotaLimit: null,
+      };
     }
     return {
       periodStart: usage.periodStart,

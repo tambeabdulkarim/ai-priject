@@ -19,8 +19,10 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { ClipboardCheck } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { type Locale } from '@/lib/i18n';
 import { RequireRole } from '../../../../guards/RequireRole';
 import { useModerationQueue, useDecideComment } from '../../../../hooks/useModeration';
@@ -44,7 +46,12 @@ const COPY = {
     hide: 'إخفاء',
     submitting: 'جارٍ الإرسال...',
     reasonRequired: 'السبب مطلوب لتسجيل أي قرار.',
-    status: { visible: 'ظاهر', hidden: 'مخفي', flagged: 'مبلّغ عنه', in_review: 'قيد المراجعة' } as Record<string, string>,
+    status: {
+      visible: 'ظاهر',
+      hidden: 'مخفي',
+      flagged: 'مبلّغ عنه',
+      in_review: 'قيد المراجعة',
+    } as Record<string, string>,
   },
   en: {
     title: 'Moderation queue',
@@ -61,7 +68,12 @@ const COPY = {
     hide: 'Hide',
     submitting: 'Submitting...',
     reasonRequired: 'A reason is required to record any decision.',
-    status: { visible: 'visible', hidden: 'hidden', flagged: 'flagged', in_review: 'in review' } as Record<string, string>,
+    status: {
+      visible: 'visible',
+      hidden: 'hidden',
+      flagged: 'flagged',
+      in_review: 'in review',
+    } as Record<string, string>,
   },
 } as const;
 
@@ -81,7 +93,11 @@ function CommentDecisionRow({ commentId, body, t }: { commentId: string; body: s
     setLocalError(null);
     decide.mutate(
       { id: commentId, decision, reason },
-      { onSuccess: (result) => { if (!result.error) setReason(''); } },
+      {
+        onSuccess: (result) => {
+          if (!result.error) setReason('');
+        },
+      },
     );
   }
 
@@ -90,7 +106,9 @@ function CommentDecisionRow({ commentId, body, t }: { commentId: string; body: s
       <p>{body}</p>
       <form className="ph-form" onSubmit={(e) => handleDecision(e, 'approve')} noValidate>
         {(localError || decide.error) && (
-          <div className="ph-form-error" role="alert">{localError ?? getErrorMessage(decide.error)}</div>
+          <div className="ph-form-error" role="alert">
+            {localError ?? getErrorMessage(decide.error)}
+          </div>
         )}
         <input
           className="ph-input"
@@ -102,7 +120,12 @@ function CommentDecisionRow({ commentId, body, t }: { commentId: string; body: s
           <button type="submit" className="ph-btn-grad" disabled={decide.isPending}>
             {decide.isPending ? t.submitting : t.approve}
           </button>
-          <button type="button" className="ph-btn-outline" disabled={decide.isPending} onClick={(e) => handleDecision(e, 'hide')}>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            disabled={decide.isPending}
+            onClick={(e) => handleDecision(e, 'hide')}
+          >
             {decide.isPending ? t.submitting : t.hide}
           </button>
         </div>
@@ -129,21 +152,47 @@ function ModerationQueueContent() {
         <h1 className="ph-page-title">{t.title}</h1>
 
         <div className="ph-form" style={{ flexDirection: 'row', gap: '0.5rem' }}>
-          <button type="button" className={filter === undefined ? 'ph-btn-grad' : 'ph-btn-outline'} onClick={() => setFilter(undefined)}>{t.filterAll}</button>
-          <button type="button" className={filter === 'course' ? 'ph-btn-grad' : 'ph-btn-outline'} onClick={() => setFilter('course')}>{t.filterCourses}</button>
-          <button type="button" className={filter === 'comment' ? 'ph-btn-grad' : 'ph-btn-outline'} onClick={() => setFilter('comment')}>{t.filterComments}</button>
+          <button
+            type="button"
+            className={filter === undefined ? 'ph-btn-grad' : 'ph-btn-outline'}
+            onClick={() => setFilter(undefined)}
+          >
+            {t.filterAll}
+          </button>
+          <button
+            type="button"
+            className={filter === 'course' ? 'ph-btn-grad' : 'ph-btn-outline'}
+            onClick={() => setFilter('course')}
+          >
+            {t.filterCourses}
+          </button>
+          <button
+            type="button"
+            className={filter === 'comment' ? 'ph-btn-grad' : 'ph-btn-outline'}
+            onClick={() => setFilter('comment')}
+          >
+            {t.filterComments}
+          </button>
         </div>
 
         {queue.isLoading && <p className="ph-state">{t.loading}</p>}
         {queue.isError && <p className="ph-state">{getErrorMessage(queue.error)}</p>}
-        {queue.data && courseItems.length === 0 && commentItems.length === 0 && <p className="ph-state">{t.empty}</p>}
+        {queue.data && courseItems.length === 0 && commentItems.length === 0 && (
+          <EmptyState icon={<ClipboardCheck size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         {courseItems.length > 0 && (
           <div className="ph-grid" style={{ marginTop: '1.5rem' }}>
             {courseItems.map((course) => (
-              <Link key={course.id} href={withLang(ROUTES.moderatorCourseReview, locale).replace('[slug]', course.slug)} className="ph-catalogue-card">
+              <Link
+                key={course.id}
+                href={withLang(ROUTES.moderatorCourseReview, locale).replace('[slug]', course.slug)}
+                className="ph-catalogue-card"
+              >
                 <h3 className="ph-catalogue-card-title">{course.title}</h3>
-                <div className="ph-catalogue-card-meta">{t.status[course.status] ?? course.status}</div>
+                <div className="ph-catalogue-card-meta">
+                  {t.status[course.status] ?? course.status}
+                </div>
                 <p className="ph-catalogue-card-desc">{t.review}</p>
               </Link>
             ))}
@@ -153,13 +202,24 @@ function ModerationQueueContent() {
         {commentItems.length > 0 && (
           <div className="ph-form" style={{ marginTop: '1.5rem', gap: '1rem' }}>
             {commentItems.map((comment) => (
-              <CommentDecisionRow key={comment.id} commentId={comment.id} body={comment.body} t={t} />
+              <CommentDecisionRow
+                key={comment.id}
+                commentId={comment.id}
+                body={comment.body}
+                t={t}
+              />
             ))}
           </div>
         )}
 
         {queue.hasNextPage && (
-          <button type="button" className="ph-btn-outline" style={{ marginTop: '1.5rem' }} onClick={() => queue.fetchNextPage()} disabled={queue.isFetchingNextPage}>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            style={{ marginTop: '1.5rem' }}
+            onClick={() => queue.fetchNextPage()}
+            disabled={queue.isFetchingNextPage}
+          >
             {t.loadMore}
           </button>
         )}

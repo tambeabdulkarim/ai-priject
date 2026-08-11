@@ -3,8 +3,18 @@ import type { ListNotificationsQuery } from '@phoenix/types';
 import { apiClient } from '../services/api-client';
 import { queryKeys } from './queryKeys';
 
-/** docs/16-API-CONTRACT.md GET /notifications/me */
-export function useNotificationsList(query: Omit<ListNotificationsQuery, 'cursor'> = {}) {
+/**
+ * docs/16-API-CONTRACT.md GET /notifications/me
+ *
+ * `enabled` (Phase 14.7, default true): the header's user menu reads
+ * `unreadCount` from this same hook, but must not fire it for anonymous
+ * visitors — every existing caller already only mounts once a session
+ * exists, so the default preserves that behavior unchanged.
+ */
+export function useNotificationsList(
+  query: Omit<ListNotificationsQuery, 'cursor'> = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.notifications.list(query),
     queryFn: async () => {
@@ -12,6 +22,7 @@ export function useNotificationsList(query: Omit<ListNotificationsQuery, 'cursor
       if (result.error) throw result.error;
       return result.data;
     },
+    enabled: options.enabled ?? true,
   });
 }
 

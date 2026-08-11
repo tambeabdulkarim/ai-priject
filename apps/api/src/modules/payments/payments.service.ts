@@ -12,7 +12,14 @@
 // resolve which (if any) purchased Product corresponds to a Course. Only
 // this one step is stopped; the rest of Phase 8 is unaffected.
 
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import Stripe from 'stripe';
 import { Payment, Prisma } from '@prisma/client';
 import { AuditLogService } from '../../common/services/audit-log.service';
@@ -50,7 +57,9 @@ export class PaymentsService {
       event.type === 'payment_intent.payment_failed' ||
       event.type === 'checkout.session.async_payment_failed'
     ) {
-      await this.handlePaymentFailed(event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent);
+      await this.handlePaymentFailed(
+        event.data.object as Stripe.Checkout.Session | Stripe.PaymentIntent,
+      );
     }
     // Other event types are acknowledged but intentionally not acted on —
     // doc16 documents only the success/failure paths for this endpoint.
@@ -60,9 +69,14 @@ export class PaymentsService {
 
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
     const orderId = session.client_reference_id;
-    const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id;
     if (!orderId || !paymentIntentId) {
-      this.logger.error('Stripe checkout.session.completed missing client_reference_id or payment_intent.');
+      this.logger.error(
+        'Stripe checkout.session.completed missing client_reference_id or payment_intent.',
+      );
       return;
     }
 
@@ -121,7 +135,9 @@ export class PaymentsService {
     // Entitlement fan-out per purchased OrderItem — BLOCKED, see file header.
   }
 
-  private async handlePaymentFailed(object: Stripe.Checkout.Session | Stripe.PaymentIntent): Promise<void> {
+  private async handlePaymentFailed(
+    object: Stripe.Checkout.Session | Stripe.PaymentIntent,
+  ): Promise<void> {
     const orderId = 'client_reference_id' in object ? object.client_reference_id : undefined;
     if (!orderId) {
       this.logger.error('Stripe payment-failure event missing client_reference_id.');
@@ -190,7 +206,12 @@ export class PaymentsService {
    *     automatic Stripe-side compensating action is out of this phase's
    *     scope.
    */
-  async refund(id: string, amountCents: number | undefined, reason: string, actorId: string): Promise<Payment> {
+  async refund(
+    id: string,
+    amountCents: number | undefined,
+    reason: string,
+    actorId: string,
+  ): Promise<Payment> {
     const payment = await this.paymentsRepository.findByIdWithOrder(id);
     if (!payment) {
       throw new NotFoundException('Payment not found.');
@@ -202,7 +223,9 @@ export class PaymentsService {
     }
     const requestedAmount = amountCents ?? refundable;
     if (requestedAmount > refundable) {
-      throw new BadRequestException(`Refund amount exceeds the refundable balance of ${refundable} cents.`);
+      throw new BadRequestException(
+        `Refund amount exceeds the refundable balance of ${refundable} cents.`,
+      );
     }
 
     const idempotencyKey = `refund:${id}:${amountCents ?? 'full'}`;

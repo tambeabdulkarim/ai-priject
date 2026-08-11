@@ -7,7 +7,7 @@ import { type Task } from '@/lib/tasks';
 const initialTasks: Task[] = [
   { id: 1, title: 'Review requirements', completed: false, priority: 'high' },
   { id: 2, title: 'Prepare summary', completed: true, priority: 'medium' },
-  { id: 3, title: 'Confirm milestone', completed: false, priority: 'low' }
+  { id: 3, title: 'Confirm milestone', completed: false, priority: 'low' },
 ];
 
 export default function WorkspacePage() {

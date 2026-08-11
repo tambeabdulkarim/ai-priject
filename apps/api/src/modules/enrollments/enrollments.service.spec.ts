@@ -38,14 +38,23 @@ describe('EnrollmentsService.enroll', () => {
 
   it('rejects a paid course with 400', async () => {
     const { service, coursesRepository } = makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', status: 'published', priceCents: 5000 });
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      status: 'published',
+      priceCents: 5000,
+    });
 
     await expect(service.enroll('u1', 'c1')).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('returns 409 with the existing enrollment when already enrolled', async () => {
     const { service, coursesRepository, enrollmentsRepository } = makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', status: 'published', priceCents: 0, title: 'Test Course' });
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      status: 'published',
+      priceCents: 0,
+      title: 'Test Course',
+    });
     const existing = { id: 'e1', userId: 'u1', courseId: 'c1', status: 'active' };
     enrollmentsRepository.findByUserAndCourse.mockResolvedValue(existing);
 
@@ -62,11 +71,26 @@ describe('EnrollmentsService.enroll', () => {
   });
 
   it('creates an active enrollment for a free, published course and notifies the learner', async () => {
-    const { service, coursesRepository, enrollmentsRepository, auditLogService, notificationsService } =
-      makeService();
-    coursesRepository.findById.mockResolvedValue({ id: 'c1', status: 'published', priceCents: 0, title: 'Test Course' });
+    const {
+      service,
+      coursesRepository,
+      enrollmentsRepository,
+      auditLogService,
+      notificationsService,
+    } = makeService();
+    coursesRepository.findById.mockResolvedValue({
+      id: 'c1',
+      status: 'published',
+      priceCents: 0,
+      title: 'Test Course',
+    });
     enrollmentsRepository.findByUserAndCourse.mockResolvedValue(null);
-    enrollmentsRepository.create.mockResolvedValue({ id: 'e1', userId: 'u1', courseId: 'c1', status: 'active' });
+    enrollmentsRepository.create.mockResolvedValue({
+      id: 'e1',
+      userId: 'u1',
+      courseId: 'c1',
+      status: 'active',
+    });
 
     const result = await service.enroll('u1', 'c1');
 
@@ -106,7 +130,11 @@ describe('EnrollmentsService.refund', () => {
 
   it('rejects an enrollment with no linked purchase', async () => {
     const { service, enrollmentsRepository } = makeService();
-    enrollmentsRepository.findById.mockResolvedValue({ id: 'e1', status: 'active', orderItemId: null });
+    enrollmentsRepository.findById.mockResolvedValue({
+      id: 'e1',
+      status: 'active',
+      orderItemId: null,
+    });
 
     await expect(service.refund('e1', 'requested by learner', 'admin1')).rejects.toBeInstanceOf(
       BadRequestException,
@@ -115,7 +143,11 @@ describe('EnrollmentsService.refund', () => {
 
   it('rejects refunding an already-refunded enrollment', async () => {
     const { service, enrollmentsRepository } = makeService();
-    enrollmentsRepository.findById.mockResolvedValue({ id: 'e1', status: 'refunded', orderItemId: 'oi1' });
+    enrollmentsRepository.findById.mockResolvedValue({
+      id: 'e1',
+      status: 'refunded',
+      orderItemId: 'oi1',
+    });
 
     await expect(service.refund('e1', 'requested by learner', 'admin1')).rejects.toBeInstanceOf(
       ConflictException,
@@ -124,7 +156,11 @@ describe('EnrollmentsService.refund', () => {
 
   it('rejects when no successful payment can be resolved for the linked order', async () => {
     const { service, enrollmentsRepository, paymentsRepository } = makeService();
-    enrollmentsRepository.findById.mockResolvedValue({ id: 'e1', status: 'active', orderItemId: 'oi1' });
+    enrollmentsRepository.findById.mockResolvedValue({
+      id: 'e1',
+      status: 'active',
+      orderItemId: 'oi1',
+    });
     enrollmentsRepository.findOrderIdForOrderItem.mockResolvedValue('order1');
     paymentsRepository.findSucceededByOrderId.mockResolvedValue(null);
 
@@ -136,14 +172,23 @@ describe('EnrollmentsService.refund', () => {
   it('triggers the real Payment refund before marking the enrollment refunded', async () => {
     const { service, enrollmentsRepository, paymentsService, paymentsRepository, auditLogService } =
       makeService();
-    enrollmentsRepository.findById.mockResolvedValue({ id: 'e1', status: 'active', orderItemId: 'oi1' });
+    enrollmentsRepository.findById.mockResolvedValue({
+      id: 'e1',
+      status: 'active',
+      orderItemId: 'oi1',
+    });
     enrollmentsRepository.findOrderIdForOrderItem.mockResolvedValue('order1');
     paymentsRepository.findSucceededByOrderId.mockResolvedValue({ id: 'pay1' });
     enrollmentsRepository.update.mockResolvedValue({ id: 'e1', status: 'refunded' });
 
     const result = await service.refund('e1', 'requested by learner', 'admin1');
 
-    expect(paymentsService.refund).toHaveBeenCalledWith('pay1', undefined, 'requested by learner', 'admin1');
+    expect(paymentsService.refund).toHaveBeenCalledWith(
+      'pay1',
+      undefined,
+      'requested by learner',
+      'admin1',
+    );
     expect(enrollmentsRepository.update).toHaveBeenCalledWith('e1', { status: 'refunded' });
     expect(result.status).toBe('refunded');
     expect(auditLogService.record).toHaveBeenCalledWith(
@@ -153,7 +198,11 @@ describe('EnrollmentsService.refund', () => {
 
   it('does not mark the enrollment refunded if the underlying payment refund fails', async () => {
     const { service, enrollmentsRepository, paymentsService, paymentsRepository } = makeService();
-    enrollmentsRepository.findById.mockResolvedValue({ id: 'e1', status: 'active', orderItemId: 'oi1' });
+    enrollmentsRepository.findById.mockResolvedValue({
+      id: 'e1',
+      status: 'active',
+      orderItemId: 'oi1',
+    });
     enrollmentsRepository.findOrderIdForOrderItem.mockResolvedValue('order1');
     paymentsRepository.findSucceededByOrderId.mockResolvedValue({ id: 'pay1' });
     paymentsService.refund.mockRejectedValue(new ConflictException('already refunded'));

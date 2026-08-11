@@ -34,9 +34,15 @@ const COPY = {
   ar: {
     loading: 'جارٍ التحميل...',
     notFound: 'الطلب غير موجود.',
-    status: { pending: 'قيد الانتظار', paid: 'مدفوع', refunded: 'مسترد', cancelled: 'ملغى' } as Record<string, string>,
+    status: {
+      pending: 'قيد الانتظار',
+      paid: 'مدفوع',
+      refunded: 'مسترد',
+      cancelled: 'ملغى',
+    } as Record<string, string>,
     items: 'العناصر',
-    unresolvedNote: 'تعذّر تحديد اسم المنتج أو ملفه — لا توجد واجهة برمجية في الخادم لجلب منتج بمعرّفه مباشرة (فقط عبر الرابط النصي)، وهذا المنتج غير موجود ضمن أول 100 منتج منشور.',
+    unresolvedNote:
+      'تعذّر تحديد اسم المنتج أو ملفه — لا توجد واجهة برمجية في الخادم لجلب منتج بمعرّفه مباشرة (فقط عبر الرابط النصي)، وهذا المنتج غير موجود ضمن أول 100 منتج منشور.',
     getDownload: 'الحصول على رابط التحميل',
     checking: 'جارٍ التحقق...',
     downloadLink: 'رابط التحميل',
@@ -45,9 +51,15 @@ const COPY = {
   en: {
     loading: 'Loading...',
     notFound: 'Order not found.',
-    status: { pending: 'Pending', paid: 'Paid', refunded: 'Refunded', cancelled: 'Cancelled' } as Record<string, string>,
+    status: {
+      pending: 'Pending',
+      paid: 'Paid',
+      refunded: 'Refunded',
+      cancelled: 'Cancelled',
+    } as Record<string, string>,
     items: 'Items',
-    unresolvedNote: 'Couldn’t resolve this product’s title or file — no backend endpoint fetches a product by id directly (only by slug), and this product isn’t among the first 100 published products.',
+    unresolvedNote:
+      'Couldn’t resolve this product’s title or file — no backend endpoint fetches a product by id directly (only by slug), and this product isn’t among the first 100 published products.',
     getDownload: 'Get download link',
     checking: 'Checking...',
     downloadLink: 'Download link',
@@ -65,13 +77,24 @@ function ItemDownload({ fileId, t }: { fileId: string; t: Copy }) {
   const download = useProductDownload(fileId);
   return (
     <div style={{ marginTop: '0.5rem' }}>
-      <button type="button" className="ph-btn-outline" onClick={() => download.refetch()} disabled={download.isFetching}>
+      <button
+        type="button"
+        className="ph-btn-outline"
+        onClick={() => download.refetch()}
+        disabled={download.isFetching}
+      >
         {download.isFetching ? t.checking : t.getDownload}
       </button>
-      {download.error && <p className="ph-form-error" role="alert">{getErrorMessage(download.error)}</p>}
+      {download.error && (
+        <p className="ph-form-error" role="alert">
+          {getErrorMessage(download.error)}
+        </p>
+      )}
       {download.data && (
         <p className="ph-form-success" role="status">
-          <a href={download.data.signedUrl} target="_blank" rel="noopener noreferrer">{t.downloadLink}</a>
+          <a href={download.data.signedUrl} target="_blank" rel="noopener noreferrer">
+            {t.downloadLink}
+          </a>
         </p>
       )}
     </div>
@@ -97,33 +120,41 @@ function OrderDetailContent() {
       <main className="ph-page">
         <h1 className="ph-page-title">#{order.orderNumber}</h1>
         <p className="ph-page-subtitle">{t.status[order.status] ?? order.status}</p>
-        <p>{formatPrice(order.totalCents, locale, order.currency)} — {new Date(order.createdAt).toLocaleString(locale)}</p>
+        <p>
+          {formatPrice(order.totalCents, locale, order.currency)} —{' '}
+          {new Date(order.createdAt).toLocaleString(locale)}
+        </p>
 
         <section style={{ marginTop: '2rem' }}>
           <h2 className="ph-catalogue-card-title">{t.items}</h2>
           {order.orderItems.map((item) => {
             const product = productById.get(item.productId);
             return (
-              <div key={item.id} className="ph-catalogue-card" style={{ cursor: 'default', marginBottom: '1rem' }}>
+              <div
+                key={item.id}
+                className="ph-catalogue-card"
+                style={{ cursor: 'default', marginBottom: '1rem' }}
+              >
                 {product ? (
                   <h3 className="ph-catalogue-card-title">{product.title}</h3>
                 ) : (
                   <>
                     <h3 className="ph-catalogue-card-title">{item.productId}</h3>
-                    <p className="ph-form-error" role="note">{t.unresolvedNote}</p>
+                    <p className="ph-form-error" role="note">
+                      {t.unresolvedNote}
+                    </p>
                   </>
                 )}
                 <p className="ph-catalogue-card-desc">
                   {item.quantity} × {formatPrice(item.unitPriceCents, locale, order.currency)}
                 </p>
 
-                {order.status === 'paid' && (
-                  product?.fileId ? (
+                {order.status === 'paid' &&
+                  (product?.fileId ? (
                     <ItemDownload fileId={product.fileId} t={t} />
                   ) : product ? (
                     <p className="ph-state">{t.noFile}</p>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
             );
           })}

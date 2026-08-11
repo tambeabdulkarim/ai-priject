@@ -89,7 +89,12 @@ export class ProductsService {
    * stores its own unitPriceCents at creation time, never re-read from
    * Product afterward — no extra handling needed here.
    */
-  async update(id: string, dto: UpdateProductDto, actorId: string, actorRoles: string[]): Promise<Product> {
+  async update(
+    id: string,
+    dto: UpdateProductDto,
+    actorId: string,
+    actorRoles: string[],
+  ): Promise<Product> {
     const product = await this.productsRepository.findById(id);
     if (!product) {
       throw new NotFoundException('Product not found.');

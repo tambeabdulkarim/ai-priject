@@ -6,10 +6,15 @@ import { apiClient } from '../services/api-client';
 export function useCreateLesson(courseSlug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, moduleId, ...body }: CreateLessonRequest & { courseId: string; moduleId: string }) =>
+    mutationFn: ({
+      courseId,
+      moduleId,
+      ...body
+    }: CreateLessonRequest & { courseId: string; moduleId: string }) =>
       apiClient.lessons.createLesson(courseId, moduleId, body),
     onSuccess: (result) => {
-      if (!result.error) queryClient.invalidateQueries({ queryKey: ['courses', 'detail', courseSlug] });
+      if (!result.error)
+        queryClient.invalidateQueries({ queryKey: ['courses', 'detail', courseSlug] });
     },
   });
 }
@@ -17,7 +22,8 @@ export function useCreateLesson(courseSlug: string) {
 export function useUpdateLesson(courseSlug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: UpdateLessonRequest & { id: string }) => apiClient.lessons.updateLesson(id, body),
+    mutationFn: ({ id, ...body }: UpdateLessonRequest & { id: string }) =>
+      apiClient.lessons.updateLesson(id, body),
     onSuccess: (result) => {
       if (!result.error) {
         queryClient.invalidateQueries({ queryKey: ['courses', 'detail', courseSlug] });
@@ -30,10 +36,18 @@ export function useUpdateLesson(courseSlug: string) {
 export function useReorderLessons(courseSlug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, moduleId, lessonIds }: { courseId: string; moduleId: string; lessonIds: string[] }) =>
-      apiClient.lessons.reorderLessons(courseId, moduleId, { lessonIds }),
+    mutationFn: ({
+      courseId,
+      moduleId,
+      lessonIds,
+    }: {
+      courseId: string;
+      moduleId: string;
+      lessonIds: string[];
+    }) => apiClient.lessons.reorderLessons(courseId, moduleId, { lessonIds }),
     onSuccess: (result) => {
-      if (!result.error) queryClient.invalidateQueries({ queryKey: ['courses', 'detail', courseSlug] });
+      if (!result.error)
+        queryClient.invalidateQueries({ queryKey: ['courses', 'detail', courseSlug] });
     },
   });
 }

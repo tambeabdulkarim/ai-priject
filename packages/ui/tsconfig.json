@@ -1,0 +1,17 @@
+{
+  "extends": "../config/base.tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve"
+  },
+  "include": [
+    "index.ts",
+    "patterns/**/*.ts",
+    "patterns/**/*.tsx",
+    "primitives/**/*.ts",
+    "primitives/**/*.tsx",
+    "theming/**/*.ts",
+    "theming/**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

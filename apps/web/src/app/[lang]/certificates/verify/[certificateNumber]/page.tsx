@@ -63,8 +63,14 @@ export default function VerifyCertificatePage() {
             <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
               <CheckCircle2 size={20} aria-hidden="true" /> {t.valid}
             </p>
-            <div className="ph-lesson-row"><span>{t.holder}</span><span>{data.holderDisplayName}</span></div>
-            <div className="ph-lesson-row"><span>{t.course}</span><span>{data.courseTitle}</span></div>
+            <div className="ph-lesson-row">
+              <span>{t.holder}</span>
+              <span>{data.holderDisplayName}</span>
+            </div>
+            <div className="ph-lesson-row">
+              <span>{t.course}</span>
+              <span>{data.courseTitle}</span>
+            </div>
             <div className="ph-lesson-row">
               <span>{t.issued}</span>
               <span>{new Date(data.issuedAt).toLocaleDateString(locale)}</span>

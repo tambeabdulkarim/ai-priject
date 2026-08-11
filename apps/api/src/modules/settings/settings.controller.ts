@@ -26,7 +26,11 @@ export class SettingsController {
 
   @Patch('admin/settings/:key')
   @RequirePermissions('settings:write')
-  update(@Param('key') key: string, @Body() dto: UpdateSettingDto, @CurrentUser() user: JwtPayload) {
+  update(
+    @Param('key') key: string,
+    @Body() dto: UpdateSettingDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.settingsService.updateByKey(key, dto, user.sub);
   }
 }

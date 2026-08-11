@@ -6,14 +6,20 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "test": "jest"
+    "prisma:validate": "prisma validate",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/s3-request-presigner": "^3.658.0",
     "@nestjs/common": "^10.4.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.0",
@@ -22,18 +28,20 @@
     "@nestjs/platform-express": "^10.4.0",
     "@nestjs/throttler": "^6.2.1",
     "@prisma/client": "^5.20.0",
-    "@aws-sdk/client-s3": "^3.658.0",
-    "@aws-sdk/s3-request-presigner": "^3.658.0",
     "argon2": "^0.41.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
+    "express": "^4.22.1",
+    "helmet": "^8.3.0",
     "isomorphic-dompurify": "^2.16.0",
+    "otplib": "^12.0.1",
     "passport": "^0.7.0",
-    "stripe": "^17.3.0",
     "passport-jwt": "^4.0.1",
+    "postmark": "^5.1.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "stripe": "^17.3.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.5",
@@ -52,7 +60,9 @@
   "jest": {
     "rootDir": "src",
     "testEnvironment": "node",
-    "transform": { "^.+\\.ts$": "ts-jest" },
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
     "testRegex": ".*\\.spec\\.ts$",
     "moduleNameMapper": {
       "^isomorphic-dompurify$": "<rootDir>/common/utils/__mocks__/isomorphic-dompurify.ts"

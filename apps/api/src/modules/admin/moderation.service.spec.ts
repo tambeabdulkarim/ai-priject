@@ -17,7 +17,10 @@ describe('ModerationService', () => {
   describe('listQueue', () => {
     it('returns only courses when content_type=course', async () => {
       const { service, moderationRepository } = makeService();
-      moderationRepository.findCoursesInReview.mockResolvedValue({ items: [{ id: 'c1' }], nextCursor: null });
+      moderationRepository.findCoursesInReview.mockResolvedValue({
+        items: [{ id: 'c1' }],
+        nextCursor: null,
+      });
 
       const result = await service.listQueue({ content_type: 'course', limit: 20 } as never);
 
@@ -64,7 +67,11 @@ describe('ModerationService', () => {
       moderationRepository.findCommentById.mockResolvedValue({ id: 'c1', status: 'flagged' });
       moderationRepository.updateCommentStatus.mockResolvedValue({ id: 'c1', status: 'visible' });
 
-      const result = await service.decideComment('c1', { decision: 'approve', reason: 'looks fine' }, 'mod1');
+      const result = await service.decideComment(
+        'c1',
+        { decision: 'approve', reason: 'looks fine' },
+        'mod1',
+      );
 
       expect(moderationRepository.updateCommentStatus).toHaveBeenCalledWith('c1', 'visible');
       expect(result.status).toBe('visible');

@@ -1,4 +1,10 @@
-import type { FileRecord, GetFileResponse, RequestUploadUrlRequest, RequestUploadUrlResponse } from '@phoenix/types';
+import type {
+  CompleteUploadResponse,
+  FileRecord,
+  GetFileResponse,
+  RequestUploadUrlRequest,
+  RequestUploadUrlResponse,
+} from '@phoenix/types';
 import type { ApiResult } from '../core/client-config';
 import type { RequestFn } from '../core/request';
 import { NetworkError } from '../core/errors';
@@ -18,10 +24,20 @@ export interface UploadFileParams {
  * to this one function specifically because it needs real upload-progress
  * events; every other call in this package goes through the shared
  * `fetch`-based `request()` wrapper.
+ *
+ * Phase 13.3: returns the live `XMLHttpRequest` alongside the promise so
+ * a caller (MediaUploader) can `.abort()` it — the Storage-upload leg is
+ * the only one worth cancelling client-side (the presigned-URL request
+ * and the completion call are both fast, single-round-trip calls).
  */
-function putToPresignedUrl(uploadUrl: string, file: File | Blob, contentType: string, onProgress?: (percent: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+function putToPresignedUrl(
+  uploadUrl: string,
+  file: File | Blob,
+  contentType: string,
+  onProgress?: (percent: number) => void,
+): { promise: Promise<void>; xhr: XMLHttpRequest } {
+  const xhr = new XMLHttpRequest();
+  const promise = new Promise<void>((resolve, reject) => {
     xhr.open('PUT', uploadUrl, true);
     xhr.setRequestHeader('Content-Type', contentType);
     if (onProgress) {
@@ -39,8 +55,10 @@ function putToPresignedUrl(uploadUrl: string, file: File | Blob, contentType: st
       }
     };
     xhr.onerror = () => reject(new NetworkError(new Error('Storage upload network error')));
+    xhr.onabort = () => reject(new NetworkError(new Error('Upload cancelled')));
     xhr.send(file);
   });
+  return { promise, xhr };
 }
 
 /**
@@ -65,28 +83,25 @@ export function createFilesResource(request: RequestFn) {
     request<RequestUploadUrlResponse>({ method: 'POST', path: '/files/upload-url', body });
 
   const completeUpload = (uploadId: string) =>
-    request<FileRecord>({ method: 'POST', path: `/files/${uploadId}/complete` });
+    request<CompleteUploadResponse>({ method: 'POST', path: `/files/${uploadId}/complete` });
 
   const getFile = (id: string) => request<GetFileResponse>({ method: 'GET', path: `/files/${id}` });
+
+  /** Phase 13.3 (Media Frontend) — `DELETE /files/:id`. 204 on success (no body). */
+  const deleteFile = (id: string) => request<void>({ method: 'DELETE', path: `/files/${id}` });
 
   return {
     requestUploadUrl,
     completeUpload,
     getFile,
+    deleteFile,
 
     /**
      * Orchestrates the full documented flow: request a presigned URL →
-     * PUT the raw bytes to storage → notify the API on completion.
-     *
-     * KNOWN BACKEND ISSUE, not fixed here (out of scope — backend is
-     * frozen this phase; see packages/types/src/files.ts's `FileRecord`
-     * comment): `completeUpload`'s real response contains a raw Prisma
-     * `BigInt` (`sizeBytes`), which has no JSON serialization in
-     * apps/api's actual bootstrap config and will throw a 500 server-side
-     * before ever reaching this function. This helper is implemented
-     * correctly against the documented/typed contract; exercising it
-     * end-to-end against the real backend today will surface that
-     * pre-existing bug, not a defect in this code.
+     * PUT the raw bytes to storage → notify the API on completion. Fixed
+     * end-to-end as of Phase 13.2 (the BigInt-serialization bug this
+     * comment used to describe is resolved — see
+     * packages/types/src/files.ts's `FileRecord` comment).
      */
     async uploadFile(params: UploadFileParams): Promise<ApiResult<FileRecord>> {
       const urlResult = await requestUploadUrl({
@@ -98,9 +113,68 @@ export function createFilesResource(request: RequestFn) {
         return urlResult;
       }
 
-      await putToPresignedUrl(urlResult.data.uploadUrl, params.file, params.contentType, params.onProgress);
+      const { promise } = putToPresignedUrl(
+        urlResult.data.uploadUrl,
+        params.file,
+        params.contentType,
+        params.onProgress,
+      );
+      await promise;
 
       return completeUpload(urlResult.data.uploadId);
+    },
+
+    /**
+     * Phase 13.3 — the same flow as `uploadFile`, but returns a `cancel()`
+     * handle alongside the result promise, for `<MediaUploader />`'s
+     * cancel/retry requirements. Not used to replace `uploadFile` (kept
+     * unchanged above) — additive, so nothing that already calls
+     * `uploadFile` is affected.
+     */
+    uploadFileWithControl(params: UploadFileParams): {
+      result: Promise<ApiResult<CompleteUploadResponse>>;
+      cancel: () => void;
+    } {
+      let xhrRef: XMLHttpRequest | null = null;
+      let cancelled = false;
+
+      // Matches `uploadFile`'s existing convention: `ApiResult['error']` is
+      // strictly a documented backend `ApiError` — a storage-layer
+      // `NetworkError` (cancelled, or a real network failure) is not
+      // force-fit into that shape, it propagates as a real rejection, same
+      // as `uploadFile` already does.
+      const result = (async (): Promise<ApiResult<CompleteUploadResponse>> => {
+        const urlResult = await requestUploadUrl({
+          filename: params.filename,
+          contentType: params.contentType,
+          sizeBytes: params.file.size,
+        });
+        if (urlResult.error) {
+          return urlResult;
+        }
+        if (cancelled) {
+          throw new NetworkError(new Error('Upload cancelled'));
+        }
+
+        const { promise, xhr } = putToPresignedUrl(
+          urlResult.data.uploadUrl,
+          params.file,
+          params.contentType,
+          params.onProgress,
+        );
+        xhrRef = xhr;
+        await promise;
+
+        return completeUpload(urlResult.data.uploadId);
+      })();
+
+      return {
+        result,
+        cancel: () => {
+          cancelled = true;
+          xhrRef?.abort();
+        },
+      };
     },
   };
 }

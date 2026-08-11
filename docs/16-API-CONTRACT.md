@@ -378,7 +378,7 @@ Base path: `/api/v1/courses/:courseId/modules/:moduleId/lessons`
 - **Authorization Required:** Active enrollment in the parent course, or owning instructor/editorial role
 - **Request Parameters:** `id` (path)
 - **Request Body:** none
-- **Response Body:** full lesson content (body, signed video/resource URLs)
+- **Response Body:** full lesson content (body, signed video/resource URLs), plus **`quiz_id`** (added Phase 28 — the lesson's Quiz id if `content_type = quiz`, else `null`; never includes question content itself, only the id needed to call `GET /progress/quizzes/:quizId` §7)
 - **Success Codes:** 200 OK
 - **Error Codes:** 401, 403 (not enrolled), 404
 - **Validation Rules:** entitlement check per `15-SYSTEM-WORKFLOWS.md` §9
@@ -505,6 +505,19 @@ Base path: `/api/v1/progress`
 - **Rate Limits:** standard authenticated API limit
 - **Audit Logging:** No
 
+### GET /progress/quizzes/:quizId
+- **Added:** Phase 28 (Educational Frontend Experience) — closes a real, confirmed gap: no endpoint previously existed for a learner to fetch a quiz's questions before submitting (the codebase's own `apps/web` lesson page had documented this exact block since an earlier phase, rather than guess at an endpoint or invent a relation). Minimal, additive, read-only; reuses `POST .../attempts`' own entitlement rule unchanged.
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner (active enrollment in the quiz's lesson's course — identical rule to the attempts endpoint below)
+- **Request Parameters:** `quizId` (path)
+- **Request Body:** none
+- **Response Body:** `id`, `title`, `passing_score_percent`, `max_attempts`, `questions` (each: `id`, `prompt`, `question_type`, `options`, `position`) — **`correct_answer` is never included**, stripped server-side before this response is built
+- **Success Codes:** 200 OK
+- **Error Codes:** 403 (not enrolled), 404
+- **Validation Rules:** none
+- **Rate Limits:** 60 requests / 5 min per user (same generous tier as lesson progress — viewing a quiz is a routine read, not the sensitive submit action below)
+- **Audit Logging:** No
+
 ### POST /progress/quizzes/:quizId/attempts
 - **Authentication Required:** Yes
 - **Authorization Required:** Resource owner (active enrollment)
@@ -516,6 +529,7 @@ Base path: `/api/v1/progress`
 - **Validation Rules:** answer set must match question set; attempt-count checked before scoring
 - **Rate Limits:** 10 requests / 15 min per user
 - **Audit Logging:** No (routine); flagged separately on abuse-pattern detection
+- **Side effect (Phase 29):** a `passed: true` attempt marks the quiz's own lesson complete — reuses the exact same `LessonProgress` upsert + `Enrollment.completionPercent` recompute + notify + `certificatesService.issueForEnrollment` flow `PUT /progress/lessons/:lessonId` already uses (no parallel completion mechanism). A failed attempt has no effect on lesson/course completion.
 
 ---
 
@@ -1128,6 +1142,198 @@ Base path: `/api/v1/settings`
 - **Validation Rules:** value validated against the setting's declared type/schema
 - **Rate Limits:** standard admin API limit
 - **Audit Logging:** Yes, mandatory, with before/after diff
+
+---
+
+# 20. Learning Paths
+
+Base path: `/api/v1/learning-paths`. Added Phase 26 to close a real architecture gap Phase 25 discovered — a learning path (a curated, ordered sequence of Courses) previously existed only as documentation (`docs/content-library/learning-paths.md`), not a real API/database resource. Deliberately no `/learning-paths/:id/projects` endpoint — a path's projects are simply the union of its member courses' own `/courses/:id/projects` (§21), avoiding a redundant relation.
+
+### GET /learning-paths
+- **Authentication Required:** No
+- **Authorization Required:** None
+- **Request Parameters:** Pagination Standard; `status` implicitly filtered to `published` for unauthenticated/learner requests (same convention as `GET /courses`)
+- **Request Body:** none
+- **Response Body:** paginated list of learning paths (id, title, slug, description, status, course count)
+- **Success Codes:** 200 OK
+- **Error Codes:** none
+- **Validation Rules:** none
+- **Rate Limits:** standard public API limit
+- **Audit Logging:** No
+
+### GET /learning-paths/:slug
+- **Authentication Required:** No
+- **Authorization Required:** None
+- **Request Parameters:** `slug` (path)
+- **Request Body:** none
+- **Response Body:** full learning path including its ordered `courses` array (each with `position`)
+- **Success Codes:** 200 OK
+- **Error Codes:** 404
+- **Validation Rules:** none
+- **Rate Limits:** standard public API limit
+- **Audit Logging:** No
+
+### POST /learning-paths
+- **Authentication Required:** Yes
+- **Authorization Required:** `learning_path:create` (content_editor/admin) — a learning path is an editorial/curricular object spanning multiple instructors' courses, so it follows the `news:create` precedent (content_editor/admin), not the `course:create` precedent (any instructor) — a single instructor should not unilaterally define a cross-course curriculum.
+- **Request Parameters:** none
+- **Request Body:** `title`, `description` (optional)
+- **Response Body:** created learning path (`status: draft`)
+- **Success Codes:** 201 Created
+- **Error Codes:** 400, 403
+- **Validation Rules:** title required, non-empty; slug generated server-side (same `slugify` utility as Courses)
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes — creation event
+
+### PATCH /learning-paths/:id
+- **Authentication Required:** Yes
+- **Authorization Required:** `learning_path:create` (same role set — no separate edit permission, matching the platform's existing convention of not minting a distinct `:edit` key per resource)
+- **Request Parameters:** `id` (path)
+- **Request Body:** `title`, `description` (all optional)
+- **Response Body:** updated learning path
+- **Success Codes:** 200 OK
+- **Error Codes:** 400, 403, 404
+- **Validation Rules:** same as create
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes
+
+### POST /learning-paths/:id/publish
+- **Authentication Required:** Yes
+- **Authorization Required:** `learning_path:publish` (content_editor/admin — same precedent as `course:publish`/`news:publish`)
+- **Request Parameters:** `id` (path)
+- **Request Body:** none
+- **Response Body:** updated learning path (`status: published`)
+- **Success Codes:** 200 OK
+- **Error Codes:** 403, 404, 409 (path has zero courses)
+- **Validation Rules:** at least one course must be attached before publishing
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes
+
+### PUT /learning-paths/:id/courses
+- **Authentication Required:** Yes
+- **Authorization Required:** `learning_path:create` (same role set as create/edit)
+- **Request Parameters:** `id` (path)
+- **Request Body:** `courseIds` — an ordered array of course UUIDs; array order becomes `position`
+- **Response Body:** updated learning path with its new ordered `courses` array
+- **Success Codes:** 200 OK
+- **Error Codes:** 400 (duplicate course ID in the array — rejected, not silently deduplicated, since a duplicate is almost always a client bug worth surfacing), 403, 404 (path or any listed course not found)
+- **Validation Rules:** every course ID must reference a real, existing course; no duplicate course ID within the array — enforced both here (400 on a malformed request) and at the database level (`LearningPathCourse`'s `@@unique([learningPathId, courseId])`, the actual last-line guard)
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes — before/after course list
+
+---
+
+# 21. Projects
+
+Base path: `/api/v1/courses/:courseId/projects` for project management (course-scoped, matching the existing `/courses/:courseId/modules/:moduleId/lessons` nesting convention), `/api/v1/projects/:projectId/submissions` for learner submissions. Added Phase 26 to close the second architecture gap Phase 25 discovered: project *briefs* already existed (as `Lesson` rows), but a learner's actual submission and its evaluation had no persistent representation anywhere.
+
+### GET /courses/:courseId/projects
+- **Authentication Required:** No
+- **Authorization Required:** None
+- **Request Parameters:** `courseId` (path)
+- **Request Body:** none
+- **Response Body:** list of the course's published projects, ordered by `position`
+- **Success Codes:** 200 OK
+- **Error Codes:** 404 (course not found)
+- **Validation Rules:** none
+- **Rate Limits:** standard public API limit
+- **Audit Logging:** No
+
+### GET /projects/:id
+- **Authentication Required:** No
+- **Authorization Required:** None
+- **Request Parameters:** `id` (path)
+- **Request Body:** none
+- **Response Body:** full project detail, including its linked `sourceLesson` (id, title) if one exists — the client is responsible for fetching that lesson's full body via the existing `GET /lessons/:id`, never duplicated into this response
+- **Success Codes:** 200 OK
+- **Error Codes:** 404
+- **Validation Rules:** none
+- **Rate Limits:** standard public API limit
+- **Audit Logging:** No
+
+### POST /courses/:courseId/projects
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner (the course's owning instructor) or content_editor/admin — same ownership-OR-editorial pattern as `POST /courses/:courseId/modules/:moduleId/lessons`, enforced in the service, not a standalone permission key
+- **Request Parameters:** `courseId` (path)
+- **Request Body:** `title`, `description` (optional), `instructions` (optional), `sourceLessonId` (optional — links to an existing project-brief Lesson instead of duplicating its content), `position` (optional)
+- **Response Body:** created project (`status: draft`)
+- **Success Codes:** 201 Created
+- **Error Codes:** 400, 403, 404 (course, or `sourceLessonId` if provided, not found), 409 (`sourceLessonId` already linked to another project — the unique constraint's surfaced error)
+- **Validation Rules:** title required; if `sourceLessonId` provided, that lesson must belong to the same course
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes
+
+### POST /courses/:courseId/projects/:id/publish
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner or content_editor/admin (same pattern as above)
+- **Request Parameters:** `courseId`, `id` (path)
+- **Request Body:** none
+- **Response Body:** updated project (`status: published`)
+- **Success Codes:** 200 OK
+- **Error Codes:** 403, 404
+- **Validation Rules:** none beyond ownership
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes
+
+### POST /projects/:id/submissions
+- **Authentication Required:** Yes
+- **Authorization Required:** None beyond authentication — enforced instead as a business rule: the actor must hold an active `Enrollment` in the project's course (same "must be enrolled" precondition already implicit in `PUT /progress/lessons/:lessonId`)
+- **Request Parameters:** `id` (path — project ID)
+- **Request Body:** `content` (optional, text/URL) and/or `fileId` (optional, an already-uploaded File per the existing `/files/upload-url` → `/files/:uploadId/complete` flow) — at least one of the two required
+- **Response Body:** created submission (`status: submitted`, `attemptNumber` auto-incremented from the actor's prior attempts on this project, if any)
+- **Success Codes:** 201 Created
+- **Error Codes:** 400 (neither `content` nor `fileId` provided), 403 (not enrolled in the project's course), 404 (project not found or not published)
+- **Validation Rules:** at least one of `content`/`fileId`; project must be `published`
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes — submission event
+
+### GET /projects/submissions/me
+- **Authentication Required:** Yes
+- **Authorization Required:** None — always scoped to the caller
+- **Request Parameters:** Pagination Standard
+- **Request Body:** none
+- **Response Body:** paginated list of the caller's own submissions, each including its `evaluation` if one exists
+- **Success Codes:** 200 OK
+- **Error Codes:** none
+- **Validation Rules:** none
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** No
+
+### GET /courses/:courseId/projects/submissions
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner (the course's owning instructor) or content_editor/admin/moderator — moderator gets the same narrow, read-only allowance already established for course-review visibility (`canViewAsModerator`), never a grading right
+- **Request Parameters:** `courseId` (path); Pagination Standard; `projectId`, `status` (optional filters)
+- **Request Body:** none
+- **Response Body:** paginated list of submissions for the course's projects
+- **Success Codes:** 200 OK
+- **Error Codes:** 403, 404
+- **Validation Rules:** none
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** No
+
+### GET /projects/submissions/:id
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner (the submitting learner) or the course's owning instructor or content_editor/admin/moderator (read-only) — same ownership-OR-editorial-OR-moderator-read shape used throughout this section
+- **Request Parameters:** `id` (path)
+- **Request Body:** none
+- **Response Body:** full submission detail including its evaluation if one exists
+- **Success Codes:** 200 OK
+- **Error Codes:** 403, 404
+- **Validation Rules:** none
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** No
+
+### POST /projects/submissions/:id/evaluate
+- **Authentication Required:** Yes
+- **Authorization Required:** Resource owner (the submission's project's course's owning instructor) or content_editor/admin — same ownership-OR-editorial pattern as grading is conceptually an edit action on course-owned content, not a standalone permission
+- **Request Parameters:** `id` (path — submission ID)
+- **Request Body:** `scorePercent` (0-100), `passed` (boolean), `feedback` (required, non-empty)
+- **Response Body:** created evaluation (`method: manual`, `status: completed`); the parent submission's `status` is updated to `evaluated` in the same transaction
+- **Success Codes:** 201 Created
+- **Error Codes:** 400, 403, 404, 409 (submission already has an evaluation — resubmit via a new attempt instead of overwriting evaluation history)
+- **Validation Rules:** `scorePercent` 0-100; `feedback` required; one evaluation per submission (enforced by `ProjectEvaluation.submissionId`'s unique constraint, the actual last-line guard)
+- **Rate Limits:** standard authenticated API limit
+- **Audit Logging:** Yes — evaluation event, including score and evaluator
 
 ---
 

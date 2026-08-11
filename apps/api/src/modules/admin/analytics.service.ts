@@ -55,7 +55,8 @@ export class AnalyticsService {
       this.analyticsRepository.countDistinctActiveUsers(monthStart, dayEnd),
     ]);
 
-    const completionRate = totalEnrollments > 0 ? (completedEnrollments / totalEnrollments) * 100 : 0;
+    const completionRate =
+      totalEnrollments > 0 ? (completedEnrollments / totalEnrollments) * 100 : 0;
 
     return {
       from: query.from,

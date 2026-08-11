@@ -15,7 +15,9 @@ describe('OrdersService.create', () => {
     };
     const auditLogService = { record: jest.fn() };
     const stripeService = {
-      createCheckoutSession: jest.fn().mockResolvedValue({ sessionId: 's1', url: 'https://stripe.test/session' }),
+      createCheckoutSession: jest
+        .fn()
+        .mockResolvedValue({ sessionId: 's1', url: 'https://stripe.test/session' }),
     };
 
     const service = new OrdersService(
@@ -28,7 +30,9 @@ describe('OrdersService.create', () => {
 
   it('rejects an order containing an unpublished product', async () => {
     const { service, ordersRepository } = makeService();
-    ordersRepository.findProductsByIds.mockResolvedValue([{ id: 'p1', status: 'draft', priceCents: 1000, title: 'X' }]);
+    ordersRepository.findProductsByIds.mockResolvedValue([
+      { id: 'p1', status: 'draft', priceCents: 1000, title: 'X' },
+    ]);
 
     await expect(
       service.create('u1', { items: [{ productId: 'p1', quantity: 1 }] }),

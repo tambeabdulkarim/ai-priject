@@ -11,12 +11,14 @@
 
 import { useState } from 'react';
 import { DollarSign, CheckCircle2, Users2, Activity } from 'lucide-react';
+import { Spinner } from '@/components/ui/Loading';
 import { useAnalyticsOverview } from '../../../../hooks/useAnalytics';
 import { getErrorMessage } from '../../../../utils/errors';
 
 const COPY = {
   title: 'التحليلات',
-  subtitle: 'مقياس إجمالي واحد للفترة المحددة — لا توجد تفصيلات فرعية (حسب الدورة أو المدرّس) في الخادم الحقيقي.',
+  subtitle:
+    'مقياس إجمالي واحد للفترة المحددة — لا توجد تفصيلات فرعية (حسب الدورة أو المدرّس) في الخادم الحقيقي.',
   from: 'من',
   to: 'إلى',
   revenue: 'الإيرادات',
@@ -47,26 +49,60 @@ export default function AdminAnalyticsPage() {
       <h1 className="ph-page-title">{COPY.title}</h1>
       <p className="ph-page-subtitle">{COPY.subtitle}</p>
 
-      <div className="ph-form" style={{ flexDirection: 'row', gap: '1rem', alignItems: 'flex-end' }}>
+      <div
+        className="ph-form"
+        style={{ flexDirection: 'row', gap: '1rem', alignItems: 'flex-end' }}
+      >
         <div className="ph-field">
-          <label className="ph-label" htmlFor="from">{COPY.from}</label>
-          <input id="from" type="date" className="ph-input" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <label className="ph-label" htmlFor="from">
+            {COPY.from}
+          </label>
+          <input
+            id="from"
+            type="date"
+            className="ph-input"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
         </div>
         <div className="ph-field">
-          <label className="ph-label" htmlFor="to">{COPY.to}</label>
-          <input id="to" type="date" className="ph-input" value={to} onChange={(e) => setTo(e.target.value)} />
+          <label className="ph-label" htmlFor="to">
+            {COPY.to}
+          </label>
+          <input
+            id="to"
+            type="date"
+            className="ph-input"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
         </div>
       </div>
 
-      {isLoading && <p className="ph-state">{COPY.loading}</p>}
+      {isLoading && (
+        <p className="ph-state" style={{ display: 'flex', justifyContent: 'center' }}>
+          <Spinner />
+        </p>
+      )}
       {isError && <p className="ph-state">{getErrorMessage(error)}</p>}
 
       {data && (
-        <div className="ph-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', marginTop: '1.5rem' }}>
+        <div
+          className="ph-grid"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            marginTop: '1.5rem',
+          }}
+        >
           <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
             <DollarSign size={20} strokeWidth={1.5} aria-hidden="true" />
             <div className="ph-catalogue-card-title">{COPY.revenue}</div>
-            <p className="ph-catalogue-card-desc">{(data.revenue_cents / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</p>
+            <p className="ph-catalogue-card-desc">
+              {(data.revenue_cents / 100).toLocaleString(undefined, {
+                style: 'currency',
+                currency: 'USD',
+              })}
+            </p>
           </div>
           <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
             <CheckCircle2 size={20} strokeWidth={1.5} aria-hidden="true" />

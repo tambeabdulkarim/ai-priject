@@ -17,7 +17,6 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
       <Navigation locale={locale} />
 
       <main className="ph-main">
-
         {/* ─── Hero ─────────────────────────────────────── */}
         <Hero locale={locale} />
 
@@ -34,7 +33,6 @@ export default function HomePageContent({ locale }: HomePageContentProps) {
 
         {/* ─── Bottom stats bar ─────────────────────────── */}
         <BottomStatistics />
-
       </main>
 
       <Footer locale={locale} />

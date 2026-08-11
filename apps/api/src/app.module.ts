@@ -21,6 +21,8 @@ import { FilesModule } from './modules/files/files.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
+import { LearningPathsModule } from './modules/learning-paths/learning-paths.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { ProgressModule } from './modules/progress/progress.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
@@ -32,6 +34,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { NewsModule } from './modules/news/news.module';
 import { MediaModule } from './modules/media/media.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -55,6 +58,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     StorageModule,
     StripeModule,
     CommonModule,
+    HealthModule,
     AuthModule,
     UsersModule,
     RolesModule,
@@ -67,6 +71,8 @@ import { SettingsModule } from './modules/settings/settings.module';
     CategoriesModule,
     CoursesModule,
     LessonsModule,
+    LearningPathsModule,
+    ProjectsModule,
     EnrollmentsModule,
     ProgressModule,
     CertificatesModule,

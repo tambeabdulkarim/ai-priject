@@ -5,7 +5,7 @@ export function createTask(title: string, priority: Task['priority']): Task {
     id: Date.now(),
     title: title.trim() || 'Untitled task',
     completed: false,
-    priority
+    priority,
   };
 }
 

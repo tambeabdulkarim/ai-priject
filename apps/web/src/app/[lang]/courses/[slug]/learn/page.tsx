@@ -23,8 +23,18 @@ import { getErrorMessage } from '../../../../../utils/errors';
 import { ROUTES, withLang } from '../../../../../constants/routes';
 
 const COPY = {
-  ar: { loading: 'جارٍ التحميل...', error: 'تعذّر تحميل الدورة.', locked: 'مقفل', progress: 'التقدم' },
-  en: { loading: 'Loading...', error: 'Couldn’t load this course.', locked: 'Locked', progress: 'Progress' },
+  ar: {
+    loading: 'جارٍ التحميل...',
+    error: 'تعذّر تحميل الدورة.',
+    locked: 'مقفل',
+    progress: 'التقدم',
+  },
+  en: {
+    loading: 'Loading...',
+    error: 'Couldn’t load this course.',
+    locked: 'Locked',
+    progress: 'Progress',
+  },
 } as const;
 
 const CONTENT_ICON = { video: PlayCircle, text: FileText, quiz: HelpCircle } as const;
@@ -57,7 +67,9 @@ function LearnOverviewContent() {
               <h1 className="ph-page-title">{course.title}</h1>
               {typeof progress?.completionPercent === 'number' && (
                 <div className="ph-detail-meta">
-                  <span>{t.progress}: {progress.completionPercent}%</span>
+                  <span>
+                    {t.progress}: {progress.completionPercent}%
+                  </span>
                 </div>
               )}
             </header>
@@ -67,7 +79,8 @@ function LearnOverviewContent() {
                 <div className="ph-module-title">{module_.title}</div>
                 {module_.lessons.map((lesson) => {
                   const Icon = CONTENT_ICON[lesson.contentType];
-                  const isLocked = !lesson.isPreview && lesson.contentType === 'text' && lesson.body === null;
+                  const isLocked =
+                    !lesson.isPreview && lesson.contentType === 'text' && lesson.body === null;
                   const lessonProgress = progressByLessonId.get(lesson.id);
                   const isComplete = Boolean(lessonProgress?.completedAt);
 
@@ -83,21 +96,39 @@ function LearnOverviewContent() {
                           href={withLang(ROUTES.lessonLearn, locale)
                             .replace('[slug]', params.slug)
                             .replace('[lessonId]', lesson.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'inherit' }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            color: 'inherit',
+                          }}
                         >
                           <Icon size={16} strokeWidth={2} aria-hidden="true" />
                           {lesson.title}
                         </Link>
                       )}
                       {isLocked ? (
-                        <span className="ph-lesson-locked" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span
+                          className="ph-lesson-locked"
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
                           <Lock size={12} strokeWidth={2} aria-hidden="true" />
                           {t.locked}
                         </span>
                       ) : isComplete ? (
-                        <CheckCircle2 size={16} strokeWidth={2} color="var(--accent-cyan)" aria-hidden="true" />
+                        <CheckCircle2
+                          size={16}
+                          strokeWidth={2}
+                          color="var(--accent-cyan)"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Circle size={16} strokeWidth={2} className="ph-lesson-locked" aria-hidden="true" />
+                        <Circle
+                          size={16}
+                          strokeWidth={2}
+                          className="ph-lesson-locked"
+                          aria-hidden="true"
+                        />
                       )}
                     </div>
                   );

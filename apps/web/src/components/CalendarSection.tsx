@@ -10,11 +10,15 @@ type CalendarEvent = {
 const events: CalendarEvent[] = [
   { title: 'Planning review', time: '09:00' },
   { title: 'Design sync', time: '11:30' },
-  { title: 'Launch prep', time: '15:00' }
+  { title: 'Launch prep', time: '15:00' },
 ];
 
 export default function CalendarSection() {
-  const dayLabel = useMemo(() => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }), []);
+  const dayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+    [],
+  );
 
   return (
     <section className="panel-card calendar-panel">

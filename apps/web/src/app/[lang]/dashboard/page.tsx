@@ -69,7 +69,9 @@ function DashboardContent() {
           <Link href={withLang(ROUTES.notifications, locale)} className="ph-catalogue-card">
             <Bell size={24} strokeWidth={1.5} aria-hidden="true" />
             <h2 className="ph-catalogue-card-title">{t.notifications}</h2>
-            <p className="ph-catalogue-card-desc">{notifications?.unreadCount ?? 0} {t.unread}</p>
+            <p className="ph-catalogue-card-desc">
+              {notifications?.unreadCount ?? 0} {t.unread}
+            </p>
           </Link>
 
           <Link href={withLang(ROUTES.certificatesList, locale)} className="ph-catalogue-card">

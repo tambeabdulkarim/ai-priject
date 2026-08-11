@@ -15,7 +15,13 @@ export function createLibraryResource(request: RequestFn) {
       request<PaginatedResponse<LibraryItemSummary>>({
         method: 'GET',
         path: '/library/items',
-        query: { cursor: query.cursor, limit: query.limit, category: query.category, author: query.author, q: query.q },
+        query: {
+          cursor: query.cursor,
+          limit: query.limit,
+          category: query.category,
+          author: query.author,
+          q: query.q,
+        },
       }),
 
     getBySlug: (slug: string) =>

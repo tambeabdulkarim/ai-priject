@@ -33,11 +33,17 @@ const COPY = {
     loading: 'جارٍ التحميل...',
     notFound: 'لم يتم العثور على الدورة.',
     instructor: 'معرّف المدرّس',
-    status: { draft: 'مسودة', in_review: 'قيد المراجعة', published: 'منشورة', archived: 'مؤرشفة' } as Record<string, string>,
+    status: {
+      draft: 'مسودة',
+      in_review: 'قيد المراجعة',
+      published: 'منشورة',
+      archived: 'مؤرشفة',
+    } as Record<string, string>,
     publish: 'نشر الدورة',
     publishing: 'جارٍ النشر...',
     published: 'تم نشر الدورة.',
-    noAction: 'لا يمكنك تنفيذ أي إجراء على هذه الدورة. صلاحية النشر (course:publish) مقتصرة على content_editor/admin. لا يوجد إجراء "رفض" في الخادم الحقيقي — الخيار الوحيد لإخراج الدورة من قيد المراجعة غير النشر هو الأرشفة، وهي مقتصرة على المالك أو فريق التحرير أيضًا.',
+    noAction:
+      'لا يمكنك تنفيذ أي إجراء على هذه الدورة. صلاحية النشر (course:publish) مقتصرة على content_editor/admin. لا يوجد إجراء "رفض" في الخادم الحقيقي — الخيار الوحيد لإخراج الدورة من قيد المراجعة غير النشر هو الأرشفة، وهي مقتصرة على المالك أو فريق التحرير أيضًا.',
     modules: 'الوحدات',
     lessons: 'الدروس',
   },
@@ -45,11 +51,17 @@ const COPY = {
     loading: 'Loading...',
     notFound: 'Course not found.',
     instructor: 'Instructor ID',
-    status: { draft: 'Draft', in_review: 'In review', published: 'Published', archived: 'Archived' } as Record<string, string>,
+    status: {
+      draft: 'Draft',
+      in_review: 'In review',
+      published: 'Published',
+      archived: 'Archived',
+    } as Record<string, string>,
     publish: 'Publish course',
     publishing: 'Publishing...',
     published: 'Course published.',
-    noAction: 'You cannot act on this course. The publish permission (course:publish) is restricted to content_editor/admin. There is no "reject" action on the real backend — the only way out of review besides publishing is archiving, which is also restricted to the owner or editorial roles.',
+    noAction:
+      'You cannot act on this course. The publish permission (course:publish) is restricted to content_editor/admin. There is no "reject" action on the real backend — the only way out of review besides publishing is archiving, which is also restricted to the owner or editorial roles.',
     modules: 'Modules',
     lessons: 'Lessons',
   },
@@ -74,32 +86,55 @@ function CourseReviewContent() {
       <main className="ph-page">
         <h1 className="ph-page-title">{course.title}</h1>
         <p className="ph-page-subtitle">{t.status[course.status] ?? course.status}</p>
-        <p>{t.instructor}: {course.instructorId}</p>
+        <p>
+          {t.instructor}: {course.instructorId}
+        </p>
         {course.description && <p style={{ marginTop: '0.75rem' }}>{course.description}</p>}
 
         <div style={{ marginTop: '1.5rem' }}>
-          {publish.error && <div className="ph-form-error" role="alert">{getErrorMessage(publish.error)}</div>}
-          {publish.isSuccess && !publish.data?.error && <div className="ph-form-success" role="status">{t.published}</div>}
+          {publish.error && (
+            <div className="ph-form-error" role="alert">
+              {getErrorMessage(publish.error)}
+            </div>
+          )}
+          {publish.isSuccess && !publish.data?.error && (
+            <div className="ph-form-success" role="status">
+              {t.published}
+            </div>
+          )}
 
           {course.status === 'in_review' && canPublish && (
-            <button type="button" className="ph-btn-grad" onClick={() => publish.mutate(course.id)} disabled={publish.isPending}>
+            <button
+              type="button"
+              className="ph-btn-grad"
+              onClick={() => publish.mutate(course.id)}
+              disabled={publish.isPending}
+            >
               {publish.isPending ? t.publishing : t.publish}
             </button>
           )}
           {course.status === 'in_review' && !canPublish && (
-            <p className="ph-form-error" role="note">{t.noAction}</p>
+            <p className="ph-form-error" role="note">
+              {t.noAction}
+            </p>
           )}
         </div>
 
         <section style={{ marginTop: '2rem' }}>
           <h2 className="ph-catalogue-card-title">{t.modules}</h2>
           {course.modules.map((mod) => (
-            <div key={mod.id} className="ph-catalogue-card" style={{ cursor: 'default', marginBottom: '1rem' }}>
+            <div
+              key={mod.id}
+              className="ph-catalogue-card"
+              style={{ cursor: 'default', marginBottom: '1rem' }}
+            >
               <h3 className="ph-catalogue-card-title">{mod.title}</h3>
               <h4>{t.lessons}</h4>
               <ul>
                 {mod.lessons.map((lesson) => (
-                  <li key={lesson.id}>{lesson.title} <em>({lesson.contentType})</em></li>
+                  <li key={lesson.id}>
+                    {lesson.title} <em>({lesson.contentType})</em>
+                  </li>
                 ))}
               </ul>
             </div>

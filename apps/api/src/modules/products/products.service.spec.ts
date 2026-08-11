@@ -52,7 +52,11 @@ describe('ProductsService', () => {
     productsRepository.findBySlug.mockResolvedValue(null);
     productsRepository.create.mockResolvedValue({ id: 'p1', status: 'draft', slug: 'template' });
 
-    const result = await service.create('admin1', { title: 'Template', categoryId: 'cat1', fileId: 'f1' });
+    const result = await service.create('admin1', {
+      title: 'Template',
+      categoryId: 'cat1',
+      fileId: 'f1',
+    });
 
     expect(result.status).toBe('draft');
     expect(auditLogService.record).toHaveBeenCalledWith(
@@ -71,8 +75,18 @@ describe('ProductsService', () => {
 
   it('allows an admin to update a product they do not own', async () => {
     const { service, productsRepository } = makeService();
-    productsRepository.findById.mockResolvedValue({ id: 'p1', ownerId: 'owner1', status: 'draft', priceCents: 0 });
-    productsRepository.update.mockResolvedValue({ id: 'p1', title: 'New title', status: 'draft', priceCents: 0 });
+    productsRepository.findById.mockResolvedValue({
+      id: 'p1',
+      ownerId: 'owner1',
+      status: 'draft',
+      priceCents: 0,
+    });
+    productsRepository.update.mockResolvedValue({
+      id: 'p1',
+      title: 'New title',
+      status: 'draft',
+      priceCents: 0,
+    });
 
     const result = await service.update('p1', { title: 'New title' }, 'admin1', ['admin']);
 

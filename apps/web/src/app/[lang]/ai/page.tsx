@@ -38,14 +38,17 @@ const COPY = {
     requestsUsed: 'الطلبات المستخدمة',
     tokensUsed: 'الرموز المستخدمة',
     quotaLimit: 'حد الحصة',
-    notTracked: 'لم يتم رصد أي استخدام لهذه الفترة بعد — لا يوجد سجل حصة (AiUsage) لهذا المستخدم حاليًا.',
+    notTracked:
+      'لم يتم رصد أي استخدام لهذه الفترة بعد — لا يوجد سجل حصة (AiUsage) لهذا المستخدم حاليًا.',
     viewQuota: 'عرض تفاصيل الحصة',
     lookupTitle: 'عرض طلب محدد',
-    lookupDesc: 'لا توجد واجهة برمجية لعرض قائمة الطلبات السابقة — أدخل معرّف طلب (UUID) تعرفه مسبقًا لعرض تفاصيله.',
+    lookupDesc:
+      'لا توجد واجهة برمجية لعرض قائمة الطلبات السابقة — أدخل معرّف طلب (UUID) تعرفه مسبقًا لعرض تفاصيله.',
     requestIdPlaceholder: 'معرّف الطلب (UUID)',
     view: 'عرض',
     tryTitle: 'تجربة إنشاء طلب ذكاء اصطناعي',
-    tryDesc: 'يستدعي هذا زر نقطة النهاية الحقيقية POST /ai/requests. سترى دائمًا خطأ 501 حقيقيًا من الخادم — هذه ميزة محظورة حسب التوثيق حاليًا، وليست عطلًا مؤقتًا.',
+    tryDesc:
+      'يستدعي هذا زر نقطة النهاية الحقيقية POST /ai/requests. سترى دائمًا خطأ 501 حقيقيًا من الخادم — هذه ميزة محظورة حسب التوثيق حاليًا، وليست عطلًا مؤقتًا.',
     tryButton: 'جرّب الآن (سيفشل بشكل متوقع)',
     trying: 'جارٍ الإرسال...',
   },
@@ -56,14 +59,17 @@ const COPY = {
     requestsUsed: 'Requests used',
     tokensUsed: 'Tokens used',
     quotaLimit: 'Quota limit',
-    notTracked: 'No usage has been tracked for this period yet — this user has no AiUsage row right now.',
+    notTracked:
+      'No usage has been tracked for this period yet — this user has no AiUsage row right now.',
     viewQuota: 'View quota details',
     lookupTitle: 'View a specific request',
-    lookupDesc: 'There is no endpoint to list past requests — enter a request ID (UUID) you already know to view its details.',
+    lookupDesc:
+      'There is no endpoint to list past requests — enter a request ID (UUID) you already know to view its details.',
     requestIdPlaceholder: 'Request ID (UUID)',
     view: 'View',
     tryTitle: 'Try creating an AI request',
-    tryDesc: 'This button calls the real POST /ai/requests endpoint. You will always see a genuine 501 error from the backend — this is a feature currently blocked by documentation, not a transient outage.',
+    tryDesc:
+      'This button calls the real POST /ai/requests endpoint. You will always see a genuine 501 error from the backend — this is a feature currently blocked by documentation, not a transient outage.',
     tryButton: 'Try it now (expected to fail)',
     trying: 'Sending...',
   },
@@ -97,13 +103,23 @@ function AiDashboardContent() {
         <p className="ph-page-subtitle">{t.subtitle}</p>
 
         <section>
-          <h2 className="ph-catalogue-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2
+            className="ph-catalogue-card-title"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
             <Gauge size={18} strokeWidth={1.5} aria-hidden="true" /> {t.usageTitle}
           </h2>
           {usageLoading && <p className="ph-state">…</p>}
-          {usage && usage.quotaLimit === null && <p className="ph-form-error" role="note">{t.notTracked}</p>}
+          {usage && usage.quotaLimit === null && (
+            <p className="ph-form-error" role="note">
+              {t.notTracked}
+            </p>
+          )}
           {usage && usage.quotaLimit !== null && (
-            <div className="ph-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+            <div
+              className="ph-grid"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}
+            >
               <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
                 <div className="ph-catalogue-card-title">{t.requestsUsed}</div>
                 <p className="ph-catalogue-card-desc">{usage.requestsUsed}</p>
@@ -118,36 +134,63 @@ function AiDashboardContent() {
               </div>
             </div>
           )}
-          <a href={withLang(ROUTES.aiQuota, locale)} className="ph-btn-outline" style={{ marginTop: '1rem', display: 'inline-flex' }}>
+          <a
+            href={withLang(ROUTES.aiQuota, locale)}
+            className="ph-btn-outline"
+            style={{ marginTop: '1rem', display: 'inline-flex' }}
+          >
             {t.viewQuota}
           </a>
         </section>
 
         <section style={{ marginTop: '2.5rem' }}>
-          <h2 className="ph-catalogue-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2
+            className="ph-catalogue-card-title"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
             <History size={18} strokeWidth={1.5} aria-hidden="true" /> {t.lookupTitle}
           </h2>
-          <p className="ph-form-error" role="note">{t.lookupDesc}</p>
-          <form className="ph-form" style={{ flexDirection: 'row', gap: '0.5rem' }} onSubmit={handleLookup}>
+          <p className="ph-form-error" role="note">
+            {t.lookupDesc}
+          </p>
+          <form
+            className="ph-form"
+            style={{ flexDirection: 'row', gap: '0.5rem' }}
+            onSubmit={handleLookup}
+          >
             <input
               className="ph-input"
               placeholder={t.requestIdPlaceholder}
               value={requestId}
               onChange={(e) => setRequestId(e.target.value)}
             />
-            <button type="submit" className="ph-btn-grad">{t.view}</button>
+            <button type="submit" className="ph-btn-grad">
+              {t.view}
+            </button>
           </form>
         </section>
 
         <section style={{ marginTop: '2.5rem' }}>
-          <h2 className="ph-catalogue-card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2
+            className="ph-catalogue-card-title"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
             <FlaskConical size={18} strokeWidth={1.5} aria-hidden="true" /> {t.tryTitle}
           </h2>
           <p className="ph-page-subtitle">{t.tryDesc}</p>
-          <button type="button" className="ph-btn-outline" onClick={handleTryRequest} disabled={tryRequest.isPending}>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            onClick={handleTryRequest}
+            disabled={tryRequest.isPending}
+          >
             {tryRequest.isPending ? t.trying : t.tryButton}
           </button>
-          {tryRequest.error && <div style={{ marginTop: '1rem' }}><BlockedRequestNotice error={tryRequest.error} locale={locale} /></div>}
+          {tryRequest.error && (
+            <div style={{ marginTop: '1rem' }}>
+              <BlockedRequestNotice error={tryRequest.error} locale={locale} />
+            </div>
+          )}
         </section>
       </main>
       <Footer locale={locale} />

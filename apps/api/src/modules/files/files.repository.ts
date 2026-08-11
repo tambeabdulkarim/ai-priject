@@ -60,7 +60,12 @@ export class FilesRepository {
    */
   async findEntitlementContext(fileId: string): Promise<{
     isAvatar: boolean;
-    lessonContexts: { lessonId: string; isPreview: boolean; courseId: string; instructorId: string }[];
+    lessonContexts: {
+      lessonId: string;
+      isPreview: boolean;
+      courseId: string;
+      instructorId: string;
+    }[];
     libraryItem: { id: string; priceCents: number | null } | null;
     product: { id: string; ownerId: string | null } | null;
     certificate: { id: string; userId: string } | null;
@@ -71,15 +76,28 @@ export class FilesRepository {
       module: { select: { course: { select: { id: true, instructorId: true } } } },
     } as const;
 
-    const [avatarUser, avatarAuthor, lessonFiles, media, libraryItem, product, certificate] = await Promise.all([
-      this.prisma.user.findFirst({ where: { avatarFileId: fileId }, select: { id: true } }),
-      this.prisma.author.findFirst({ where: { avatarFileId: fileId }, select: { id: true } }),
-      this.prisma.lessonFile.findMany({ where: { fileId }, select: { lesson: { select: lessonSelect } } }),
-      this.prisma.media.findUnique({ where: { fileId }, select: { lessons: { select: lessonSelect } } }),
-      this.prisma.libraryItem.findFirst({ where: { fileId }, select: { id: true, priceCents: true } }),
-      this.prisma.product.findFirst({ where: { fileId }, select: { id: true, ownerId: true } }),
-      this.prisma.certificate.findFirst({ where: { pdfFileId: fileId }, select: { id: true, userId: true } }),
-    ]);
+    const [avatarUser, avatarAuthor, lessonFiles, media, libraryItem, product, certificate] =
+      await Promise.all([
+        this.prisma.user.findFirst({ where: { avatarFileId: fileId }, select: { id: true } }),
+        this.prisma.author.findFirst({ where: { avatarFileId: fileId }, select: { id: true } }),
+        this.prisma.lessonFile.findMany({
+          where: { fileId },
+          select: { lesson: { select: lessonSelect } },
+        }),
+        this.prisma.media.findUnique({
+          where: { fileId },
+          select: { lessons: { select: lessonSelect } },
+        }),
+        this.prisma.libraryItem.findFirst({
+          where: { fileId },
+          select: { id: true, priceCents: true },
+        }),
+        this.prisma.product.findFirst({ where: { fileId }, select: { id: true, ownerId: true } }),
+        this.prisma.certificate.findFirst({
+          where: { pdfFileId: fileId },
+          select: { id: true, userId: true },
+        }),
+      ]);
 
     const rawLessons = [...lessonFiles.map((lf) => lf.lesson), ...(media?.lessons ?? [])];
     const lessonContexts = rawLessons.map((l) => ({

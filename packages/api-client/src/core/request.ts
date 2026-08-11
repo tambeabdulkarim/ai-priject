@@ -47,7 +47,10 @@ function isDocumentedErrorBody(value: unknown): value is { error: ApiErrorBody }
  * transient-failure retry and doesn't belong in TanStack Query's config.
  */
 export function createRequestFn(config: ApiClientConfig) {
-  async function requestOnce<T>(input: RequestInput, accessTokenOverride?: string | null): Promise<Response> {
+  async function requestOnce(
+    input: RequestInput,
+    accessTokenOverride?: string | null,
+  ): Promise<Response> {
     const url = buildUrl(config.baseUrl, input.path, input.query);
     const token = accessTokenOverride !== undefined ? accessTokenOverride : config.getAccessToken();
 
@@ -73,8 +76,11 @@ export function createRequestFn(config: ApiClientConfig) {
     // runtime range yet — feature-detected and cast defensively rather
     // than relied on at the type level, so this compiles regardless of
     // the configured DOM lib version.
-    const abortSignalAny = (AbortSignal as unknown as { any?: (signals: AbortSignal[]) => AbortSignal }).any;
-    const signal = signals.length > 1 && abortSignalAny ? abortSignalAny(signals) : timeoutController.signal;
+    const abortSignalAny = (
+      AbortSignal as unknown as { any?: (signals: AbortSignal[]) => AbortSignal }
+    ).any;
+    const signal =
+      signals.length > 1 && abortSignalAny ? abortSignalAny(signals) : timeoutController.signal;
 
     try {
       return await fetch(url, {
@@ -126,12 +132,12 @@ export function createRequestFn(config: ApiClientConfig) {
   }
 
   return async function request<T>(input: RequestInput): Promise<ApiResult<T>> {
-    const response = await requestOnce<T>(input);
+    const response = await requestOnce(input);
 
     if (response.status === 401 && !input.skipAuthRetry) {
       const newToken = await config.onUnauthorized();
       if (newToken) {
-        const retried = await requestOnce<T>(input, newToken);
+        const retried = await requestOnce(input, newToken);
         return parseResult<T>(retried);
       }
       // Refresh itself failed — surface the original 401 as a documented

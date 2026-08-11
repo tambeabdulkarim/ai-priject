@@ -1,0 +1,647 @@
+<title>Phoenix Platform — Visual Review Gallery</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Interactive, read-only visual review of the Phoenix platform against its own design language — Phase 14.6C." />
+<link rel="stylesheet" href="styles.css" />
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">🔥</span>
+      <span>Phoenix Visual Review<br /><small>Phase 14.6C · Read-only</small></span>
+    </div>
+    <nav class="topnav-links">
+      <a href="#summary">Summary</a>
+      <a href="#screens">Screens</a>
+      <a href="#comparison">Design Language</a>
+      <a href="#responsive">Responsive</a>
+      <a href="#dashboard">Dashboard</a>
+    </nav>
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="screen-search" placeholder="Filter screens…" aria-label="Filter screens by name" />
+    </div>
+  </div>
+</div>
+
+<header class="hero">
+  <span class="eyebrow">Phase 14.6C · Interactive Visual Review Gallery</span>
+  <h1>The Phoenix platform, screen by screen, against its own design language.</h1>
+  <p class="lede">
+    Every screenshot below is real — captured with a live browser against the running application, not inferred from source.
+    This gallery reorganizes <a href="../platform-visual-review.md">platform-visual-review.md</a> and
+    <a href="../platform-pixel-audit.md">platform-pixel-audit.md</a> into a visual-first review package. No platform code was touched to build it.
+  </p>
+  <div class="hero-meta">
+    <span><span class="dot"></span>23 real screenshots</span>
+    <span>20 screens reviewed</span>
+    <span>3 viewports (desktop / tablet / mobile)</span>
+    <span>Captured 2026-08-05</span>
+  </div>
+</header>
+
+<main class="page-shell">
+
+  <section class="section" id="summary" style="margin-top:0;">
+    <div class="section-head">
+      <h2>Executive Summary</h2>
+    </div>
+    <p class="section-intro">
+      The public homepage is a polished, custom-built AI-SaaS marketing page. Everything behind the login wall is a visually
+      different, much plainer product — flat cards, no gradients, no glass, no status color-coding. That gap, plus three
+      reproducible engineering bugs (a header that never shows logged-in state, a broken <code>/instructor/courses</code> route,
+      and a tablet-width header overflow), are the platform's biggest open items. Full reasoning in
+      <a href="../platform-pixel-audit.md">platform-pixel-audit.md</a>.
+    </p>
+    <div class="score-grid">
+      <div class="score-card overall">
+        <div class="big b-amber">47<span style="font-size:18px;">/100</span></div>
+        <div class="label">Overall Platform Score</div>
+      </div>
+      <div class="score-card"><div class="big">5<span style="font-size:16px;">/10</span></div><div class="label">Design</div></div>
+      <div class="score-card"><div class="big">6<span style="font-size:16px;">/10</span></div><div class="label">UX</div></div>
+      <div class="score-card"><div class="big">5<span style="font-size:16px;">/10</span></div><div class="label">Consistency</div></div>
+      <div class="score-card"><div class="big">7<span style="font-size:16px;">/10</span></div><div class="label">Engineering</div></div>
+      <div class="score-card"><div class="big">7<span style="font-size:16px;">/10</span></div><div class="label">Accessibility</div></div>
+      <div class="score-card"><div class="big">5<span style="font-size:16px;">/10</span></div><div class="label">Responsiveness</div></div>
+      <div class="score-card"><div class="big b-red">55%</div><div class="label">Visual Polish Remaining</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="screens">
+    <div class="section-head">
+      <h2>Screen-by-Screen Review</h2>
+      <span class="count-pill" id="screen-count-pill">20 screens</span>
+    </div>
+    <p class="section-intro">Click any section header to expand or collapse it. Click any screenshot to open it full-size, then use the arrow keys to page through every image in the gallery.</p>
+    <div id="screens-mount"></div>
+    <p class="no-results" id="no-results">No screens match "<span id="no-results-term"></span>".</p>
+  </section>
+
+  <section class="section" id="comparison">
+    <div class="section-head"><h2>Phoenix Design Language — Comparison</h2></div>
+    <p class="section-intro">How consistently each element of the platform's own visual identity — as established on the live homepage — survives once a user moves past it.</p>
+    <div class="compare-table-wrap">
+      <table class="compare-table" id="compare-table">
+        <thead><tr><th>Topic</th><th>Verdict</th><th>Note</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="responsive">
+    <div class="section-head"><h2>Responsive Review</h2></div>
+    <p class="section-intro">Only the homepage was captured across all three viewports this session; the finding below is real and specific to that page, not extrapolated to interior screens.</p>
+    <div class="responsive-grid" id="responsive-mount"></div>
+  </section>
+
+  <section class="section" id="dashboard">
+    <div class="section-head"><h2>Final Management Dashboard</h2></div>
+    <div class="dash-grid">
+      <div class="dash-card critical"><div class="count">4</div><div class="dash-label">Critical Issues</div></div>
+      <div class="dash-card high"><div class="count">2</div><div class="dash-label">High Priority</div></div>
+      <div class="dash-card medium"><div class="count">3</div><div class="dash-label">Medium Priority</div></div>
+      <div class="dash-card low"><div class="count">3</div><div class="dash-label">Low Priority</div></div>
+    </div>
+    <div class="dash-bottom">
+      <div class="metric-card">
+        <h4>Visual Completion</h4>
+        <div class="gauge-row"><div class="gauge-num">45%</div></div>
+        <div class="gauge-track" style="margin-top:12px;"><div class="gauge-fill" style="width:45%;"></div></div>
+      </div>
+      <div class="metric-card">
+        <h4>Production Readiness</h4>
+        <div class="gauge-row"><div class="gauge-num">47%</div></div>
+        <div class="gauge-track" style="margin-top:12px;"><div class="gauge-fill" style="width:47%;"></div></div>
+      </div>
+      <div class="metric-card">
+        <h4>Estimated Remaining Work</h4>
+        <p style="font-size:13px;color:var(--text-dim);margin:0;">
+          Unify the logged-in product's card/panel/gradient language with the homepage; add status color-coding across
+          course/order states; fix the header auth-state bug and the tablet breakpoint; repair or remove the
+          <code>/instructor/courses</code> route; clean E2E test data out of admin-facing views before any further design review.
+        </p>
+      </div>
+    </div>
+    <div class="reco-final">
+      <h4>Recommendation</h4>
+      <p><strong>Ship-blocking:</strong> the header auth-state bug and the <code>/instructor/courses</code> 404 are functional defects, not polish — fix before any visual work.</p>
+      <p><strong>Design-blocking:</strong> the logged-in product needs its own pass to inherit the homepage's card, gradient, and glass language before this reads as one product.</p>
+      <p><strong>Not blocking:</strong> icon/illustration polish, animation, and skeleton states are real gaps but lowest priority relative to the above.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  Phoenix Project · Phase 14.6C Visual Review Gallery · Read-only, built entirely from screenshots in
+  <a href="../assets/visual-review-2026-08-05/">docs/assets/visual-review-2026-08-05/</a> · No platform source, styles, or components were modified.
+</footer>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+  <button class="lb-close" id="lb-close" aria-label="Close (Esc)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <button class="lb-btn lb-prev" id="lb-prev" aria-label="Previous image (←)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <img id="lb-img" src="" alt="" />
+  <button class="lb-btn lb-next" id="lb-next" aria-label="Next image (→)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+  <div class="lightbox-caption">
+    <div class="lb-title" id="lb-title"></div>
+    <div id="lb-sub"></div>
+    <div class="lb-count" id="lb-count"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Data — every field below is drawn directly from the real observations
+   recorded in docs/platform-visual-review.md and docs/platform-pixel-audit.md.
+   Nothing here was invented for presentation purposes; "responsive: null"
+   means that viewport genuinely was not captured for that screen.
+   ===================================================================== */
+const ASSET_BASE = "../assets/visual-review-2026-08-05/";
+
+const SCREENS = [
+  {
+    id: "homepage", title: "Homepage", route: "/ar", img: "01-landing-desktop-full.png",
+    extraImg: "02-landing-desktop-viewport-top.png", extraImgLabel: "Header & Hero — above-the-fold close-up",
+    ratings: { design: 9, ux: 8, consistency: 10, engineering: 8, accessibility: 6, responsive: 6 },
+    match: 88,
+    findings: [
+      { good: true, text: "Custom illustration, gradient CTAs, and glass-panel hero — this is the platform's real visual identity" },
+      { good: true, text: "5-column footer, bottom stats bar, and feature grid all render cleanly at desktop width" },
+      { good: false, text: "Hero stat widgets show decorative system metrics (\"GPU Status 92%\") instead of real platform numbers" },
+      { good: false, text: "Feature grid is 1×6, not the 3×2 grid the platform's own approved reference calls for" },
+      { good: false, text: "English strings (\"Neural Network\", \"Model Training\") leak into an otherwise fully Arabic page" },
+    ],
+    critical: ["Header navigation overflows and clips at tablet width (~820px) — login/register become unreachable"],
+    recommendation: "This page is the bar every other screen should be measured against — the majority of the platform's design budget clearly went here. Fixing the tablet breakpoint and reconciling the hero stats with real data are the only two real gaps.",
+  },
+  {
+    id: "login", title: "Login", route: "/ar/login", img: "15-login-desktop.png",
+    ratings: { design: 4, ux: 7, consistency: 3, engineering: 8, accessibility: 7, responsive: null },
+    match: 35,
+    findings: [
+      { good: true, text: "Clean, focused single-purpose form with clear labels and a working \"forgot password\" link" },
+      { good: true, text: "Primary button correctly uses the brand's purple→pink gradient" },
+      { good: false, text: "No card, panel, border, or glass treatment — the form floats directly on the flat background" },
+      { good: false, text: "Zero visual continuity with the homepage's hero/glass identity beyond the logo and button color" },
+    ],
+    critical: [],
+    recommendation: "Functionally solid and fast to use. The visual gap is real but low-risk to close: wrap the form in the same glass-panel treatment used in the homepage hero.",
+  },
+  {
+    id: "register", title: "Register", route: "/ar/register", img: "16-register-desktop.png",
+    ratings: { design: 4, ux: 7, consistency: 3, engineering: 8, accessibility: 7, responsive: null },
+    match: 35,
+    findings: [
+      { good: true, text: "Perfectly consistent with the Login page — same layout, spacing, and validation style" },
+      { good: true, text: "Real inline password-length hint (\"10 أحرف على الأقل\") shown before submission" },
+      { good: false, text: "Same bare-form-on-void treatment as Login, same distance from the brand identity" },
+    ],
+    critical: [],
+    recommendation: "No changes needed relative to Login — whatever treatment Login receives should be applied identically here to preserve the one pairing on the platform that is already fully consistent.",
+  },
+  {
+    id: "student-dashboard", title: "Student Dashboard", route: "/ar/dashboard", img: "07-student-dashboard-desktop.png",
+    ratings: { design: 4, ux: 6, consistency: 5, engineering: 8, accessibility: 7, responsive: null },
+    match: 40,
+    findings: [
+      { good: true, text: "Four stat cards (Profile / Certificates / Notifications / My Courses) show real, correct zero-state data" },
+      { good: false, text: "Header shows Login/Create Account buttons despite an active, working authenticated session" },
+      { good: false, text: "Stat cards have no icons, unlike the visually similar Instructor Dashboard cards" },
+      { good: false, text: "Large empty area between the card row and the footer with nothing to fill it" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The data layer is genuinely correct — this is a presentation problem, not a functionality one. Icons on the stat cards and a fix to the header bug would close most of the gap.",
+  },
+  {
+    id: "instructor-dashboard", title: "Instructor Dashboard", route: "/ar/instructor", img: "21-instructor-dashboard-desktop.png",
+    ratings: { design: 5, ux: 6, consistency: 6, engineering: 7, accessibility: 7, responsive: null },
+    match: 48,
+    findings: [
+      { good: true, text: "5 icon+label+number stat cards with real, live counts (35 total / 32 draft / 2 in review / 1 published)" },
+      { good: true, text: "Honest disclosure banner explains progress stats aren't available server-side rather than faking them" },
+      { good: false, text: "32 of 35 listed courses are raw E2E test fixtures (\"E2E Editor Course 1785834711847\"), visible to a real account" },
+      { good: false, text: "Course status shown as plain lowercase text (\"draft\", \"in_review\") with no color badge" },
+      { good: false, text: "No search, filter, or pagination on a 35-item course grid" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session", "32 of 35 listed courses are raw E2E test fixtures, visible to a real instructor account"],
+    recommendation: "The most functionally complete interior screen on the platform. It needs a status-chip component and a search/filter bar before it can be judged as a finished course-management surface — and the test data needs to be cleared before this screen can be design-reviewed on real content.",
+  },
+  {
+    id: "instructor-courses", title: "Instructor Courses", route: "/ar/instructor/courses", img: "22-instructor-courses-desktop.png",
+    ratings: { design: null, ux: 1, consistency: null, engineering: 2, accessibility: 5, responsive: null },
+    match: 8,
+    findings: [
+      { good: true, text: "The 404 page itself is clean, on-brand, and correctly styled" },
+      { good: false, text: "The route returns a real 404 for a real, logged-in instructor account — this is not a permissions issue" },
+    ],
+    critical: ["Route returns a real 404 — a broken or unimplemented page, not a design issue", "Header shows logged-out state despite active authenticated session"],
+    recommendation: "Engineering issue, not a design one. This needs investigation before it can be visually reviewed at all — right now there is nothing here to audit.",
+  },
+  {
+    id: "media-manager", title: "Media Manager", route: "/ar/instructor/media", img: "23-instructor-media-desktop.png",
+    ratings: { design: 6, ux: 8, consistency: 6, engineering: 8, accessibility: 7, responsive: null },
+    match: 55,
+    findings: [
+      { good: true, text: "The only logged-in screen with a real search + type filter + grid/list view toggle combination" },
+      { good: true, text: "Drag-and-drop upload zone and empty state (\"لا توجد وسائط بعد\") are both clear and correctly implemented" },
+      { good: false, text: "Still shares the same flat, borderless, un-branded visual weight as the rest of the interior product" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The strongest interaction design of any interior screen — treat this page's search/filter/view-toggle pattern as the template other list screens (Instructor Dashboard, Admin Users, Orders) should adopt.",
+  },
+  {
+    id: "moderation-queue", title: "Moderator Queue", route: "/ar/moderator/queue", img: "11-moderation-queue-desktop.png",
+    ratings: { design: 5, ux: 6, consistency: 6, engineering: 7, accessibility: 7, responsive: null },
+    match: 45,
+    findings: [
+      { good: true, text: "Clear filter tabs (All / Courses / Comments) and an unambiguous \"under review\" status label" },
+      { good: false, text: "Both items pending review are E2E test fixtures (\"E2E Review Course 1785834620071\")" },
+      { good: false, text: "Same sparse single-row-then-empty-space layout seen on the Course Catalog — caused by low real content volume" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "Functionally sound moderation flow. Needs real content to properly evaluate layout at scale — right now the queue is too sparse to judge how it behaves with more than a couple of items.",
+  },
+  {
+    id: "admin-dashboard", title: "Admin Dashboard", route: "/ar/admin", img: "12-admin-dashboard-desktop.png",
+    ratings: { design: 6, ux: 7, consistency: 5, engineering: 8, accessibility: 7, responsive: null },
+    match: 52,
+    findings: [
+      { good: true, text: "Real, live metrics (MAU 9, DAU 4, 0% completion, $0 revenue) — not placeholder numbers" },
+      { good: true, text: "Honest disclosure box explains which totals aren't available server-side, with real links instead of fabricated data" },
+      { good: false, text: "The only screen on the platform with a persistent left sidebar — Instructor and Moderator areas have no equivalent" },
+      { good: false, text: "Metrics are plain numbers in cards, no sparkline, trend arrow, or chart of any kind" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The admin area's honesty about data limitations is a real strength worth preserving. A lightweight trend indicator on each metric card and reconciling the sidebar pattern with the rest of the platform are the two highest-value next steps.",
+  },
+  {
+    id: "admin-users", title: "Admin Users", route: "/ar/admin/users", img: "13-admin-users-desktop.png",
+    ratings: { design: 5, ux: 5, consistency: 6, engineering: 7, accessibility: 6, responsive: null },
+    match: 42,
+    findings: [
+      { good: true, text: "Real, live account list with working search/status/role filter controls" },
+      { good: false, text: "~13 of the listed accounts are \"E2E Register Test...\" rows with no visual distinction from real users" },
+      { good: false, text: "The schema's own isTestData flag exists specifically to support this distinction and isn't surfaced here" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session", "No visual indicator distinguishes ~13 test accounts from real ones despite isTestData flag existing"],
+    recommendation: "A single badge or filter toggle keyed off the existing isTestData flag would resolve the biggest usability problem on this screen with no new backend work required.",
+  },
+  {
+    id: "admin-audit-logs", title: "Admin Audit Logs", route: "/ar/admin/audit-logs", img: "14-admin-audit-logs-desktop.png",
+    ratings: { design: 6, ux: 7, consistency: 6, engineering: 8, accessibility: 7, responsive: null },
+    match: 50,
+    findings: [
+      { good: true, text: "Real, live audit trail (mfa.enabled, login.success, media.created) — genuinely confirms MFA and media features work end-to-end" },
+      { good: true, text: "Filters honestly disclose they're exact-match only, not fuzzy search, avoiding a misleading affordance" },
+      { good: false, text: "Same plain-table presentation as Admin Users, no visual hierarchy between event severities" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "One of the more trustworthy screens on the platform — the exact-match disclosure is exactly the kind of honesty that should be the house style. A severity indicator (info/warning) on log rows would be the next natural improvement.",
+  },
+  {
+    id: "course-catalog", title: "Course Catalog", route: "/ar/courses", img: "03-course-catalog-desktop.png",
+    ratings: { design: 5, ux: 6, consistency: 6, engineering: 7, accessibility: 7, responsive: null },
+    match: 42,
+    findings: [
+      { good: true, text: "Real search input and clean card styling on the one real (test-fixture) course present" },
+      { good: false, text: "Only one course exists in the entire catalog, leaving most of the page's vertical space empty" },
+      { good: false, text: "Can't evaluate multi-item grid behavior, sorting, or pagination — there's nothing to page through yet" },
+    ],
+    critical: [],
+    recommendation: "This page cannot be meaningfully design-reviewed until there is real catalog content in the database — the emptiness observed is a content problem, not (as far as this audit can tell) a layout defect.",
+  },
+  {
+    id: "course-details", title: "Course Details", route: "/ar/courses/[slug]", img: "04-course-details-desktop.png",
+    ratings: { design: null, ux: 5, consistency: 5, engineering: 6, accessibility: 6, responsive: null },
+    match: 38,
+    findings: [
+      { good: true, text: "Module/lesson structure with a locked-lesson indicator renders correctly" },
+      { good: false, text: "No description, thumbnail, instructor byline, rating, or enroll button visible anywhere on the page" },
+      { good: false, text: "Course title itself is untranslated English (\"Verify Moderator Fix...\") on an Arabic page" },
+    ],
+    critical: [],
+    recommendation: "Inconclusive by design: the only real course in the database is itself a bare test fixture, so it's not possible to tell whether the missing fields (thumbnail, description, byline) are a template gap or simply absent data. Needs re-review against a real, fully-populated course.",
+  },
+  {
+    id: "checkout", title: "Checkout", route: "/ar/checkout", img: "20-checkout-desktop.png",
+    ratings: { design: 4, ux: 6, consistency: 6, engineering: 7, accessibility: 7, responsive: null },
+    match: 40,
+    findings: [
+      { good: true, text: "Correct, unambiguous empty-cart state (\"سلتك فارغة\") with a single clear outline CTA back to the shop" },
+      { good: false, text: "Same bare, cardless, unbranded treatment as Login/Register/Profile/Settings" },
+    ],
+    critical: [],
+    recommendation: "Behaves correctly on the one real state it was possible to observe (empty cart). A populated-cart screenshot would be needed to review the actual checkout flow this page exists for.",
+  },
+  {
+    id: "profile", title: "Profile", route: "/ar/profile", img: "09-profile-desktop.png",
+    ratings: { design: 4, ux: 7, consistency: 5, engineering: 7, accessibility: 7, responsive: null },
+    match: 40,
+    findings: [
+      { good: true, text: "Genuinely honest in-product disclosure: avatar/name editing isn't available because no profile-file system exists server-side yet, stated plainly rather than left as a dead control" },
+      { good: true, text: "Real account data (email, confirmation status, role, member-since) displayed correctly" },
+      { good: false, text: "Plain stacked info-table layout with no card treatment, same as Settings" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The honest-disclosure pattern here is worth formalizing as a house style — it's a real strength. The visual treatment itself needs the same card/panel work as the rest of the account-management screens.",
+  },
+  {
+    id: "settings", title: "Settings", route: "/ar/settings", img: "10-settings-desktop.png",
+    ratings: { design: 4, ux: 7, consistency: 6, engineering: 8, accessibility: 7, responsive: null },
+    match: 42,
+    findings: [
+      { good: true, text: "Real, working MFA enablement flow with a correct \"not enabled\" state and clear enable button" },
+      { good: true, text: "Session management controls (log out / log out everywhere) both present and clearly labeled" },
+      { good: false, text: "Same flat list-style layout as Profile, no visual separation between the password, session, and MFA sections beyond spacing" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "Functionally the deepest account-settings screen on the platform. Grouping the three sections into distinct cards would substantially improve scannability without any new functionality.",
+  },
+  {
+    id: "certificates", title: "Certificates", route: "/ar/certificates", img: "18-certificates-desktop.png",
+    ratings: { design: 5, ux: 7, consistency: 8, engineering: 7, accessibility: 7, responsive: null },
+    match: 48,
+    findings: [
+      { good: true, text: "Correct empty state, and visually identical to the empty-state pattern used on My Courses, Checkout, Notifications, and Media Manager" },
+      { good: false, text: "No certificate template or preview available to review since no real certificates have been issued yet" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The empty-state pattern here is the single most consistent design element on the entire platform — it should be documented as a reusable component rather than a coincidence.",
+  },
+  {
+    id: "notifications", title: "Notifications", route: "/ar/notifications", img: "08-notifications-desktop.png",
+    ratings: { design: 5, ux: 6, consistency: 7, engineering: null, accessibility: 7, responsive: null },
+    match: 45,
+    findings: [
+      { good: true, text: "Filter tabs (All / Unread / Read) and a \"mark all read\" control are both present and clearly laid out" },
+      { good: true, text: "Correct, honest empty state — consistent with the fact that notification delivery isn't implemented yet" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The UI shell is ready and waiting for the notification-delivery feature to land; nothing here needs visual rework in the meantime.",
+  },
+  {
+    id: "orders", title: "Orders", route: "/ar/orders", img: "19-orders-desktop.png",
+    ratings: { design: 5, ux: 6, consistency: 6, engineering: 8, accessibility: 7, responsive: null },
+    match: 44,
+    findings: [
+      { good: true, text: "Real, live order records with real IDs and correct prices ($15.00 each)" },
+      { good: false, text: "Order status (\"قيد الانتظار\") is plain text with no color-coded pill — same gap as course status on the Instructor Dashboard" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "The same status-chip component needed on the Instructor Dashboard would resolve the one real gap on this screen — worth building once and reusing across both.",
+  },
+  {
+    id: "my-courses", title: "My Courses", route: "/ar/my-courses", img: "17-my-courses-desktop.png",
+    ratings: { design: 5, ux: 7, consistency: 8, engineering: 7, accessibility: 7, responsive: null },
+    match: 48,
+    findings: [
+      { good: true, text: "Correct empty state, consistent with the platform-wide empty-state pattern" },
+    ],
+    critical: ["Header shows logged-out state despite active authenticated session"],
+    recommendation: "Nothing to change until there's enrollment data to review the populated-state grid against.",
+  },
+];
+
+const RESPONSIVE = [
+  {
+    label: "Desktop", size: "1440 × 900", img: "01-landing-desktop-full.png",
+    status: "good", text: "Full hero, all three hero zones (stats / illustration / copy) render side by side as designed.",
+  },
+  {
+    label: "Tablet", size: "820 × 1180", img: "05-landing-tablet-full.png",
+    status: "bad", text: "Header navigation overflows and clips — nav links run off-screen and Login/Create Account buttons are pushed out of view entirely. The 6 feature cards also stay in one cramped row rather than reflowing.",
+  },
+  {
+    label: "Mobile", size: "390 × 844", img: "06-landing-mobile-full.png",
+    status: "good", text: "Header correctly collapses to logo + compact controls; feature cards correctly stack to a single column.",
+  },
+];
+
+const COMPARISON = [
+  ["Header", "status-partial", "🟡 Partial", "Structure and branding match the homepage everywhere, but never reflects logged-in state — a functional break, not a stylistic one."],
+  ["Hero", "status-needs", "🔴 Needs work", "Only exists on the homepage; every interior screen has no hero-equivalent moment, just a plain page title."],
+  ["Buttons", "status-match", "✅ Matches", "Primary gradient + outline secondary pairing is used correctly and consistently everywhere it appears."],
+  ["Cards", "status-needs", "🔴 Needs work", "Homepage uses glass-panel cards with depth; interior screens use flat, single-border cards or no card at all."],
+  ["Spacing", "status-match", "✅ Matches", "Consistent padding rhythm and section spacing across every screen reviewed."],
+  ["Typography", "status-match", "✅ Matches", "Consistent type scale and weight hierarchy platform-wide; Arabic RTL rendering is correct throughout."],
+  ["Colors", "status-match", "✅ Matches", "Dark navy/purple background family and purple/pink/cyan accents are consistent everywhere."],
+  ["Gradients", "status-needs", "🔴 Needs work", "Present only on buttons. The homepage's gradient backgrounds, glows, and radial accents don't appear on any interior screen."],
+  ["Glass Effects", "status-needs", "🔴 Needs work", "The homepage's glass hero panels have no equivalent anywhere behind the login wall."],
+  ["Shadows", "status-needs", "🔴 Needs work", "No elevation/shadow system observed on any interior card, button, or panel."],
+  ["Animations", "status-needs", "🔴 Needs work", "No hover states, transitions, or motion of any kind observed in any of the 23 screenshots (static captures can't fully rule this out, but nothing suggests it's present)."],
+  ["Icons", "status-partial", "🟡 Partial", "Present and well-used on the homepage and Instructor Dashboard stat cards; absent from the visually similar Student Dashboard stat cards."],
+  ["Illustrations", "status-needs", "🔴 Needs work", "The homepage's custom phoenix/AI illustration is the only illustration on the entire platform — no interior screen has any equivalent visual interest."],
+  ["Dashboard Style", "status-partial", "🟡 Partial", "Student and Instructor dashboards share a consistent stat-card pattern with each other, but neither resembles the homepage's visual language."],
+  ["Admin Style", "status-partial", "🟡 Partial", "Internally consistent (sidebar + stat cards + honest data disclosures) but is its own distinct visual system, unlike Instructor or Moderator areas which have no sidebar at all."],
+  ["Brand Consistency", "status-partial", "🟡 Partial", "Logo, color family, and button gradient carry through everywhere; the glass/glow/gradient identity that makes the homepage distinctive does not."],
+];
+
+/* ===================================================================== */
+
+function scoreClass(n) {
+  if (n === null || n === undefined) return "na";
+  if (n >= 7) return "score-green";
+  if (n >= 4) return "score-amber";
+  return "score-red";
+}
+function matchColor(pct) {
+  if (pct >= 70) return "var(--green)";
+  if (pct >= 40) return "var(--amber)";
+  return "var(--red)";
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+function ratingBadge(label, value) {
+  const cls = scoreClass(value);
+  const display = value === null || value === undefined ? "N/A" : value + "/10";
+  return `<div class="rating-badge ${cls}"><div class="r-label">${label}</div><div class="r-score">${display}</div></div>`;
+}
+
+function renderScreens() {
+  const mount = document.getElementById("screens-mount");
+  mount.innerHTML = SCREENS.map((s, i) => {
+    const findingsHtml = s.findings.map(f =>
+      `<li class="${f.good ? "good" : "bad"}"><span class="mark">${f.good ? "✓" : "✖"}</span><span>${esc(f.text)}</span></li>`
+    ).join("");
+    const criticalHtml = s.critical.length
+      ? `<div class="critical-box"><div class="subhead">Critical Issues</div><ul>${s.critical.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>`
+      : `<div class="critical-box none"><div class="subhead">Critical Issues</div><div style="font-size:13px;color:var(--text-dim);">None found for this screen.</div></div>`;
+    return `
+    <article class="screen-card ${i < 1 ? "open" : ""}" data-screen-id="${s.id}" data-title="${esc(s.title.toLowerCase())}">
+      <div class="screen-head" data-toggle>
+        <div class="screen-head-left">
+          <span class="screen-index">${String(i + 1).padStart(2, "0")}</span>
+          <div>
+            <h3>${esc(s.title)}</h3>
+            <div class="screen-route">${esc(s.route)}</div>
+          </div>
+        </div>
+        <div class="match-chip">
+          <div class="track"><div class="fill" style="width:${s.match}%;background:${matchColor(s.match)};"></div></div>
+          <div class="pct" style="color:${matchColor(s.match)};">${s.match}%</div>
+          <div class="chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>
+        </div>
+      </div>
+      <div class="screen-body">
+        <div class="screen-body-inner">
+          <div class="screen-media" data-gallery-img="${s.img}" data-title="${esc(s.title)}" data-sub="${esc(s.route)}">
+            <img src="${ASSET_BASE}${s.img}" alt="${esc(s.title)} screenshot" loading="lazy" />
+            <span class="zoom-hint">🔍 Click to zoom</span>
+          </div>
+          <div class="screen-content">
+            <div class="subhead">Quick Ratings</div>
+            <div class="rating-row">
+              ${ratingBadge("Design", s.ratings.design)}
+              ${ratingBadge("UX", s.ratings.ux)}
+              ${ratingBadge("Consistency", s.ratings.consistency)}
+              ${ratingBadge("Engineering", s.ratings.engineering)}
+              ${ratingBadge("Accessibility", s.ratings.accessibility)}
+              ${ratingBadge("Responsive", s.ratings.responsive)}
+            </div>
+            ${s.extraImg ? `
+            <div class="subhead">${esc(s.extraImgLabel)}</div>
+            <div class="screen-media" style="border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:26px;" data-gallery-img="${s.extraImg}" data-title="${esc(s.title)} — ${esc(s.extraImgLabel)}" data-sub="${esc(s.route)}">
+              <img src="${ASSET_BASE}${s.extraImg}" alt="${esc(s.extraImgLabel)}" loading="lazy" />
+              <span class="zoom-hint">🔍 Click to zoom</span>
+            </div>` : ""}
+            <div class="two-col">
+              <div>
+                <div class="subhead">Visual Findings</div>
+                <ul class="findings-list">${findingsHtml}</ul>
+              </div>
+              <div>
+                ${criticalHtml}
+                <div class="subhead">Recommendation</div>
+                <div class="reco-box">${esc(s.recommendation)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>`;
+  }).join("");
+
+  mount.querySelectorAll("[data-toggle]").forEach(head => {
+    head.addEventListener("click", () => head.closest(".screen-card").classList.toggle("open"));
+  });
+}
+
+function renderResponsive() {
+  const mount = document.getElementById("responsive-mount");
+  mount.innerHTML = RESPONSIVE.map(v => `
+    <div class="viewport-card">
+      <div class="vp-head"><h4>${esc(v.label)}</h4><span class="vp-size">${esc(v.size)}</span></div>
+      <img src="${ASSET_BASE}${v.img}" alt="${esc(v.label)} homepage screenshot" loading="lazy" data-gallery-img="${v.img}" data-title="Homepage — ${esc(v.label)}" data-sub="${esc(v.size)}" />
+      <div class="viewport-status">
+        <strong class="${v.status === "good" ? "b-green" : "b-red"}">${v.status === "good" ? "✓ Renders correctly" : "✖ Real defect found"}</strong>
+        ${esc(v.text)}
+      </div>
+    </div>`).join("");
+}
+
+function renderComparison() {
+  const tbody = document.querySelector("#compare-table tbody");
+  tbody.innerHTML = COMPARISON.map(([topic, cls, label, note]) => `
+    <tr>
+      <td class="topic">${esc(topic)}</td>
+      <td><span class="status-pill ${cls}">${label}</span></td>
+      <td class="note">${esc(note)}</td>
+    </tr>`).join("");
+}
+
+/* ---------- Search filter ---------- */
+function initSearch() {
+  const input = document.getElementById("screen-search");
+  const countPill = document.getElementById("screen-count-pill");
+  const noResults = document.getElementById("no-results");
+  const noResultsTerm = document.getElementById("no-results-term");
+  input.addEventListener("input", () => {
+    const term = input.value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".screen-card").forEach(card => {
+      const match = !term || card.dataset.title.includes(term);
+      card.classList.toggle("is-hidden", !match);
+      if (match) visible++;
+    });
+    countPill.textContent = `${visible} screen${visible === 1 ? "" : "s"}`;
+    noResults.classList.toggle("show", visible === 0);
+    noResultsTerm.textContent = input.value.trim();
+  });
+}
+
+/* ---------- Lightbox gallery (all images, in document order, keyboard nav) ---------- */
+function initLightbox() {
+  const lb = document.getElementById("lightbox");
+  const lbImg = document.getElementById("lb-img");
+  const lbTitle = document.getElementById("lb-title");
+  const lbSub = document.getElementById("lb-sub");
+  const lbCount = document.getElementById("lb-count");
+  let gallery = [];
+  let index = 0;
+
+  function buildGallery() {
+    gallery = Array.from(document.querySelectorAll("[data-gallery-img]")).map(el => ({
+      src: ASSET_BASE + el.dataset.galleryImg,
+      title: el.dataset.title || "",
+      sub: el.dataset.sub || "",
+    }));
+  }
+
+  function open(i) {
+    buildGallery();
+    index = i;
+    render();
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function close() {
+    lb.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+  function render() {
+    const item = gallery[index];
+    if (!item) return;
+    lbImg.src = item.src;
+    lbImg.alt = item.title;
+    lbTitle.textContent = item.title;
+    lbSub.textContent = item.sub;
+    lbCount.textContent = `${index + 1} / ${gallery.length}`;
+  }
+  function next() { index = (index + 1) % gallery.length; render(); }
+  function prev() { index = (index - 1 + gallery.length) % gallery.length; render(); }
+
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("[data-gallery-img]");
+    if (!trigger) return;
+    buildGallery();
+    const src = ASSET_BASE + trigger.dataset.galleryImg;
+    const i = gallery.findIndex(g => g.src === src);
+    open(i >= 0 ? i : 0);
+  });
+
+  document.getElementById("lb-close").addEventListener("click", close);
+  document.getElementById("lb-next").addEventListener("click", next);
+  document.getElementById("lb-prev").addEventListener("click", prev);
+  lb.addEventListener("click", (e) => { if (e.target === lb) close(); });
+
+  document.addEventListener("keydown", (e) => {
+    if (!lb.classList.contains("open")) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
+  });
+}
+
+renderScreens();
+renderResponsive();
+renderComparison();
+initSearch();
+initLightbox();
+</script>

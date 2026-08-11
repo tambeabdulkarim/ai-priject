@@ -6,11 +6,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AppConfig } from '../config/configuration';
 
@@ -33,20 +29,30 @@ export class StorageService {
     this.client = new S3Client({
       endpoint: storageConfig.endpoint || undefined,
       forcePathStyle: true,
-      region: 'auto',
+      region: storageConfig.region,
       credentials: {
         accessKeyId: storageConfig.accessKeyId || 'unconfigured',
         secretAccessKey: storageConfig.secretAccessKey || 'unconfigured',
       },
     });
+    if (this.configured) {
+      this.logger.log(
+        `Storage configured: endpoint=${storageConfig.endpoint} bucket=${storageConfig.bucket} region=${storageConfig.region}`,
+      );
+    } else {
+      // docs/known-issues.md "Object Storage Not Provisioned": STORAGE_*
+      // credentials are blank — an infrastructure gap, not an
+      // architectural one. The code path is real; it just has nothing to
+      // talk to yet. Logged at startup (not just on first use) so this is
+      // never a silent failure mode.
+      this.logger.warn(
+        'Storage is NOT configured (STORAGE_ENDPOINT/STORAGE_BUCKET/STORAGE_ACCESS_KEY_ID empty) — all storage operations will fail fast until this is resolved. See docs/phase13.6-storage-provisioning-report.md.',
+      );
+    }
   }
 
   private assertConfigured(): void {
     if (!this.configured) {
-      // docs/SESSION-HANDOFF.md Blocker #4: STORAGE_* credentials are still
-      // blank in every environment file — this is an infrastructure gap,
-      // not an architectural one. The code path is real; it just has
-      // nothing to talk to yet.
       throw new Error(
         'Storage is not configured: STORAGE_ENDPOINT/STORAGE_BUCKET/STORAGE_ACCESS_KEY_ID are empty.',
       );

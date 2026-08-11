@@ -8,7 +8,8 @@ import { ApiError, NetworkError, TimeoutError } from '@phoenix/api-client';
 import type { ErrorCode } from '@phoenix/types';
 
 const MESSAGES: Partial<Record<ErrorCode, string>> = {
-  VALIDATION_ERROR: 'Some of the information you entered isn’t valid. Please check the highlighted fields.',
+  VALIDATION_ERROR:
+    'Some of the information you entered isn’t valid. Please check the highlighted fields.',
   UNAUTHENTICATED: 'Your session has expired. Please sign in again.',
   PAYMENT_REQUIRED: 'This requires a completed purchase.',
   FORBIDDEN: 'You don’t have access to do that.',

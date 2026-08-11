@@ -29,11 +29,13 @@ const COPY = {
     quotaLimit: 'حد الحصة',
     loading: 'جارٍ التحميل...',
     error: 'تعذّر تحميل بيانات الحصة.',
-    notTracked: 'لا يوجد سجل حصة (AiUsage) لهذا المستخدم للفترة الحالية — لم يُنشئ الخادم أي سجل بعد، ولا توجد واجهة برمجية لإنشائه من الواجهة الأمامية.',
+    notTracked:
+      'لا يوجد سجل حصة (AiUsage) لهذا المستخدم للفترة الحالية — لم يُنشئ الخادم أي سجل بعد، ولا توجد واجهة برمجية لإنشائه من الواجهة الأمامية.',
   },
   en: {
     title: 'Quota',
-    subtitle: 'Values exactly as returned by the backend — no "remaining" figure is computed client-side.',
+    subtitle:
+      'Values exactly as returned by the backend — no "remaining" figure is computed client-side.',
     periodStart: 'Period start',
     periodEnd: 'Period end',
     requestsUsed: 'Requests used',
@@ -41,7 +43,8 @@ const COPY = {
     quotaLimit: 'Quota limit',
     loading: 'Loading...',
     error: 'Couldn’t load quota data.',
-    notTracked: 'No AiUsage row exists for this user for the current period — the backend hasn’t provisioned one yet, and there is no endpoint to create one from the frontend.',
+    notTracked:
+      'No AiUsage row exists for this user for the current period — the backend hasn’t provisioned one yet, and there is no endpoint to create one from the frontend.',
   },
 } as const;
 
@@ -61,15 +64,29 @@ function AiQuotaContent() {
         {isLoading && <p className="ph-state">{t.loading}</p>}
         {isError && <p className="ph-state">{getErrorMessage(error)}</p>}
 
-        {usage && usage.quotaLimit === null && <p className="ph-form-error" role="note">{t.notTracked}</p>}
+        {usage && usage.quotaLimit === null && (
+          <p className="ph-form-error" role="note">
+            {t.notTracked}
+          </p>
+        )}
 
         {usage && usage.quotaLimit !== null && (
           <div className="ph-form" style={{ gap: '0.75rem' }}>
-            <p><strong>{t.periodStart}:</strong> {new Date(usage.periodStart).toLocaleString(locale)}</p>
-            <p><strong>{t.periodEnd}:</strong> {new Date(usage.periodEnd).toLocaleString(locale)}</p>
-            <p><strong>{t.requestsUsed}:</strong> {usage.requestsUsed}</p>
-            <p><strong>{t.tokensUsed}:</strong> {usage.tokensUsed}</p>
-            <p><strong>{t.quotaLimit}:</strong> {usage.quotaLimit}</p>
+            <p>
+              <strong>{t.periodStart}:</strong> {new Date(usage.periodStart).toLocaleString(locale)}
+            </p>
+            <p>
+              <strong>{t.periodEnd}:</strong> {new Date(usage.periodEnd).toLocaleString(locale)}
+            </p>
+            <p>
+              <strong>{t.requestsUsed}:</strong> {usage.requestsUsed}
+            </p>
+            <p>
+              <strong>{t.tokensUsed}:</strong> {usage.tokensUsed}
+            </p>
+            <p>
+              <strong>{t.quotaLimit}:</strong> {usage.quotaLimit}
+            </p>
           </div>
         )}
       </main>

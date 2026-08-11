@@ -15,6 +15,17 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [value];
 }
 
+// "single" answers are conceptually one atomic value, but real seeded
+// content (prisma/seed-phase27-content.ts) consistently stores
+// correctAnswer as a one-element array (e.g. ["True"]) rather than a bare
+// string, while both the frontend and this function's own submittedAnswer
+// contract use a bare string. Unwrap a one-element array on either side so
+// the comparison is shape-tolerant instead of requiring both sides to
+// happen to be encoded identically.
+function normalizeSingle(value: unknown): unknown {
+  return Array.isArray(value) && value.length === 1 ? value[0] : value;
+}
+
 function setsEqual(a: unknown[], b: unknown[]): boolean {
   if (a.length !== b.length) return false;
   const normalizedA = [...a].map((v) => JSON.stringify(v)).sort();
@@ -29,7 +40,10 @@ export function isAnswerCorrect(
 ): boolean {
   switch (questionType as QuestionType) {
     case 'single':
-      return JSON.stringify(submittedAnswer) === JSON.stringify(correctAnswer);
+      return (
+        JSON.stringify(normalizeSingle(submittedAnswer)) ===
+        JSON.stringify(normalizeSingle(correctAnswer))
+      );
     case 'multiple':
       return setsEqual(asArray(correctAnswer), asArray(submittedAnswer));
     case 'text':

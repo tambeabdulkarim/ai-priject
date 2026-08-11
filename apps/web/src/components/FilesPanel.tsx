@@ -3,7 +3,7 @@
 const files = [
   { name: 'Roadmap.pdf', size: '1.2 MB', updated: 'Today' },
   { name: 'Sprint-notes.docx', size: '540 KB', updated: 'Yesterday' },
-  { name: 'Design-kit.zip', size: '3.4 MB', updated: '2 days ago' }
+  { name: 'Design-kit.zip', size: '3.4 MB', updated: '2 days ago' },
 ];
 
 export default function FilesPanel() {
@@ -15,7 +15,9 @@ export default function FilesPanel() {
           <li key={file.name}>
             <div>
               <strong>{file.name}</strong>
-              <p className="muted-text">{file.size} • {file.updated}</p>
+              <p className="muted-text">
+                {file.size} • {file.updated}
+              </p>
             </div>
           </li>
         ))}

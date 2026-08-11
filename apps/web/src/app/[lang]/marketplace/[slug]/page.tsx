@@ -79,7 +79,12 @@ export default function ProductDetailPage() {
   if (isError || !product) return <p className="ph-state">{t.notFound}</p>;
 
   function handleAddToCart() {
-    cart.addItem({ productId: product!.id, title: product!.title, slug: product!.slug, priceCents: product!.priceCents });
+    cart.addItem({
+      productId: product!.id,
+      title: product!.title,
+      slug: product!.slug,
+      priceCents: product!.priceCents,
+    });
     setAdded(true);
   }
 
@@ -107,29 +112,61 @@ export default function ProductDetailPage() {
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{product.title}</h1>
         {product.description && <p className="ph-page-subtitle">{product.description}</p>}
-        <p style={{ fontSize: '1.5rem', fontWeight: 600 }}>{formatPrice(product.priceCents, locale, t.free)}</p>
+        <p style={{ fontSize: '1.5rem', fontWeight: 600 }}>
+          {formatPrice(product.priceCents, locale, t.free)}
+        </p>
 
-        {createOrder.error && <div className="ph-form-error" role="alert">{getErrorMessage(createOrder.error)}</div>}
-        {status !== 'authenticated' && <p className="ph-form-error" role="note">{t.loginToBuy}</p>}
+        {createOrder.error && (
+          <div className="ph-form-error" role="alert">
+            {getErrorMessage(createOrder.error)}
+          </div>
+        )}
+        {status !== 'authenticated' && (
+          <p className="ph-form-error" role="note">
+            {t.loginToBuy}
+          </p>
+        )}
 
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-          <button type="button" className="ph-btn-outline" onClick={handleAddToCart}>{t.addToCart}</button>
-          <button type="button" className="ph-btn-grad" onClick={handleBuyNow} disabled={createOrder.isPending || status !== 'authenticated'}>
+          <button type="button" className="ph-btn-outline" onClick={handleAddToCart}>
+            {t.addToCart}
+          </button>
+          <button
+            type="button"
+            className="ph-btn-grad"
+            onClick={handleBuyNow}
+            disabled={createOrder.isPending || status !== 'authenticated'}
+          >
             {createOrder.isPending ? t.buying : t.buyNow}
           </button>
         </div>
-        {added && <p className="ph-form-success" role="status">{t.addedToCart}</p>}
+        {added && (
+          <p className="ph-form-success" role="status">
+            {t.addedToCart}
+          </p>
+        )}
 
         <section style={{ marginTop: '2rem' }}>
           {product.fileId ? (
             <>
-              <button type="button" className="ph-btn-outline" onClick={() => download.refetch()} disabled={download.isFetching}>
+              <button
+                type="button"
+                className="ph-btn-outline"
+                onClick={() => download.refetch()}
+                disabled={download.isFetching}
+              >
                 {download.isFetching ? t.checking : t.getDownload}
               </button>
-              {download.error && <p className="ph-form-error" role="alert">{getErrorMessage(download.error)}</p>}
+              {download.error && (
+                <p className="ph-form-error" role="alert">
+                  {getErrorMessage(download.error)}
+                </p>
+              )}
               {download.data && (
                 <p className="ph-form-success" role="status">
-                  <a href={download.data.signedUrl} target="_blank" rel="noopener noreferrer">{t.downloadLink}</a>
+                  <a href={download.data.signedUrl} target="_blank" rel="noopener noreferrer">
+                    {t.downloadLink}
+                  </a>
                 </p>
               )}
             </>

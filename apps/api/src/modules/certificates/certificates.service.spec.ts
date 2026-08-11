@@ -51,7 +51,8 @@ describe('CertificatesService.issueForEnrollment', () => {
   });
 
   it('issues a certificate when the course has no quizzes at all', async () => {
-    const { service, certificatesRepository, auditLogService, notificationsService } = makeService();
+    const { service, certificatesRepository, auditLogService, notificationsService } =
+      makeService();
     certificatesRepository.findByEnrollmentId.mockResolvedValue(null);
     certificatesRepository.findQuizIdsForCourse.mockResolvedValue([]);
     certificatesRepository.create.mockResolvedValue({ id: 'cert2' });
@@ -70,7 +71,10 @@ describe('CertificatesService.issueForEnrollment', () => {
   it('issues a certificate once every course quiz has a passing attempt', async () => {
     const { service, certificatesRepository } = makeService();
     certificatesRepository.findByEnrollmentId.mockResolvedValue(null);
-    certificatesRepository.findQuizIdsForCourse.mockResolvedValue([{ id: 'quiz1' }, { id: 'quiz2' }]);
+    certificatesRepository.findQuizIdsForCourse.mockResolvedValue([
+      { id: 'quiz1' },
+      { id: 'quiz2' },
+    ]);
     certificatesRepository.hasPassingAttempt.mockResolvedValue(true);
     certificatesRepository.create.mockResolvedValue({ id: 'cert3' });
 

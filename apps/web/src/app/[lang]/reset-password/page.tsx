@@ -37,7 +37,8 @@ const COPY = {
     submitting: 'Saving...',
     missingToken: 'This reset link is invalid or incomplete.',
     successTitle: 'Password updated',
-    successBody: 'You’ve been signed out of every session for security. Sign in with your new password.',
+    successBody:
+      'You’ve been signed out of every session for security. Sign in with your new password.',
     goToLogin: 'Go to sign in',
   },
 } as const;
@@ -66,46 +67,52 @@ function ResetPasswordPageContent() {
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{t.title}</h1>
 
-        {!token ? (
-          <div className="ph-form-error" role="alert">{t.missingToken}</div>
-        ) : succeeded ? (
-          <div className="ph-form-success" role="status">
-            <strong>{t.successTitle}</strong>
-            <p style={{ marginTop: '0.5rem' }}>{t.successBody}</p>
-            <p style={{ marginTop: '1rem' }}>
-              <Link href={withLang(ROUTES.login, locale)}>{t.goToLogin}</Link>
-            </p>
-          </div>
-        ) : (
-          <>
-            <p className="ph-page-subtitle">{t.subtitle}</p>
-            <form className="ph-form" onSubmit={handleSubmit} noValidate>
-              {(data?.error || mutationError) && (
-                <div className="ph-form-error" role="alert">
-                  {getErrorMessage(data?.error ?? mutationError)}
+        <div className="ph-form-card">
+          {!token ? (
+            <div className="ph-form-error" role="alert">
+              {t.missingToken}
+            </div>
+          ) : succeeded ? (
+            <div className="ph-form-success" role="status">
+              <strong>{t.successTitle}</strong>
+              <p style={{ marginTop: '0.5rem' }}>{t.successBody}</p>
+              <p style={{ marginTop: '1rem' }}>
+                <Link href={withLang(ROUTES.login, locale)}>{t.goToLogin}</Link>
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="ph-page-subtitle">{t.subtitle}</p>
+              <form className="ph-form" onSubmit={handleSubmit} noValidate>
+                {(data?.error || mutationError) && (
+                  <div className="ph-form-error" role="alert">
+                    {getErrorMessage(data?.error ?? mutationError)}
+                  </div>
+                )}
+
+                <div className="ph-field">
+                  <label className="ph-label" htmlFor="newPassword">
+                    {t.newPassword}
+                  </label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    className="ph-input"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={10}
+                    autoComplete="new-password"
+                  />
                 </div>
-              )}
 
-              <div className="ph-field">
-                <label className="ph-label" htmlFor="newPassword">{t.newPassword}</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  className="ph-input"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={10}
-                  autoComplete="new-password"
-                />
-              </div>
-
-              <button type="submit" className="ph-btn-grad" disabled={isPending}>
-                {isPending ? t.submitting : t.submit}
-              </button>
-            </form>
-          </>
-        )}
+                <button type="submit" className="ph-btn-grad" disabled={isPending}>
+                  {isPending ? t.submitting : t.submit}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       </main>
       <Footer locale={locale} />
     </div>

@@ -22,7 +22,10 @@ const COPY = {
     error: 'تعذّر تحميل هذا الطلب.',
     feature: 'الميزة',
     status: 'الحالة',
-    statusValues: { success: 'نجاح', error: 'خطأ', moderation_blocked: 'محظور (إشراف)' } as Record<string, string>,
+    statusValues: { success: 'نجاح', error: 'خطأ', moderation_blocked: 'محظور (إشراف)' } as Record<
+      string,
+      string
+    >,
     inputTokens: 'رموز الإدخال',
     outputTokens: 'رموز الإخراج',
     latency: 'زمن الاستجابة (مللي ثانية)',
@@ -37,7 +40,11 @@ const COPY = {
     error: 'Couldn’t load this request.',
     feature: 'Feature',
     status: 'Status',
-    statusValues: { success: 'Success', error: 'Error', moderation_blocked: 'Blocked (moderation)' } as Record<string, string>,
+    statusValues: {
+      success: 'Success',
+      error: 'Error',
+      moderation_blocked: 'Blocked (moderation)',
+    } as Record<string, string>,
     inputTokens: 'Input tokens',
     outputTokens: 'Output tokens',
     latency: 'Latency (ms)',
@@ -66,24 +73,43 @@ function AiRequestDetailContent() {
 
         {request && (
           <div className="ph-form" style={{ gap: '0.75rem' }}>
-            <p><strong>{t.feature}:</strong> {request.feature}</p>
-            <p><strong>{t.status}:</strong> {t.statusValues[request.status] ?? request.status}</p>
-            <p><strong>{t.inputTokens}:</strong> {request.inputTokens ?? t.noValue}</p>
-            <p><strong>{t.outputTokens}:</strong> {request.outputTokens ?? t.noValue}</p>
-            <p><strong>{t.latency}:</strong> {request.latencyMs ?? t.noValue}</p>
-            <p><strong>{t.createdAt}:</strong> {new Date(request.createdAt).toLocaleString(locale)}</p>
+            <p>
+              <strong>{t.feature}:</strong> {request.feature}
+            </p>
+            <p>
+              <strong>{t.status}:</strong> {t.statusValues[request.status] ?? request.status}
+            </p>
+            <p>
+              <strong>{t.inputTokens}:</strong> {request.inputTokens ?? t.noValue}
+            </p>
+            <p>
+              <strong>{t.outputTokens}:</strong> {request.outputTokens ?? t.noValue}
+            </p>
+            <p>
+              <strong>{t.latency}:</strong> {request.latencyMs ?? t.noValue}
+            </p>
+            <p>
+              <strong>{t.createdAt}:</strong> {new Date(request.createdAt).toLocaleString(locale)}
+            </p>
 
             <div>
               <strong>{t.prompt}:</strong>
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{request.promptRedacted ?? t.noValue}</pre>
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {request.promptRedacted ?? t.noValue}
+              </pre>
             </div>
             <div>
               <strong>{t.response}:</strong>
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{request.responseRedacted ?? t.noValue}</pre>
+              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {request.responseRedacted ?? t.noValue}
+              </pre>
             </div>
 
             {request.cost && (
-              <p><strong>{t.cost}:</strong> ${request.cost.providerCostUsd} ({new Date(request.cost.billedAt).toLocaleString(locale)})</p>
+              <p>
+                <strong>{t.cost}:</strong> ${request.cost.providerCostUsd} (
+                {new Date(request.cost.billedAt).toLocaleString(locale)})
+              </p>
             )}
           </div>
         )}

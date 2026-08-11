@@ -14,7 +14,7 @@ test('creates a note with a fallback title and timestamp', () => {
 test('counts notes by total and latest', () => {
   const notes = [
     createNote('Plan', 'Outline the milestone'),
-    createNote('Review', 'Check the handoff')
+    createNote('Review', 'Check the handoff'),
   ];
 
   const stats = getNoteStats(notes);

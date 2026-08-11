@@ -35,7 +35,8 @@ const COPY = {
     mau: 'مستخدمون نشطون شهريًا',
     loading: 'جارٍ التحميل...',
     error: 'تعذّر تحميل التحليلات.',
-    notice: 'لا توجد واجهة برمجية في الخادم لعرض "إجمالي المستخدمين" أو "عدد الدورات" أو أي عدد إجمالي آخر — لا يحمل أي رد مُقسّم إلى صفحات حقل "total" في هذا الخادم. تصفح القوائم الحقيقية مباشرة:',
+    notice:
+      'لا توجد واجهة برمجية في الخادم لعرض "إجمالي المستخدمين" أو "عدد الدورات" أو أي عدد إجمالي آخر — لا يحمل أي رد مُقسّم إلى صفحات حقل "total" في هذا الخادم. تصفح القوائم الحقيقية مباشرة:',
     users: 'المستخدمون',
     auditLogs: 'سجل التدقيق',
   },
@@ -50,7 +51,8 @@ const COPY = {
     mau: 'Monthly active users',
     loading: 'Loading...',
     error: 'Couldn’t load analytics.',
-    notice: 'No backend endpoint exposes a "total users" count, "total courses" count, or any other grand total — no paginated response on this backend carries a `total` field. Browse the real lists directly instead:',
+    notice:
+      'No backend endpoint exposes a "total users" count, "total courses" count, or any other grand total — no paginated response on this backend carries a `total` field. Browse the real lists directly instead:',
     users: 'Users',
     auditLogs: 'Audit logs',
   },
@@ -80,14 +82,33 @@ export default function AdminDashboardPage() {
       <h1 className="ph-page-title">{t.title}</h1>
       <p className="ph-page-subtitle">{t.subtitle}</p>
 
-      <div className="ph-form" style={{ flexDirection: 'row', gap: '1rem', alignItems: 'flex-end' }}>
+      <div
+        className="ph-form"
+        style={{ flexDirection: 'row', gap: '1rem', alignItems: 'flex-end' }}
+      >
         <div className="ph-field">
-          <label className="ph-label" htmlFor="from">{t.from}</label>
-          <input id="from" type="date" className="ph-input" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <label className="ph-label" htmlFor="from">
+            {t.from}
+          </label>
+          <input
+            id="from"
+            type="date"
+            className="ph-input"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
         </div>
         <div className="ph-field">
-          <label className="ph-label" htmlFor="to">{t.to}</label>
-          <input id="to" type="date" className="ph-input" value={to} onChange={(e) => setTo(e.target.value)} />
+          <label className="ph-label" htmlFor="to">
+            {t.to}
+          </label>
+          <input
+            id="to"
+            type="date"
+            className="ph-input"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
         </div>
       </div>
 
@@ -95,11 +116,22 @@ export default function AdminDashboardPage() {
       {isError && <p className="ph-state">{getErrorMessage(error)}</p>}
 
       {data && (
-        <div className="ph-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', marginTop: '1.5rem' }}>
+        <div
+          className="ph-grid"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            marginTop: '1.5rem',
+          }}
+        >
           <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
             <DollarSign size={20} strokeWidth={1.5} aria-hidden="true" />
             <div className="ph-catalogue-card-title">{t.revenue}</div>
-            <p className="ph-catalogue-card-desc">{(data.revenue_cents / 100).toLocaleString(locale, { style: 'currency', currency: 'USD' })}</p>
+            <p className="ph-catalogue-card-desc">
+              {(data.revenue_cents / 100).toLocaleString(locale, {
+                style: 'currency',
+                currency: 'USD',
+              })}
+            </p>
           </div>
           <div className="ph-catalogue-card" style={{ cursor: 'default' }}>
             <CheckCircle2 size={20} strokeWidth={1.5} aria-hidden="true" />

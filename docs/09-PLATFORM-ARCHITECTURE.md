@@ -240,10 +240,14 @@ users ──< purchases >── products   (grants access post-payment)
 
 ## 16. Admin Dashboard
 
+**Status (Phase 14.4 — superseded, see `docs/restore-point-phase14.4.md`):** the "separate app" plan below was never built out (`apps/admin` remained a 2-file placeholder). Real admin functionality was instead built directly inside `apps/web` (`apps/web/src/app/[lang]/admin/*`, backed by `apps/api/src/modules/admin`) — tested, permission-gated, and already tightly coupled to `apps/web`'s shared `AuthProvider`/`QueryClientProvider`/`RequireRole`/`Navigation`/`Footer`/i18n, none of which exist as an extractable shared package today. Phase 14.4 reviewed both surfaces and formally adopted **`apps/web` as the platform's one authoritative admin surface**, retiring `apps/admin` (kept in place as inert history, excluded from CI). This was a deliberate engineering trade-off given the code's actual current state, not a silent drift — the isolation rationale below remains valid and can be revisited later as its own project (extract shared UI/auth into a real package first, then build a real separate app), just not as a same-phase migration under Phase 14.4's "no UI redesign" constraint.
+
+The original plan, preserved for that future reconsideration:
+
 - **Separate app** (`apps/admin`), separate subdomain (`admin.phoenix.app`), separate deploy pipeline — an admin XSS or dependency vuln can't leak into the public site's bundle, and it can be put behind additional network-level restrictions (IP allowlist, VPN) independent of the public app.
 - **Modules:** user management (role assignment, bans), content moderation (courses/news/reviews queues), catalog management (tools/courses/products CRUD), order/refund management, analytics (revenue, DAU/MAU, course completion rates), AI usage/cost dashboard (§10).
-- **Auth:** same identity provider as the main platform (§4), but requires the elevated "admin session scope" and MFA is mandatory for every admin-capable role.
-- **Audit trail:** every admin mutation (ban a user, edit a course, issue a refund) writes to the audit log (§19) with actor, action, before/after diff.
+- **Auth:** same identity provider as the main platform (§4), but requires the elevated "admin session scope" and MFA is mandatory for every admin-capable role. (Current reality: `apps/web`'s admin routes use the same `RequireRole` gate as every other role-restricted page, and MFA is opt-in platform-wide as of Phase 14.2 — see `docs/known-issues.md`.)
+- **Audit trail:** every admin mutation (ban a user, edit a course, issue a refund) writes to the audit log (§19) with actor, action, before/after diff. (Implemented as designed — confirmed real, unaffected by the app-topology decision above.)
 
 ---
 
@@ -253,6 +257,18 @@ users ──< purchases >── products   (grants access post-payment)
 - **Architecture:** producers (any backend module — "course published," "order confirmed," "new reply") publish events to a queue (Redis Streams initially, SQS/BullMQ if volume demands it); a single `NotificationsWorker` consumes events, applies user preferences (which channels they've opted into), and fans out to the right delivery service (email via SES/Postmark, push via FCM/APNs later).
 - **Why queue-based:** decouples "something happened" from "how it gets delivered" — new channels (SMS, WhatsApp) are added by writing a new consumer, not touching every feature that triggers notifications.
 - **In-app storage:** `notifications` table per user, paginated, read/unread state, TTL-based archival to keep the hot table small.
+
+### Idempotency — binding architectural rule (decided ahead of Phase 14.5's implementation, applies to every producer forever after)
+
+Confirmed by direct code inspection before Phase 14.5 began: `NotificationsService.create()` has no idempotency guarantee of its own today — the four existing callers (payments, certificates, enrollments, progress) only avoid duplicates because each sits downstream of its *own* domain-level unique-constraint-plus-`P2002`-catch guard (see `payments.service.ts`'s `providerPaymentId`, `certificates.service.ts`'s `enrollmentId`, `enrollments.service.ts`'s `(userId, courseId)`). That protection is transitive and does not extend to a queue/worker-based producer unless deliberately replicated.
+
+**Mandatory mechanism, not a per-phase suggestion:**
+
+- `Notification` carries `@@unique([userId, sourceEventId, type, channel])`. (`sourceEventId` alone is insufficient — `enrollments.service.ts` and `progress.service.ts` both key `sourceEventId` to the same `enrollment.id` for two legitimately different `type`s; `type` disambiguates that. `channel` allows the same logical event to legitimately fan out to `in_app` and `email` as two separate, non-duplicate rows.)
+- Every producer creates notifications through **one shared idempotent-create helper** (on `NotificationsService`/`NotificationsRepository`) that performs the `create()` → catch `P2002` → return-existing-row pattern already proven three times elsewhere in this codebase. **No producer, present or future, may write to the `Notification` repository directly or reimplement this catch logic ad hoc** — doing so silently reopens the exact duplicate-notification risk this rule exists to close, and violates this project's single-source-of-truth standard (`engineering-standards` §3).
+- Rejected alternatives, not to be substituted without an equally rigorous documented comparison: a Redis/idempotency-key approach (a second, weaker, TTL-bound source of truth than a DB constraint, non-atomic with the actual write) and application-level check-then-insert (the exact race this codebase has already hit and fixed three times under concurrent requests).
+
+This rule is architecture, not phase-scoped guidance — it binds every future notification producer, not only the ones Phase 14.5 itself introduces.
 
 ---
 
@@ -293,7 +309,7 @@ users ──< purchases >── products   (grants access post-payment)
 - **CI/CD:** GitHub Actions — lint, type-check, test, build on every PR; deploy on merge to `main` (staging) and on tagged release (production).
 - **Environments:** `local` → `staging` (production-like, seeded data, used for QA and stakeholder review) → `production`. No direct-to-prod deploys.
 - **Hosting:**
-  - `apps/web` and `apps/admin`: Vercel (or equivalent edge platform) — matches how the Homepage already deploys, gets CDN/edge caching and preview deployments for free.
+  - `apps/web` (including its admin surface, per §16's Phase 14.4 update): Vercel (or equivalent edge platform) — matches how the Homepage already deploys, gets CDN/edge caching and preview deployments for free. `apps/admin` is retired (§16) and not part of the deployment plan.
   - `apps/api` and `apps/workers`: containerized (Docker), deployed to a managed container platform (AWS ECS Fargate / Railway / Fly.io) — needs long-running processes and background job workers that don't fit a serverless-only model.
   - Database/Redis/search: managed services, not self-hosted, in the same region as the API for latency.
 - **Infrastructure as Code:** Terraform for all cloud resources — no manual console changes, every environment reproducible from git.

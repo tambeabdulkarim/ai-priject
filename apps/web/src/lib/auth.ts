@@ -8,6 +8,6 @@ export function getDemoUser(): UserProfile {
   return {
     name: 'Amina Al-Sayed',
     email: 'amina@opsive.app',
-    role: 'Product Lead'
+    role: 'Product Lead',
   };
 }

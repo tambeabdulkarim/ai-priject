@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListUsersQuery, UpdateUserRolesRequest, UpdateUserStatusRequest } from '@phoenix/types';
+import type {
+  ListUsersQuery,
+  UpdateUserRolesRequest,
+  UpdateUserStatusRequest,
+} from '@phoenix/types';
 import { apiClient } from '../services/api-client';
 import { queryKeys } from './queryKeys';
 
@@ -32,7 +36,8 @@ export function useAdminUserDetail(id: string) {
 export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: UpdateUserStatusRequest & { id: string }) => apiClient.users.updateStatus(id, body),
+    mutationFn: ({ id, ...body }: UpdateUserStatusRequest & { id: string }) =>
+      apiClient.users.updateStatus(id, body),
     onSuccess: (result, variables) => {
       if (!result.error) {
         queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
@@ -46,7 +51,8 @@ export function useUpdateUserStatus() {
 export function useUpdateUserRoles() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: UpdateUserRolesRequest & { id: string }) => apiClient.users.updateRoles(id, body),
+    mutationFn: ({ id, ...body }: UpdateUserRolesRequest & { id: string }) =>
+      apiClient.users.updateRoles(id, body),
     onSuccess: (result, variables) => {
       if (!result.error) {
         queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });

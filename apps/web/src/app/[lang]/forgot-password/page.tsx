@@ -52,39 +52,43 @@ function ForgotPasswordPageContent() {
       <main className="ph-page ph-page-narrow">
         <h1 className="ph-page-title">{t.title}</h1>
 
-        {responseMessage ? (
-          <div className="ph-form-success" role="status">
-            {responseMessage}
-          </div>
-        ) : (
-          <>
-            <p className="ph-page-subtitle">{t.subtitle}</p>
-            <form className="ph-form" onSubmit={handleSubmit} noValidate>
-              {(data?.error || mutationError) && (
-                <div className="ph-form-error" role="alert">
-                  {getErrorMessage(data?.error ?? mutationError)}
+        <div className="ph-form-card">
+          {responseMessage ? (
+            <div className="ph-form-success" role="status">
+              {responseMessage}
+            </div>
+          ) : (
+            <>
+              <p className="ph-page-subtitle">{t.subtitle}</p>
+              <form className="ph-form" onSubmit={handleSubmit} noValidate>
+                {(data?.error || mutationError) && (
+                  <div className="ph-form-error" role="alert">
+                    {getErrorMessage(data?.error ?? mutationError)}
+                  </div>
+                )}
+
+                <div className="ph-field">
+                  <label className="ph-label" htmlFor="email">
+                    {t.email}
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    className="ph-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
                 </div>
-              )}
 
-              <div className="ph-field">
-                <label className="ph-label" htmlFor="email">{t.email}</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="ph-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-
-              <button type="submit" className="ph-btn-grad" disabled={isPending}>
-                {isPending ? t.submitting : t.submit}
-              </button>
-            </form>
-          </>
-        )}
+                <button type="submit" className="ph-btn-grad" disabled={isPending}>
+                  {isPending ? t.submitting : t.submit}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       </main>
       <Footer locale={locale} />
     </div>

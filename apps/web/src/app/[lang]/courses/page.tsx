@@ -10,8 +10,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { GraduationCap } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonGrid } from '@/components/ui/Loading';
 import { type Locale } from '@/lib/i18n';
 import { useCoursesList } from '../../../hooks/useCourses';
 import { ROUTES, withLang } from '../../../constants/routes';
@@ -51,9 +54,10 @@ export default function CoursesListPage() {
   const locale = (params.lang as Locale) ?? 'ar';
   const t = COPY[locale] ?? COPY.ar;
   const [q, setQ] = useState('');
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useCoursesList({
-    q: q || undefined,
-  });
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useCoursesList({
+      q: q || undefined,
+    });
 
   const courses = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -75,9 +79,11 @@ export default function CoursesListPage() {
           />
         </div>
 
-        {isLoading && <p className="ph-state">{t.loading}</p>}
+        {isLoading && <SkeletonGrid count={6} />}
         {isError && <p className="ph-state">{t.error}</p>}
-        {!isLoading && !isError && courses.length === 0 && <p className="ph-state">{t.empty}</p>}
+        {!isLoading && !isError && courses.length === 0 && (
+          <EmptyState icon={<GraduationCap size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         <div className="ph-grid">
           {courses.map((course) => (
@@ -97,7 +103,12 @@ export default function CoursesListPage() {
 
         {hasNextPage && (
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button type="button" className="ph-btn-outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            <button
+              type="button"
+              className="ph-btn-outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
               {isFetchingNextPage ? t.loadingMore : t.loadMore}
             </button>
           </div>

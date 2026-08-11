@@ -30,7 +30,8 @@ const COPY = {
     courseTitle: 'عنوان الدورة',
     description: 'الوصف',
     categoryId: 'معرّف التصنيف (Category ID)',
-    categoryWarning: 'لا توجد واجهة برمجية في الخادم لعرض قائمة التصنيفات المتاحة. أدخل معرّف تصنيف موجود بالفعل — قيمة غير صحيحة ستؤدي إلى رفض الطلب من الخادم.',
+    categoryWarning:
+      'لا توجد واجهة برمجية في الخادم لعرض قائمة التصنيفات المتاحة. أدخل معرّف تصنيف موجود بالفعل — قيمة غير صحيحة ستؤدي إلى رفض الطلب من الخادم.',
     priceCents: 'السعر (بالسنت، اختياري)',
     create: 'إنشاء الدورة',
     creating: 'جارٍ الإنشاء...',
@@ -41,7 +42,8 @@ const COPY = {
     courseTitle: 'Course title',
     description: 'Description',
     categoryId: 'Category ID',
-    categoryWarning: 'No backend endpoint lists available categories. Enter an existing category ID — an invalid value will be rejected by the server.',
+    categoryWarning:
+      'No backend endpoint lists available categories. Enter an existing category ID — an invalid value will be rejected by the server.',
     priceCents: 'Price (cents, optional)',
     create: 'Create course',
     creating: 'Creating...',
@@ -72,7 +74,9 @@ function CreateCourseContent() {
       {
         onSuccess: (result) => {
           if (!result.error) {
-            router.replace(withLang(ROUTES.instructorCourseEdit, locale).replace('[id]', result.data.id));
+            router.replace(
+              withLang(ROUTES.instructorCourseEdit, locale).replace('[id]', result.data.id),
+            );
           }
         },
       },
@@ -87,27 +91,66 @@ function CreateCourseContent() {
         <p className="ph-page-subtitle">{t.subtitle}</p>
 
         <form className="ph-form" onSubmit={handleSubmit} noValidate>
-          {mutationError && <div className="ph-form-error" role="alert">{getErrorMessage(mutationError)}</div>}
+          {mutationError && (
+            <div className="ph-form-error" role="alert">
+              {getErrorMessage(mutationError)}
+            </div>
+          )}
 
           <div className="ph-field">
-            <label className="ph-label" htmlFor="title">{t.courseTitle}</label>
-            <input id="title" className="ph-input" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <label className="ph-label" htmlFor="title">
+              {t.courseTitle}
+            </label>
+            <input
+              id="title"
+              className="ph-input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
           </div>
 
           <div className="ph-field">
-            <label className="ph-label" htmlFor="description">{t.description}</label>
-            <textarea id="description" className="ph-input" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label className="ph-label" htmlFor="description">
+              {t.description}
+            </label>
+            <textarea
+              id="description"
+              className="ph-input"
+              rows={5}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
 
           <div className="ph-field">
-            <label className="ph-label" htmlFor="categoryId">{t.categoryId}</label>
-            <input id="categoryId" className="ph-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} required />
-            <p className="ph-form-error" style={{ marginTop: '0.5rem' }} role="note">{t.categoryWarning}</p>
+            <label className="ph-label" htmlFor="categoryId">
+              {t.categoryId}
+            </label>
+            <input
+              id="categoryId"
+              className="ph-input"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              required
+            />
+            <p className="ph-form-error" style={{ marginTop: '0.5rem' }} role="note">
+              {t.categoryWarning}
+            </p>
           </div>
 
           <div className="ph-field">
-            <label className="ph-label" htmlFor="priceCents">{t.priceCents}</label>
-            <input id="priceCents" type="number" min={0} className="ph-input" value={priceCents} onChange={(e) => setPriceCents(e.target.value)} />
+            <label className="ph-label" htmlFor="priceCents">
+              {t.priceCents}
+            </label>
+            <input
+              id="priceCents"
+              type="number"
+              min={0}
+              className="ph-input"
+              value={priceCents}
+              onChange={(e) => setPriceCents(e.target.value)}
+            />
           </div>
 
           <button type="submit" className="ph-btn-grad" disabled={isPending}>

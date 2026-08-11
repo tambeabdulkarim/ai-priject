@@ -16,7 +16,8 @@ export function createAiResource(request: RequestFn) {
     createRequest: (body: CreateAiRequestInput) =>
       request<never>({ method: 'POST', path: '/ai/requests', body }),
 
-    getRequestById: (id: string) => request<AiRequestRecord>({ method: 'GET', path: `/ai/requests/${id}` }),
+    getRequestById: (id: string) =>
+      request<AiRequestRecord>({ method: 'GET', path: `/ai/requests/${id}` }),
 
     getMyUsage: () => request<AiUsageResponse>({ method: 'GET', path: '/ai/usage/me' }),
   };

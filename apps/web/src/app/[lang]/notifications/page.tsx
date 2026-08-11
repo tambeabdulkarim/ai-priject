@@ -9,7 +9,12 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { type Locale } from '@/lib/i18n';
 import { RequireAuth } from '../../../guards/RequireAuth';
-import { useNotificationsList, useMarkAllNotificationsRead, useMarkNotificationRead } from '../../../hooks/useNotifications';
+import { EmptyState } from '@/components/ui/EmptyState';
+import {
+  useNotificationsList,
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+} from '../../../hooks/useNotifications';
 
 const COPY = {
   ar: {
@@ -52,7 +57,9 @@ function NotificationsContent() {
         <div className="ph-sec-hdr">
           <h1 className="ph-page-title" style={{ marginBottom: 0 }}>
             {t.title}
-            {typeof data?.unreadCount === 'number' && data.unreadCount > 0 ? ` (${data.unreadCount})` : ''}
+            {typeof data?.unreadCount === 'number' && data.unreadCount > 0
+              ? ` (${data.unreadCount})`
+              : ''}
           </h1>
           <button
             type="button"
@@ -65,18 +72,45 @@ function NotificationsContent() {
         </div>
 
         <div className="ph-filters">
-          <button type="button" className="ph-btn-outline" aria-pressed={filter === undefined} onClick={() => setFilter(undefined)}>{t.all}</button>
-          <button type="button" className="ph-btn-outline" aria-pressed={filter === 'unread'} onClick={() => setFilter('unread')}>{t.unread}</button>
-          <button type="button" className="ph-btn-outline" aria-pressed={filter === 'read'} onClick={() => setFilter('read')}>{t.read}</button>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            aria-pressed={filter === undefined}
+            onClick={() => setFilter(undefined)}
+          >
+            {t.all}
+          </button>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            aria-pressed={filter === 'unread'}
+            onClick={() => setFilter('unread')}
+          >
+            {t.unread}
+          </button>
+          <button
+            type="button"
+            className="ph-btn-outline"
+            aria-pressed={filter === 'read'}
+            onClick={() => setFilter('read')}
+          >
+            {t.read}
+          </button>
         </div>
 
         {isLoading && <p className="ph-state">{t.loading}</p>}
         {isError && <p className="ph-state">{t.error}</p>}
-        {!isLoading && !isError && (data?.items.length ?? 0) === 0 && <p className="ph-state">{t.empty}</p>}
+        {!isLoading && !isError && (data?.items.length ?? 0) === 0 && (
+          <EmptyState icon={<Bell size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         <div style={{ marginTop: '1.5rem' }}>
           {data?.items.map((notification) => (
-            <div key={notification.id} className="ph-module" style={{ opacity: notification.readAt ? 0.6 : 1 }}>
+            <div
+              key={notification.id}
+              className="ph-module"
+              style={{ opacity: notification.readAt ? 0.6 : 1 }}
+            >
               <div className="ph-lesson-row">
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Bell size={16} strokeWidth={2} aria-hidden="true" />
@@ -94,7 +128,9 @@ function NotificationsContent() {
                 )}
               </div>
               {notification.body && <p className="ph-catalogue-card-desc">{notification.body}</p>}
-              <span className="ph-lesson-locked">{new Date(notification.createdAt).toLocaleString(locale)}</span>
+              <span className="ph-lesson-locked">
+                {new Date(notification.createdAt).toLocaleString(locale)}
+              </span>
             </div>
           ))}
         </div>

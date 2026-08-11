@@ -7,8 +7,11 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { GraduationCap } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonGrid } from '@/components/ui/Loading';
 import { type Locale } from '@/lib/i18n';
 import { RequireAuth } from '../../../guards/RequireAuth';
 import { useEnrollmentsList } from '../../../hooks/useEnrollments';
@@ -49,13 +52,14 @@ function MyCoursesContent() {
       <main className="ph-page">
         <h1 className="ph-page-title">{t.title}</h1>
 
-        {isLoading && <p className="ph-state">{t.loading}</p>}
+        {isLoading && <SkeletonGrid count={4} />}
         {isError && <p className="ph-state">{t.error}</p>}
         {!isLoading && !isError && (data?.items.length ?? 0) === 0 && (
-          <div className="ph-state">
-            <p className="ph-state-title">{t.empty}</p>
-            <Link href={withLang(ROUTES.coursesList, locale)} className="ph-btn-grad">{t.browse}</Link>
-          </div>
+          <EmptyState
+            icon={<GraduationCap size={24} strokeWidth={1.5} />}
+            title={t.empty}
+            primaryAction={{ label: t.browse, href: withLang(ROUTES.coursesList, locale) }}
+          />
         )}
 
         <div className="ph-grid">
@@ -70,7 +74,10 @@ function MyCoursesContent() {
               </div>
               <div style={{ marginTop: '1rem' }}>
                 <Link
-                  href={withLang(ROUTES.courseLearn, locale).replace('[slug]', enrollment.course.slug)}
+                  href={withLang(ROUTES.courseLearn, locale).replace(
+                    '[slug]',
+                    enrollment.course.slug,
+                  )}
                   className="ph-btn-outline"
                 >
                   {t.continueLabel}

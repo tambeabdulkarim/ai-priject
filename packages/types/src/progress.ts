@@ -46,3 +46,24 @@ export interface SubmitQuizAttemptResponse {
   attempt: QuizAttempt;
   perQuestionCorrectness: Record<string, boolean>;
 }
+
+/**
+ * docs/16-API-CONTRACT.md GET /progress/quizzes/:quizId — Phase 28.
+ * Deliberately has no `correctAnswer` field anywhere — the backend never
+ * sends it (stripped server-side in ProgressService.getQuizForLearner).
+ */
+export interface QuizQuestionForLearner {
+  id: string;
+  prompt: string;
+  questionType: 'single' | 'multiple' | 'text';
+  options: unknown;
+  position: number;
+}
+
+export interface QuizForLearner {
+  id: string;
+  title: string;
+  passingScorePercent: number;
+  maxAttempts: number | null;
+  questions: QuizQuestionForLearner[];
+}

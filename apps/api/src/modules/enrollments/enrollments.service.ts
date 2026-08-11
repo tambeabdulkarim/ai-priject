@@ -13,7 +13,13 @@
 // Nothing else in this file, and none of docs/16 §6's documented
 // endpoints, depend on the missing relation.
 
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Enrollment, Prisma } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
@@ -61,7 +67,10 @@ export class EnrollmentsService {
     const existing = await this.enrollmentsRepository.findByUserAndCourse(userId, courseId);
     if (existing) {
       // docs/16-API-CONTRACT.md: "409 (already enrolled — returns existing enrollment)"
-      throw new ConflictException({ message: 'Already enrolled in this course.', details: existing });
+      throw new ConflictException({
+        message: 'Already enrolled in this course.',
+        details: existing,
+      });
     }
 
     let enrollment: Enrollment;
@@ -81,7 +90,10 @@ export class EnrollmentsService {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const raced = await this.enrollmentsRepository.findByUserAndCourse(userId, courseId);
         if (raced) {
-          throw new ConflictException({ message: 'Already enrolled in this course.', details: raced });
+          throw new ConflictException({
+            message: 'Already enrolled in this course.',
+            details: raced,
+          });
         }
       }
       throw error;
@@ -108,7 +120,10 @@ export class EnrollmentsService {
     courseId: string;
     orderItemId: string;
   }): Promise<Enrollment> {
-    const existing = await this.enrollmentsRepository.findByUserAndCourse(params.userId, params.courseId);
+    const existing = await this.enrollmentsRepository.findByUserAndCourse(
+      params.userId,
+      params.courseId,
+    );
     if (existing) {
       return existing;
     }
@@ -136,7 +151,10 @@ export class EnrollmentsService {
   }
 
   /** docs/16-API-CONTRACT.md GET /enrollments/me */
-  listMine(userId: string, query: ListEnrollmentsQueryDto): Promise<PaginatedResult<EnrollmentWithCourse>> {
+  listMine(
+    userId: string,
+    query: ListEnrollmentsQueryDto,
+  ): Promise<PaginatedResult<EnrollmentWithCourse>> {
     return this.enrollmentsRepository.findManyForUser({
       userId,
       cursor: query.cursor,
@@ -185,13 +203,17 @@ export class EnrollmentsService {
       throw new BadRequestException('This enrollment has no linked purchase to refund.');
     }
 
-    const orderId = await this.enrollmentsRepository.findOrderIdForOrderItem(enrollment.orderItemId);
+    const orderId = await this.enrollmentsRepository.findOrderIdForOrderItem(
+      enrollment.orderItemId,
+    );
     if (!orderId) {
       throw new BadRequestException('This enrollment has no linked purchase to refund.');
     }
     const payment = await this.paymentsRepository.findSucceededByOrderId(orderId);
     if (!payment) {
-      throw new BadRequestException('No successful payment found for this enrollment’s linked order.');
+      throw new BadRequestException(
+        'No successful payment found for this enrollment’s linked order.',
+      );
     }
 
     // Refund the payment first — if this fails, the enrollment must not be

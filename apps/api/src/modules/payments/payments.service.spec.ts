@@ -28,7 +28,14 @@ describe('PaymentsService', () => {
       auditLogService as never,
       notificationsService as never,
     );
-    return { service, paymentsRepository, ordersRepository, stripeService, auditLogService, notificationsService };
+    return {
+      service,
+      paymentsRepository,
+      ordersRepository,
+      stripeService,
+      auditLogService,
+      notificationsService,
+    };
   };
 
   describe('handleStripeWebhook', () => {
@@ -38,9 +45,9 @@ describe('PaymentsService', () => {
         throw new Error('bad signature');
       });
 
-      await expect(service.handleStripeWebhook(Buffer.from('{}'), 'bad-sig')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.handleStripeWebhook(Buffer.from('{}'), 'bad-sig'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('is idempotent: a checkout.session.completed for an already-recorded payment is a no-op', async () => {
@@ -74,8 +81,17 @@ describe('PaymentsService', () => {
         },
       });
       paymentsRepository.findByProviderPaymentId.mockResolvedValue(null);
-      ordersRepository.findById.mockResolvedValue({ id: 'order1', userId: 'u1', orderNumber: 'ORD-1', totalCents: 5000, currency: 'USD' });
-      paymentsRepository.recordSuccessfulPayment.mockResolvedValue({ id: 'payment1', amountCents: 5000 });
+      ordersRepository.findById.mockResolvedValue({
+        id: 'order1',
+        userId: 'u1',
+        orderNumber: 'ORD-1',
+        totalCents: 5000,
+        currency: 'USD',
+      });
+      paymentsRepository.recordSuccessfulPayment.mockResolvedValue({
+        id: 'payment1',
+        amountCents: 5000,
+      });
 
       const result = await service.handleStripeWebhook(Buffer.from('{}'), 'sig');
 
@@ -103,9 +119,9 @@ describe('PaymentsService', () => {
       paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
       paymentsRepository.getRefundableBalance.mockResolvedValue(0);
 
-      await expect(service.refund('pay1', undefined, 'customer request', 'admin1')).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(
+        service.refund('pay1', undefined, 'customer request', 'admin1'),
+      ).rejects.toBeInstanceOf(ConflictException);
       expect(stripeService.refundPayment).not.toHaveBeenCalled();
     });
 
@@ -114,17 +130,22 @@ describe('PaymentsService', () => {
       paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
       paymentsRepository.getRefundableBalance.mockResolvedValue(1000);
 
-      await expect(service.refund('pay1', 5000, 'customer request', 'admin1')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.refund('pay1', 5000, 'customer request', 'admin1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(stripeService.refundPayment).not.toHaveBeenCalled();
     });
 
     it('calls the real Stripe Refunds API with the payment intent id and a deterministic idempotency key, then commits the local ledger', async () => {
-      const { service, paymentsRepository, stripeService, notificationsService, auditLogService } = makeService();
+      const { service, paymentsRepository, stripeService, notificationsService, auditLogService } =
+        makeService();
       paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
       paymentsRepository.getRefundableBalance.mockResolvedValue(1000);
-      stripeService.refundPayment.mockResolvedValue({ id: 're_abc', amountCents: 1000, status: 'succeeded' });
+      stripeService.refundPayment.mockResolvedValue({
+        id: 're_abc',
+        amountCents: 1000,
+        status: 'succeeded',
+      });
       paymentsRepository.processRefund.mockResolvedValue({
         payment: { id: 'pay1', amountCents: 1000, status: 'refunded' },
         transaction: { amountCents: 1000 },
@@ -149,7 +170,11 @@ describe('PaymentsService', () => {
       expect(auditLogService.record).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'payment.refunded',
-          afterState: expect.objectContaining({ refundAmount: 1000, fullRefund: true, stripeRefundId: 're_abc' }),
+          afterState: expect.objectContaining({
+            refundAmount: 1000,
+            fullRefund: true,
+            stripeRefundId: 're_abc',
+          }),
         }),
       );
       expect(notificationsService.create).toHaveBeenCalledWith(
@@ -161,7 +186,11 @@ describe('PaymentsService', () => {
       const { service, paymentsRepository, stripeService, auditLogService } = makeService();
       paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
       paymentsRepository.getRefundableBalance.mockResolvedValue(1000);
-      stripeService.refundPayment.mockResolvedValue({ id: 're_partial', amountCents: 400, status: 'succeeded' });
+      stripeService.refundPayment.mockResolvedValue({
+        id: 're_partial',
+        amountCents: 400,
+        status: 'succeeded',
+      });
       paymentsRepository.processRefund.mockResolvedValue({
         payment: { id: 'pay1', amountCents: 1000, status: 'succeeded' },
         transaction: { amountCents: 400 },
@@ -176,7 +205,9 @@ describe('PaymentsService', () => {
         idempotencyKey: 'refund:pay1:400',
       });
       expect(auditLogService.record).toHaveBeenCalledWith(
-        expect.objectContaining({ afterState: expect.objectContaining({ refundAmount: 400, fullRefund: false }) }),
+        expect.objectContaining({
+          afterState: expect.objectContaining({ refundAmount: 400, fullRefund: false }),
+        }),
       );
     });
 
@@ -186,9 +217,9 @@ describe('PaymentsService', () => {
       paymentsRepository.getRefundableBalance.mockResolvedValue(1000);
       stripeService.refundPayment.mockRejectedValue(new Error('charge already refunded'));
 
-      await expect(service.refund('pay1', undefined, 'customer request', 'admin1')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.refund('pay1', undefined, 'customer request', 'admin1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
       expect(paymentsRepository.processRefund).not.toHaveBeenCalled();
     });
 
@@ -196,14 +227,21 @@ describe('PaymentsService', () => {
       const { service, paymentsRepository, stripeService } = makeService();
       paymentsRepository.findByIdWithOrder.mockResolvedValue(baseOrder);
       paymentsRepository.getRefundableBalance.mockResolvedValue(1000);
-      stripeService.refundPayment.mockResolvedValue({ id: 're_race', amountCents: 1000, status: 'succeeded' });
-      const conflictError = Object.assign(new Error('Transaction write conflict'), { code: 'P2034', name: 'PrismaClientKnownRequestError' });
+      stripeService.refundPayment.mockResolvedValue({
+        id: 're_race',
+        amountCents: 1000,
+        status: 'succeeded',
+      });
+      const conflictError = Object.assign(new Error('Transaction write conflict'), {
+        code: 'P2034',
+        name: 'PrismaClientKnownRequestError',
+      });
       Object.setPrototypeOf(conflictError, Prisma.PrismaClientKnownRequestError.prototype);
       paymentsRepository.processRefund.mockRejectedValue(conflictError);
 
-      await expect(service.refund('pay1', undefined, 'customer request', 'admin1')).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(
+        service.refund('pay1', undefined, 'customer request', 'admin1'),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 });

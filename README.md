@@ -1,26 +1,11 @@
-# AI Productivity Platform
+# Phoenix Project
 
-منصة إنتاجية احترافية مبنية من الصفر لتوفير تجربة حديثة وفعالة لإدارة العمل والمهام.
+This is the Phoenix platform monorepo (`apps/web`, `apps/api`, `apps/admin`, `packages/*`).
 
-## الميزات
-- واجهة احترافية وسهلة الاستخدام
-- بنية قابلة للتوسع
-- جاهزة للانتقال إلى تطوير ميزات متقدمة مثل المهام والتقويم والتحليلات
+**Start here:** [`docs/documentation-index.md`](docs/documentation-index.md) — the canonical entry point for project status, architecture, API contract, frontend/backend structure, testing, deployment, and historical reports.
 
-## البدء
-```bash
-npm install
-npm run dev
-```
+For current project status specifically, see [`docs/project-status.md`](docs/project-status.md).
 
-## التحقق
-```bash
-npm run build
-node --test tests/taskFeatures.test.js tests/notes.test.js tests/tasks.test.js
-```
+---
 
-## البنية
-- src/app: الصفحات والتطبيق
-- src/components: المكونات القابلة لإعادة الاستخدام
-- src/lib: الأدوات والمنطق المساعد
-- public: الأصول الثابتة
+*This file previously described an earlier, unrelated productivity-app prototype that has since been fully replaced by the Phoenix platform. The original content is preserved at [`docs/archive/legacy-productivity-app/README-original.md`](docs/archive/legacy-productivity-app/README-original.md) for history.*

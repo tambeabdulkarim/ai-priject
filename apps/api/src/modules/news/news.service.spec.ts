@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { NewsService } from './news.service';
 
 describe('NewsService', () => {
@@ -46,7 +51,9 @@ describe('NewsService', () => {
       const { service, newsRepository } = makeService();
       newsRepository.findBySlug.mockResolvedValue({ id: 'n1', status: 'draft' });
 
-      await expect(service.getBySlug('draft-article', ['learner'])).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getBySlug('draft-article', ['learner'])).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('shows a draft article to an editorial viewer', async () => {
@@ -112,7 +119,9 @@ describe('NewsService', () => {
       newsRepository.findById.mockResolvedValue({ id: 'n1', authorId: 'author1' });
       newsRepository.update.mockResolvedValue({ id: 'n1', title: 'Updated' });
 
-      const result = await service.update('n1', { title: 'Updated' }, 'author1', ['content_editor']);
+      const result = await service.update('n1', { title: 'Updated' }, 'author1', [
+        'content_editor',
+      ]);
 
       expect(result.title).toBe('Updated');
     });

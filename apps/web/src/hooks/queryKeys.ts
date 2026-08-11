@@ -46,7 +46,8 @@ export const queryKeys = {
   },
   admin: {
     auditLogs: (query: Record<string, unknown> = {}) => ['admin', 'audit-logs', query] as const,
-    analyticsOverview: (query: Record<string, unknown> = {}) => ['admin', 'analytics-overview', query] as const,
+    analyticsOverview: (query: Record<string, unknown> = {}) =>
+      ['admin', 'analytics-overview', query] as const,
     users: {
       list: (query: Record<string, unknown> = {}) => ['admin', 'users', 'list', query] as const,
       detail: (id: string) => ['admin', 'users', 'detail', id] as const,
@@ -57,7 +58,8 @@ export const queryKeys = {
   },
   marketplace: {
     products: {
-      list: (query: Record<string, unknown> = {}) => ['marketplace', 'products', 'list', query] as const,
+      list: (query: Record<string, unknown> = {}) =>
+        ['marketplace', 'products', 'list', query] as const,
       detail: (slug: string) => ['marketplace', 'products', 'detail', slug] as const,
     },
     categories: () => ['marketplace', 'categories'] as const,
@@ -72,5 +74,25 @@ export const queryKeys = {
   ai: {
     requestDetail: (id: string) => ['ai', 'requests', 'detail', id] as const,
     usage: () => ['ai', 'usage', 'me'] as const,
+  },
+  media: {
+    detail: (id: string) => ['media', 'detail', id] as const,
+    mine: (query: Record<string, unknown> = {}) => ['media', 'mine', query] as const,
+  },
+  learningPaths: {
+    list: (query: Record<string, unknown> = {}) => ['learning-paths', 'list', query] as const,
+    detail: (slug: string) => ['learning-paths', 'detail', slug] as const,
+  },
+  projects: {
+    forCourse: (courseId: string) => ['projects', 'course', courseId] as const,
+    detail: (id: string) => ['projects', 'detail', id] as const,
+    mySubmissions: (query: Record<string, unknown> = {}) =>
+      ['projects', 'submissions', 'mine', query] as const,
+    courseSubmissions: (courseId: string, query: Record<string, unknown> = {}) =>
+      ['projects', 'submissions', 'course', courseId, query] as const,
+    submissionDetail: (id: string) => ['projects', 'submissions', 'detail', id] as const,
+  },
+  quiz: {
+    detail: (quizId: string) => ['quiz', 'detail', quizId] as const,
   },
 } as const;

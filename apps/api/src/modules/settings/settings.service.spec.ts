@@ -48,9 +48,9 @@ describe('SettingsService', () => {
       const { service, settingsRepository } = makeService();
       settingsRepository.findByKey.mockResolvedValue(null);
 
-      await expect(service.updateByKey('missing.key', { value: 'x' }, 'admin1')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.updateByKey('missing.key', { value: 'x' }, 'admin1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updates the value and records a mandatory audit log with before/after diff', async () => {

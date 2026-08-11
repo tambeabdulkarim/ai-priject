@@ -61,6 +61,18 @@ const PERMISSION_KEYS = [
   'analytics:read',
   'settings:read',
   'settings:write',
+  // Phase 26 — docs/16-API-CONTRACT.md §20. No new permission was needed
+  // for Projects (grading/creation there is ownership-OR-editorial,
+  // enforced in ProjectsService, the exact same pattern already used for
+  // course:create's sibling actions like editing/archiving a course —
+  // see docs/phase26-learning-path-project-architecture-report.md's
+  // Authorization Model section for the full reasoning). LearningPaths
+  // genuinely needed two new keys: a path spans multiple instructors'
+  // courses, so — unlike course:create, open to any instructor — it
+  // follows the news:create precedent (an editorial/curricular object,
+  // content_editor/admin only).
+  'learning_path:create',
+  'learning_path:publish',
 ] as const;
 
 // docs/16-API-CONTRACT.md "Authorization Required" — direct transcription,
@@ -101,6 +113,11 @@ const EXPLICIT_ROLE_GRANTS: Record<string, string[]> = {
   // docs/16-API-CONTRACT.md: "settings:read (superadmin)" and
   // "settings:write (superadmin)" — no explicit grant needed beyond the
   // default superadmin grant every permission already receives.
+  // docs/16-API-CONTRACT.md §20: "content_editor/admin" — direct
+  // transcription of the news:create precedent this phase's own contract
+  // section explicitly cites.
+  'learning_path:create': ['content_editor', 'admin'],
+  'learning_path:publish': ['content_editor', 'admin'],
 };
 
 async function main(): Promise<void> {
@@ -121,16 +138,23 @@ async function main(): Promise<void> {
     });
   }
 
-  const roles = await prisma.role.findMany({ where: { name: { in: ROLE_NAMES as unknown as string[] } } });
+  const roles = await prisma.role.findMany({
+    where: { name: { in: ROLE_NAMES as unknown as string[] } },
+  });
   const roleByName = new Map(roles.map((r) => [r.name, r]));
-  const permissions = await prisma.permission.findMany({ where: { key: { in: [...PERMISSION_KEYS] } } });
+  const permissions = await prisma.permission.findMany({
+    where: { key: { in: [...PERMISSION_KEYS] } },
+  });
 
   const superadmin = roleByName.get('superadmin');
   if (!superadmin) throw new Error('superadmin role missing after seed.');
 
   let grantCount = 0;
   for (const permission of permissions) {
-    const roleNamesToGrant = new Set<string>(['superadmin', ...(EXPLICIT_ROLE_GRANTS[permission.key] ?? [])]);
+    const roleNamesToGrant = new Set<string>([
+      'superadmin',
+      ...(EXPLICIT_ROLE_GRANTS[permission.key] ?? []),
+    ]);
     for (const roleName of roleNamesToGrant) {
       const role = roleByName.get(roleName);
       if (!role) continue;

@@ -3,7 +3,14 @@ import type {
   ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
+  LoginResult,
   LogoutAllResponse,
+  MfaDisableRequest,
+  MfaEnrollBeginResponse,
+  MfaEnrollConfirmRequest,
+  MfaEnrollConfirmResponse,
+  MfaRegenerateRecoveryCodesResponse,
+  MfaVerifyRequest,
   RefreshResponse,
   RegisterRequest,
   RegisterResponse,
@@ -30,26 +37,78 @@ import type { RequestFn } from '../core/request';
 export function createAuthResource(request: RequestFn) {
   return {
     register: (body: RegisterRequest) =>
-      request<RegisterResponse>({ method: 'POST', path: '/auth/register', body, skipAuthRetry: true }),
+      request<RegisterResponse>({
+        method: 'POST',
+        path: '/auth/register',
+        body,
+        skipAuthRetry: true,
+      }),
 
     verifyEmail: (body: VerifyEmailRequest) =>
-      request<VerifyEmailResponse>({ method: 'POST', path: '/auth/verify-email', body, skipAuthRetry: true }),
+      request<VerifyEmailResponse>({
+        method: 'POST',
+        path: '/auth/verify-email',
+        body,
+        skipAuthRetry: true,
+      }),
 
+    /** docs/10-SECURITY-BIBLE.md §5 (Phase 14.2): returns `LoginResponse` OR `MfaChallengeResponse` — the caller must check `'mfaRequired' in result` before touching `.accessToken`. */
     login: (body: LoginRequest) =>
-      request<LoginResponse>({ method: 'POST', path: '/auth/login', body, skipAuthRetry: true }),
+      request<LoginResult>({ method: 'POST', path: '/auth/login', body, skipAuthRetry: true }),
+
+    /** Step 2 of the MFA challenge/response flow — no access token exists yet at this point, same reasoning as `login`. */
+    mfaVerify: (body: MfaVerifyRequest) =>
+      request<LoginResponse>({
+        method: 'POST',
+        path: '/auth/mfa/verify',
+        body,
+        skipAuthRetry: true,
+      }),
 
     /** Relies entirely on the httpOnly refresh_token cookie (credentials: 'include', set by core/request.ts) — no body. */
-    refresh: () => request<RefreshResponse>({ method: 'POST', path: '/auth/refresh', skipAuthRetry: true }),
+    refresh: () =>
+      request<RefreshResponse>({ method: 'POST', path: '/auth/refresh', skipAuthRetry: true }),
 
     logout: () => request<void>({ method: 'POST', path: '/auth/logout', skipAuthRetry: true }),
 
-    logoutAll: () => request<LogoutAllResponse>({ method: 'POST', path: '/auth/logout-all', skipAuthRetry: true }),
+    logoutAll: () =>
+      request<LogoutAllResponse>({ method: 'POST', path: '/auth/logout-all', skipAuthRetry: true }),
 
     forgotPassword: (body: ForgotPasswordRequest) =>
-      request<ForgotPasswordResponse>({ method: 'POST', path: '/auth/forgot-password', body, skipAuthRetry: true }),
+      request<ForgotPasswordResponse>({
+        method: 'POST',
+        path: '/auth/forgot-password',
+        body,
+        skipAuthRetry: true,
+      }),
 
     resetPassword: (body: ResetPasswordRequest) =>
-      request<ResetPasswordResponse>({ method: 'POST', path: '/auth/reset-password', body, skipAuthRetry: true }),
+      request<ResetPasswordResponse>({
+        method: 'POST',
+        path: '/auth/reset-password',
+        body,
+        skipAuthRetry: true,
+      }),
+
+    // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — enrollment/management,
+    // all authenticated (unlike everything above): deliberately NOT
+    // `skipAuthRetry` — these behave like any other authenticated call
+    // (e.g. users.changePassword), so a 401 from an expired access token
+    // should go through the normal refresh-and-retry flow, not fail outright.
+    mfaEnrollBegin: () =>
+      request<MfaEnrollBeginResponse>({ method: 'POST', path: '/auth/mfa/enroll/begin' }),
+
+    mfaEnrollConfirm: (body: MfaEnrollConfirmRequest) =>
+      request<MfaEnrollConfirmResponse>({ method: 'POST', path: '/auth/mfa/enroll/confirm', body }),
+
+    mfaDisable: (body: MfaDisableRequest) =>
+      request<void>({ method: 'POST', path: '/auth/mfa/disable', body }),
+
+    mfaRegenerateRecoveryCodes: () =>
+      request<MfaRegenerateRecoveryCodesResponse>({
+        method: 'POST',
+        path: '/auth/mfa/recovery-codes/regenerate',
+      }),
   };
 }
 

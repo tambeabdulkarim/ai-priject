@@ -1,5 +1,6 @@
-// Shared TypeScript types for API contracts, consumed by apps/web,
-// apps/admin, and the future apps/mobile. Populated incrementally,
+// Shared TypeScript types for API contracts, consumed by apps/web and a
+// future apps/mobile (apps/admin is retired, see
+// docs/09-PLATFORM-ARCHITECTURE.md §16). Populated incrementally,
 // resource group by resource group, alongside packages/api-client —
 // Frontend Phase 2 (Foundation Layer) added Auth/Users/Files. Frontend
 // Phase 3 (Public Foundation Pages) added the public read surface of
@@ -30,3 +31,5 @@ export * from './src/settings';
 export * from './src/analytics';
 export * from './src/marketplace';
 export * from './src/ai';
+export * from './src/learning-paths';
+export * from './src/projects';

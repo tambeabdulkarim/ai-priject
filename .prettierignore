@@ -1,0 +1,13 @@
+node_modules
+dist
+.next
+.turbo
+coverage
+build
+package-lock.json
+apps/api/prisma/migrations
+docs
+*.md
+infra/**/*.yml
+infra/**/*.yaml
+apps/web/tests/e2e/.auth/**

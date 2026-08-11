@@ -42,6 +42,24 @@ model User {
   timezone               String            @default("UTC")
   /// active | suspended | deactivated
   status                 String            @default("active")
+  // Marks accounts created by test/verification flows (not seeded product
+  // reference data — Roles/Permissions/etc. are a separate concept). Every
+  // row a test user touches (File.uploadedById, AuditLog.actorUserId, and
+  // transitively Media via File) is identifiable by joining back to this
+  // flag rather than duplicating it across tables. Intentionally not
+  // exposed in any API response/DTO.
+  isTestData             Boolean           @default(false) @map("is_test_data")
+  // docs/10-SECURITY-BIBLE.md §5 (MFA Policy) — Phase 14.2. mfaSecret is
+  // the TOTP shared secret, ENCRYPTED at rest (AES-256-GCM, see
+  // common/services/mfa-crypto.service.ts) — never plaintext, and never a
+  // one-way hash (unlike passwordHash), because verifying a TOTP code
+  // requires the raw secret back. mfaSecret is set as soon as enrollment
+  // begins (before confirmation) so the confirm step has something to
+  // verify against; mfaEnabled only flips to true once a real code is
+  // confirmed. Neither field is ever exposed via any API response — see
+  // UsersService.toSafeUser.
+  mfaEnabled             Boolean           @default(false) @map("mfa_enabled")
+  mfaSecret              String?           @map("mfa_secret")
   deletedAt              DateTime?         @map("deleted_at") @db.Timestamptz
   createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz
@@ -51,6 +69,7 @@ model User {
   sessions               UserSession[]
   settingsUpdated        Setting[]
   refreshTokens          RefreshToken[]
+  mfaRecoveryCodes       MfaRecoveryCode[]
   notifications          Notification[]
   uploads                Upload[]
   versionsReplacedByMe   Version[]         @relation("VersionReplacedBy")
@@ -67,6 +86,8 @@ model User {
   quizAttempts           QuizAttempt[]
   readingProgress        ReadingProgress[]
   certificates           Certificate[]
+  projectSubmissions     ProjectSubmission[]  @relation("ProjectSubmissionLearner")
+  projectEvaluationsDone ProjectEvaluation[]  @relation("ProjectEvaluationEvaluator")
   auditLogs              AuditLog[]
   roleAssignments        UserRole[]        @relation("UserRoleAssignments")
   roleGrantsIssued       UserRole[]        @relation("UserRoleGrantedBy")
@@ -267,19 +288,25 @@ model UserSession {
 
 /// docs/13-DATABASE-BLUEPRINT.md — Files (shared infrastructure, files schema)
 model File {
-  id               String   @id @default(uuid(7)) @db.Uuid
-  uploadedById     String   @map("uploaded_by_id") @db.Uuid
-  uploadedBy       User     @relation("FileUploadedBy", fields: [uploadedById], references: [id])
-  storageKey       String   @unique @map("storage_key")
-  originalFilename String   @map("original_filename")
-  mimeType         String   @map("mime_type")
-  sizeBytes        BigInt   @map("size_bytes")
+  id               String    @id @default(uuid(7)) @db.Uuid
+  uploadedById     String    @map("uploaded_by_id") @db.Uuid
+  uploadedBy       User      @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+  storageKey       String    @unique @map("storage_key")
+  originalFilename String    @map("original_filename")
+  mimeType         String    @map("mime_type")
+  sizeBytes        BigInt    @map("size_bytes")
   /// pending | clean | quarantined
-  scanStatus       String   @default("pending") @map("scan_status")
+  scanStatus       String    @default("pending") @map("scan_status")
   /// private | public
-  visibility       String   @default("private")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  visibility       String    @default("private")
+  // Phase 13.3: soft delete, same convention already used by User.deletedAt
+  // — DELETE /files/:id sets this rather than removing the row, so
+  // existing relations (LessonFile, Product, LibraryItem, Certificate,
+  // avatars) are left untouched (cascading a hard delete through all of
+  // those is real, separate, out-of-scope risk).
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   usersWithAvatar    User[]        @relation("UserAvatarFile")
   authorsWithAvatar  Author[]      @relation("AuthorAvatarFile")
@@ -291,6 +318,7 @@ model File {
   products           Product[]
   lessonFiles        LessonFile[]
   certificates       Certificate[]
+  projectSubmissions ProjectSubmission[]
 
   @@index([uploadedById])
   @@index([scanStatus])
@@ -377,6 +405,26 @@ model RefreshToken {
   @@schema("auth")
 }
 
+/// docs/10-SECURITY-BIBLE.md §5 — MFA recovery codes (Phase 14.2). Not in
+/// docs/13-DATABASE-BLUEPRINT.md (predates this work). Modeled exactly
+/// like RefreshToken above: individually hashed rows (never a JSON array
+/// on User), single-use (usedAt), auditable, indexed by owner —
+/// high-entropy generated codes, not user-chosen, so a fast deterministic
+/// hash (SHA-256, same reasoning as RefreshToken.tokenHash) is correct,
+/// not Argon2id.
+model MfaRecoveryCode {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id])
+  codeHash  String    @unique @map("code_hash")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([userId])
+  @@map("mfa_recovery_codes")
+  @@schema("auth")
+}
+
 /// docs/13-DATABASE-BLUEPRINT.md — Notifications
 /// source_event_id intentionally has no FK, per doc: "not a hard foreign
 /// key, to avoid coupling this table to every other domain."
@@ -437,6 +485,7 @@ model Media {
   lessons           Lesson[]
 
   @@index([transcodingStatus])
+  @@index([mediaType])
   @@map("media")
   @@schema("files")
 }
@@ -498,9 +547,15 @@ model Course {
   modules      Module[]
   enrollments  Enrollment[]
   certificates Certificate[]
+  learningPaths LearningPathCourse[]
+  projects     Project[]
 
   @@index([status])
   @@index([instructorId])
+  // Phase 16 — docs/phase15-production-readiness-report.md's High-severity
+  // finding: categoryId is filtered on in courses.repository.ts but had no
+  // supporting index, unlike LibraryItem.categoryId just above, which does.
+  @@index([categoryId])
   @@map("courses")
   @@schema("courses")
 }
@@ -552,6 +607,8 @@ model Product {
   orderItems  OrderItem[]
 
   @@index([status])
+  // Phase 16 — same categoryId gap as Course above, same reasoning.
+  @@index([categoryId])
   @@map("products")
   @@schema("marketplace")
 }
@@ -662,6 +719,11 @@ model Lesson {
   lessonFiles     LessonFile[]
   quizzes         Quiz[]
   progress        LessonProgress[]
+  /// Phase 26 — reverse of Project.sourceLessonId, optional 1:1 (not every
+  /// lesson has a linked Project, and this relation never implies the
+  /// lesson's body content is duplicated onto the Project — see Project's
+  /// own doc comment).
+  project         Project?
 
   @@index([moduleId, position])
   @@map("lessons")
@@ -809,6 +871,11 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  // Phase 16 — docs/phase15-production-readiness-report.md's Medium-
+  // severity finding: orders.repository.ts's admin listing filters by a
+  // createdAt date range and sorts by createdAt desc, with no supporting
+  // index.
+  @@index([createdAt])
   @@map("orders")
   @@schema("marketplace")
 }
@@ -1026,6 +1093,157 @@ model Certificate {
   pdfFile           File?      @relation(fields: [pdfFileId], references: [id])
 
   @@map("certificates")
+  @@schema("courses")
+}
+
+// Phase 26 — Learning Paths & Project Evaluation Architecture. Not part of
+// the original approved 49-table blueprint (docs/13-DATABASE-BLUEPRINT.md)
+// — added post-blueprint to close two real gaps Phase 25 discovered and
+// explicitly documented (docs/phase25-content-production-report.md's
+// Database Findings #1-2), the same precedent as MfaRecoveryCode/MfaCrypto
+// above (Phase 14.2), which also postdates the original blueprint and is
+// documented with its own explanatory comments rather than a false
+// docs/13-DATABASE-BLUEPRINT.md citation. See docs/16-API-CONTRACT.md
+// §20-21 for the corresponding API contract.
+
+/// A curated, ordered sequence of existing Courses (docs/content-library/
+/// learning-paths.md's 9 named paths — 3 have real courses seeded as of
+/// Phase 25/26). Deliberately NOT linked directly to Project — a path's
+/// projects are simply the union of its member courses' own projects,
+/// avoiding a redundant relation (see the Phase 26 report's "why not a
+/// direct Project<->LearningPath relation" note).
+model LearningPath {
+  id          String                @id @default(uuid(7)) @db.Uuid
+  title       String
+  slug        String                @unique
+  description String?
+  /// draft | published | archived — same convention as Course.status
+  status      String                @default("draft")
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz
+  courses     LearningPathCourse[]
+
+  @@index([status])
+  @@map("learning_paths")
+  @@schema("courses")
+}
+
+/// Join table preserving per-path course ordering. `position` is the
+/// path-relative order (independent of any other path the same course may
+/// also belong to). The composite unique constraint is the actual
+/// duplicate-membership guard this phase's "avoid duplicate course
+/// membership within the same path" requirement calls for.
+model LearningPathCourse {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  learningPathId String       @map("learning_path_id") @db.Uuid
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  courseId       String       @map("course_id") @db.Uuid
+  course         Course       @relation(fields: [courseId], references: [id])
+  position       Int
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([learningPathId, courseId])
+  @@index([learningPathId, position])
+  @@map("learning_path_courses")
+  @@schema("courses")
+}
+
+/// A real, trackable educational project — the model Phase 25's
+/// Lesson-based project briefs deliberately did NOT have (they still don't
+/// need to: `sourceLessonId` links a Project to the Lesson that already
+/// holds its full brief text in `Lesson.body`, so the brief is never
+/// copied/duplicated — see docs/phase26-learning-path-project-architecture-
+/// report.md's migration strategy for exactly which of the 6 Phase 25
+/// briefs are linked this way). `instructions` is optional specifically
+/// because lesson-sourced projects rely on the linked Lesson for their
+/// brief; only a project created directly (no source lesson) needs its own
+/// `instructions` text.
+model Project {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  courseId       String              @map("course_id") @db.Uuid
+  course         Course              @relation(fields: [courseId], references: [id])
+  sourceLessonId String?             @unique @map("source_lesson_id") @db.Uuid
+  sourceLesson   Lesson?             @relation(fields: [sourceLessonId], references: [id])
+  title          String
+  description    String?
+  instructions   String?
+  /// draft | published | archived — same convention as Course.status
+  status         String              @default("draft")
+  position       Int                 @default(0)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+  submissions    ProjectSubmission[]
+
+  @@index([courseId, position])
+  @@map("projects")
+  @@schema("courses")
+}
+
+/// A learner's submitted work for a Project. `content` covers a text/URL
+/// submission (e.g. a repo link or written reflection); `fileId` covers an
+/// uploaded artifact via the existing File model (same pattern as
+/// LessonFile.fileId). At least one of the two must be present — enforced
+/// in ProjectsService, not the database, since Prisma has no portable
+/// "at least one of" column constraint (same class of tradeoff already
+/// accepted for Certificate.pdfFileId being nullable-with-service-level
+/// rules). `attemptNumber` supports resubmission without losing history;
+/// the unique constraint blocks only an accidental duplicate of the exact
+/// same attempt, not a genuine resubmission (which increments the number).
+model ProjectSubmission {
+  id             String             @id @default(uuid(7)) @db.Uuid
+  projectId      String             @map("project_id") @db.Uuid
+  project        Project            @relation(fields: [projectId], references: [id])
+  userId         String             @map("user_id") @db.Uuid
+  user           User               @relation("ProjectSubmissionLearner", fields: [userId], references: [id])
+  content        String?
+  fileId         String?            @map("file_id") @db.Uuid
+  file           File?              @relation(fields: [fileId], references: [id])
+  attemptNumber  Int                @default(1) @map("attempt_number")
+  /// submitted | evaluated — set to evaluated by ProjectsService when a
+  /// ProjectEvaluation is created for this submission (same
+  /// service-driven-state-transition pattern as CertificatesService
+  /// issuing on Enrollment reaching 100%).
+  status         String             @default("submitted")
+  submittedAt    DateTime           @default(now()) @map("submitted_at") @db.Timestamptz
+  createdAt      DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime           @updatedAt @map("updated_at") @db.Timestamptz
+  evaluation     ProjectEvaluation?
+
+  @@unique([projectId, userId, attemptNumber])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_submissions")
+  @@schema("courses")
+}
+
+/// One evaluation per submission (1:1 — a resubmission gets a new
+/// ProjectSubmission row with an incremented attemptNumber, and therefore
+/// its own new evaluation, rather than overwriting history).
+/// `method` is deliberately included now (not added later as a breaking
+/// migration) so automated evaluation can be introduced in a future phase
+/// without a schema change — Phase 26 itself only ever writes "manual",
+/// per this phase's explicit instruction not to implement AI grading now.
+model ProjectEvaluation {
+  id           String            @id @default(uuid(7)) @db.Uuid
+  submissionId String            @unique @map("submission_id") @db.Uuid
+  submission   ProjectSubmission @relation(fields: [submissionId], references: [id])
+  evaluatorId  String            @map("evaluator_id") @db.Uuid
+  evaluator    User              @relation("ProjectEvaluationEvaluator", fields: [evaluatorId], references: [id])
+  scorePercent Int               @map("score_percent")
+  passed       Boolean
+  feedback     String
+  /// manual | automated — see model-level note. Always "manual" as written
+  /// by Phase 26; the column exists so a future automated-evaluation
+  /// feature is additive, not a breaking migration.
+  method       String            @default("manual")
+  /// completed | disputed — "disputed" is reserved for a future
+  /// re-evaluation workflow; Phase 26 only ever writes "completed".
+  status       String            @default("completed")
+  evaluatedAt  DateTime          @default(now()) @map("evaluated_at") @db.Timestamptz
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("project_evaluations")
   @@schema("courses")
 }
 

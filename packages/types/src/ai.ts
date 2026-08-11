@@ -57,7 +57,13 @@ export interface AiCostRecord {
  * exactly — never collapsed into a single always-present shape.
  */
 export type AiUsageResponse =
-  | { periodStart: string; periodEnd: string; requestsUsed: number; tokensUsed: number; quotaLimit: number }
+  | {
+      periodStart: string;
+      periodEnd: string;
+      requestsUsed: number;
+      tokensUsed: number;
+      quotaLimit: number;
+    }
   | { periodStart: null; periodEnd: null; requestsUsed: 0; tokensUsed: 0; quotaLimit: null };
 
 /**

@@ -45,16 +45,20 @@ export function createCoursesResource(request: RequestFn) {
 
     getBySlug: (slug: string) => request<CourseDetail>({ method: 'GET', path: `/courses/${slug}` }),
 
-    create: (body: CreateCourseRequest) => request<CourseSummary>({ method: 'POST', path: '/courses', body }),
+    create: (body: CreateCourseRequest) =>
+      request<CourseSummary>({ method: 'POST', path: '/courses', body }),
 
     update: (id: string, body: UpdateCourseRequest) =>
       request<CourseSummary>({ method: 'PATCH', path: `/courses/${id}`, body }),
 
-    submitForReview: (id: string) => request<CourseSummary>({ method: 'POST', path: `/courses/${id}/submit-review` }),
+    submitForReview: (id: string) =>
+      request<CourseSummary>({ method: 'POST', path: `/courses/${id}/submit-review` }),
 
-    publish: (id: string) => request<CourseSummary>({ method: 'POST', path: `/courses/${id}/publish` }),
+    publish: (id: string) =>
+      request<CourseSummary>({ method: 'POST', path: `/courses/${id}/publish` }),
 
-    archive: (id: string) => request<CourseSummary>({ method: 'POST', path: `/courses/${id}/archive` }),
+    archive: (id: string) =>
+      request<CourseSummary>({ method: 'POST', path: `/courses/${id}/archive` }),
   };
 }
 

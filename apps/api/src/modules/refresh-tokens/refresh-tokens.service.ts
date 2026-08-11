@@ -62,10 +62,7 @@ export class RefreshTokensService {
 
     if (existing.revokedAt || existing.usedAt) {
       // Reuse of an already-rotated or revoked token — treat as theft.
-      await this.refreshTokensRepository.revokeAllForSession(
-        existing.sessionId,
-        'reuse_detected',
-      );
+      await this.refreshTokensRepository.revokeAllForSession(existing.sessionId, 'reuse_detected');
       await this.sessionsRepository.revoke(existing.sessionId);
       throw new UnauthorizedException('Refresh token reuse detected — session revoked.');
     }

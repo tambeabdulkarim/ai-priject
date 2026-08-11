@@ -32,7 +32,11 @@ export class RolesRepository {
   }
 
   /** docs/16-API-CONTRACT.md PATCH /users/:id/roles — full-set replacement. */
-  async replaceUserRoles(userId: string, roleIds: string[], grantedById: string | null): Promise<void> {
+  async replaceUserRoles(
+    userId: string,
+    roleIds: string[],
+    grantedById: string | null,
+  ): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.userRole.deleteMany({ where: { userId } }),
       this.prisma.userRole.createMany({

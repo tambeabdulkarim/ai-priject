@@ -1,0 +1,94 @@
+# Phoenix Platform — OPTIONAL local development infrastructure.
+#
+# The primary, documented development path is cloud-hosted: a Neon
+# serverless Postgres database (DATABASE_URL) and Upstash Redis (REST API,
+# UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN) — see .env.example.
+# This file remains available as a fallback for contributors whose
+# machines can run Docker (this is not guaranteed: some managed/IT-policy
+# devices block the virtualization Docker Desktop requires). Does not
+# build or run any Phoenix application code — apps/web, apps/admin,
+# apps/api, and apps/workers are run via `turbo run dev`, not through
+# this file.
+#
+# `minio`/`minio-init` (added Phase 13.6) is the same kind of optional
+# local-dev fallback for object storage — see docs/phase13.6-storage-provisioning-report.md
+# for the production recommendation (Cloudflare R2) and why MinIO is
+# dev-only, not a production storage decision.
+
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: phoenix
+      POSTGRES_PASSWORD: phoenix
+      POSTGRES_DB: phoenix
+    ports:
+      - "5432:5432"
+    volumes:
+      - phoenix_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - phoenix_redis_data:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    restart: unless-stopped
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - phoenix_meilisearch_data:/meili_data
+
+  # S3-compatible object storage for local development (docs/phase13.6-storage-provisioning-report.md).
+  # Production should use a real hosted provider (Cloudflare R2 recommended —
+  # see the report's Task 1) via the same STORAGE_* variables; MinIO here is
+  # a local-dev-only stand-in, matching the postgres/redis pattern above.
+  minio:
+    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: phoenix
+      MINIO_ROOT_PASSWORD: phoenix_dev_password
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
+    volumes:
+      - phoenix_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # One-shot init: creates the phoenix-media bucket on first startup.
+  # MinIO does not auto-create buckets; this uses the official mc client,
+  # runs once, and exits (no restart policy) rather than staying up.
+  minio-init:
+    image: minio/mc:RELEASE.2024-10-08T09-37-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set phoenix-minio http://minio:9000 phoenix phoenix_dev_password &&
+      mc mb --ignore-existing phoenix-minio/phoenix-media &&
+      echo 'MinIO bucket phoenix-media ready.'
+      "
+
+volumes:
+  phoenix_postgres_data:
+  phoenix_redis_data:
+  phoenix_meilisearch_data:
+  phoenix_minio_data:

@@ -26,23 +26,26 @@ function sanitize(html: string, options: SanitizeOptions = {}): string {
     .replace(/<iframe\b[^>]*\/?>/gi, '');
 
   // Strip any tag not on the allowlist (keeps inner text).
-  result = result.replace(/<\/?([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName: string, attrs: string) => {
-    const tag = tagName.toLowerCase();
-    if (!allowedTags.has(tag)) {
-      return '';
-    }
-    const isClosing = match.startsWith('</');
-    if (isClosing) {
-      return `</${tag}>`;
-    }
-    const cleanedAttrs = (attrs.match(/([a-zA-Z-]+)\s*=\s*"([^"]*)"/g) ?? [])
-      .filter((pair: string) => {
-        const attrName = pair.split('=')[0].trim().toLowerCase();
-        return allowedAttrs.has(attrName) && !attrName.startsWith('on');
-      })
-      .join(' ');
-    return cleanedAttrs ? `<${tag} ${cleanedAttrs}>` : `<${tag}>`;
-  });
+  result = result.replace(
+    /<\/?([a-zA-Z0-9-]+)([^>]*)>/g,
+    (match, tagName: string, attrs: string) => {
+      const tag = tagName.toLowerCase();
+      if (!allowedTags.has(tag)) {
+        return '';
+      }
+      const isClosing = match.startsWith('</');
+      if (isClosing) {
+        return `</${tag}>`;
+      }
+      const cleanedAttrs = (attrs.match(/([a-zA-Z-]+)\s*=\s*"([^"]*)"/g) ?? [])
+        .filter((pair: string) => {
+          const attrName = pair.split('=')[0].trim().toLowerCase();
+          return allowedAttrs.has(attrName) && !attrName.startsWith('on');
+        })
+        .join(' ');
+      return cleanedAttrs ? `<${tag} ${cleanedAttrs}>` : `<${tag}>`;
+    },
+  );
 
   return result;
 }

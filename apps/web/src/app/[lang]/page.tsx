@@ -36,7 +36,8 @@ const STRUCTURED_DATA = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Phoenix Project',
-  description: 'منصة متكاملة تجمع أحدث أدوات الذكاء الاصطناعي، والدورات التدريبية، والمسارات المهنية، والمنتجات الرقمية في مكان واحد.',
+  description:
+    'منصة متكاملة تجمع أحدث أدوات الذكاء الاصطناعي، والدورات التدريبية، والمسارات المهنية، والمنتجات الرقمية في مكان واحد.',
 };
 
 export default function LocalePage({ params }: PageProps) {

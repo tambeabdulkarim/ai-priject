@@ -260,7 +260,7 @@ Maps to the backend's session-revocation-except/all pattern — UI-level "Log ou
 ### 4.6 Forgot Password / 4.7 Reset Password
 `POST /auth/forgot-password` → always the generic "if this email exists..." response (enumeration-safe, matches backend exactly — see `docs/16`). `POST /auth/reset-password` with the emailed token → on success, per backend behavior, **all** existing sessions are revoked (not "other" — there's no "current" session mid-reset-flow), so the UI must send the user to `/login` after reset, not attempt to keep them signed in.
 
-**BLOCKED BY DOCUMENTATION:** the reset/verification email is never actually delivered by the backend today (no email provider configured — `docs/SESSION-HANDOFF.md`, `AuthService`'s own logged-not-sent tokens). The frontend flow is fully buildable and correct, but end-to-end manual testing of it will require reading the token from server logs, not an inbox, until that infra gap is closed. This is a pre-existing, already-disclosed backend limitation, not a frontend design gap.
+**BLOCKED BY DOCUMENTATION:** the reset/verification email is never actually delivered by the backend today (no email provider configured — `docs/archive/backend-build-handoff/SESSION-HANDOFF.md`, `AuthService`'s own logged-not-sent tokens). The frontend flow is fully buildable and correct, but end-to-end manual testing of it will require reading the token from server logs, not an inbox, until that infra gap is closed. This is a pre-existing, already-disclosed backend limitation, not a frontend design gap.
 
 ### 4.8 Protected Routes
 Two layers, matching `docs/09` §5's "two enforcement layers" principle:

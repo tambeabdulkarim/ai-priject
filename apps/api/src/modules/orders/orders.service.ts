@@ -1,7 +1,12 @@
 // docs/16-API-CONTRACT.md §11 (Orders). docs/15-SYSTEM-WORKFLOWS.md §13 (Checkout).
 
 import { randomBytes } from 'crypto';
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Order } from '@prisma/client';
 import { PaginatedResult } from '../../common/dto/pagination-query.dto';
 import { AuditLogService } from '../../common/services/audit-log.service';
@@ -44,7 +49,12 @@ export class OrdersService {
     const lineItems = dto.items.map((item) => {
       const product = productById.get(item.productId)!;
       subtotalCents += product.priceCents * item.quantity;
-      return { productId: item.productId, unitPriceCents: product.priceCents, quantity: item.quantity, name: product.title };
+      return {
+        productId: item.productId,
+        unitPriceCents: product.priceCents,
+        quantity: item.quantity,
+        name: product.title,
+      };
     });
 
     let couponId: string | undefined;
@@ -89,7 +99,11 @@ export class OrdersService {
     // Stripe SDK call, not a placeholder) rather than faking a URL.
     const { url: checkoutUrl } = await this.stripeService.createCheckoutSession({
       orderId: order.id,
-      lineItems: lineItems.map((li) => ({ name: li.name, unitAmountCents: li.unitPriceCents, quantity: li.quantity })),
+      lineItems: lineItems.map((li) => ({
+        name: li.name,
+        unitAmountCents: li.unitPriceCents,
+        quantity: li.quantity,
+      })),
       currency: order.currency,
       successUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/checkout/success?order=${order.id}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/checkout/cancel?order=${order.id}`,

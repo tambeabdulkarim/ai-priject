@@ -13,9 +13,11 @@
 // with a fake "redirecting..." success state.
 
 import { type FormEvent, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { ShoppingCart } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { type Locale } from '@/lib/i18n';
 import { RequireAuth } from '../../../guards/RequireAuth';
 import { useCart } from '../../../hooks/useCart';
@@ -59,7 +61,6 @@ function CheckoutContent() {
   const params = useParams<{ lang: string }>();
   const locale = (params.lang as Locale) ?? 'ar';
   const t = COPY[locale] ?? COPY.ar;
-  const router = useRouter();
   const cart = useCart();
   const createOrder = useCreateOrder();
   const [couponCode, setCouponCode] = useState('');
@@ -89,21 +90,35 @@ function CheckoutContent() {
         <h1 className="ph-page-title">{t.title}</h1>
 
         {cart.items.length === 0 ? (
-          <div>
-            <p className="ph-state">{t.empty}</p>
-            <button type="button" className="ph-btn-outline" onClick={() => router.push(withLang(ROUTES.marketplaceHome, locale))}>
-              {t.browse}
-            </button>
-          </div>
+          <EmptyState
+            icon={<ShoppingCart size={24} strokeWidth={1.5} />}
+            title={t.empty}
+            primaryAction={{ label: t.browse, href: withLang(ROUTES.marketplaceHome, locale) }}
+          />
         ) : (
-          <form className="ph-form" onSubmit={handleSubmit} noValidate>
-            {createOrder.error && <div className="ph-form-error" role="alert">{getErrorMessage(createOrder.error)}</div>}
+          <form className="ph-form ph-form-card" onSubmit={handleSubmit} noValidate>
+            {createOrder.error && (
+              <div className="ph-form-error" role="alert">
+                {getErrorMessage(createOrder.error)}
+              </div>
+            )}
 
             {cart.items.map((item) => (
-              <div key={item.productId} className="ph-catalogue-card" style={{ cursor: 'default', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                key={item.productId}
+                className="ph-catalogue-card"
+                style={{
+                  cursor: 'default',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
                 <div>
                   <h3 className="ph-catalogue-card-title">{item.title}</h3>
-                  <p className="ph-catalogue-card-desc">{formatPrice(item.priceCents, locale, t.free)}</p>
+                  <p className="ph-catalogue-card-desc">
+                    {formatPrice(item.priceCents, locale, t.free)}
+                  </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <label>
@@ -117,17 +132,32 @@ function CheckoutContent() {
                       onChange={(e) => cart.updateQuantity(item.productId, Number(e.target.value))}
                     />
                   </label>
-                  <button type="button" className="ph-btn-outline" onClick={() => cart.removeItem(item.productId)}>{t.remove}</button>
+                  <button
+                    type="button"
+                    className="ph-btn-outline"
+                    onClick={() => cart.removeItem(item.productId)}
+                  >
+                    {t.remove}
+                  </button>
                 </div>
               </div>
             ))}
 
             <div className="ph-field">
-              <label className="ph-label" htmlFor="couponCode">{t.coupon}</label>
-              <input id="couponCode" className="ph-input" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+              <label className="ph-label" htmlFor="couponCode">
+                {t.coupon}
+              </label>
+              <input
+                id="couponCode"
+                className="ph-input"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+              />
             </div>
 
-            <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>{t.total}: {formatPrice(cart.totalCents, locale, t.free)}</p>
+            <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+              {t.total}: {formatPrice(cart.totalCents, locale, t.free)}
+            </p>
 
             <button type="submit" className="ph-btn-grad" disabled={createOrder.isPending}>
               {createOrder.isPending ? t.paying : t.pay}

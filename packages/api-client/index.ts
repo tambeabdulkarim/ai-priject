@@ -1,6 +1,7 @@
 // Typed SDK wrapping the apps/api HTTP surface defined in
-// docs/16-API-CONTRACT.md, shared by apps/web, apps/admin, and the future
-// apps/mobile so no consumer re-implements API integration independently.
+// docs/16-API-CONTRACT.md, shared by apps/web and a future apps/mobile
+// (apps/admin is retired, see docs/09-PLATFORM-ARCHITECTURE.md §16) so no
+// consumer re-implements API integration independently.
 //
 // Frontend Phase 2 (Foundation Layer) added Auth, Users ("me"), and Files.
 // Frontend Phase 3 (Public Foundation Pages) added the PUBLIC read
@@ -31,6 +32,8 @@ import { createMarketplaceResource } from './src/resources/marketplace';
 import { createOrdersResource } from './src/resources/orders';
 import { createPaymentsResource } from './src/resources/payments';
 import { createAiResource } from './src/resources/ai';
+import { createLearningPathsResource } from './src/resources/learning-paths';
+import { createProjectsResource } from './src/resources/projects';
 
 export type { ApiClientConfig, ApiResult, RequestOptions } from './src/core/client-config';
 export { ApiError, NetworkError, TimeoutError } from './src/core/errors';
@@ -53,6 +56,8 @@ export type { MarketplaceResource } from './src/resources/marketplace';
 export type { OrdersResource } from './src/resources/orders';
 export type { PaymentsResource } from './src/resources/payments';
 export type { AiResource } from './src/resources/ai';
+export type { LearningPathsResource } from './src/resources/learning-paths';
+export type { ProjectsResource } from './src/resources/projects';
 
 export function createApiClient(config: ApiClientConfig) {
   const request = createRequestFn(config);
@@ -75,6 +80,8 @@ export function createApiClient(config: ApiClientConfig) {
     orders: createOrdersResource(request),
     payments: createPaymentsResource(request),
     ai: createAiResource(request),
+    learningPaths: createLearningPathsResource(request),
+    projects: createProjectsResource(request),
   };
 }
 

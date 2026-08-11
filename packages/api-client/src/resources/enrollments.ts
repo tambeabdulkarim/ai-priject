@@ -1,4 +1,9 @@
-import type { Enrollment, EnrollmentWithCourse, ListEnrollmentsQuery, PaginatedResponse } from '@phoenix/types';
+import type {
+  Enrollment,
+  EnrollmentWithCourse,
+  ListEnrollmentsQuery,
+  PaginatedResponse,
+} from '@phoenix/types';
 import type { RequestFn } from '../core/request';
 
 /**

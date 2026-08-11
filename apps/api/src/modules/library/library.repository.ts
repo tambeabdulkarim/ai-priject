@@ -17,7 +17,9 @@ export interface ListLibraryItemsParams {
 export class LibraryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findMany(params: ListLibraryItemsParams): Promise<{ items: LibraryItem[]; nextCursor: string | null }> {
+  async findMany(
+    params: ListLibraryItemsParams,
+  ): Promise<{ items: LibraryItem[]; nextCursor: string | null }> {
     const where: Prisma.LibraryItemWhereInput = {
       AND: [
         { status: 'published' },
@@ -80,7 +82,11 @@ export class LibraryRepository {
     });
   }
 
-  upsertReadingProgress(userId: string, libraryItemId: string, lastPosition: string): Promise<ReadingProgress> {
+  upsertReadingProgress(
+    userId: string,
+    libraryItemId: string,
+    lastPosition: string,
+  ): Promise<ReadingProgress> {
     return this.prisma.readingProgress.upsert({
       where: { userId_libraryItemId: { userId, libraryItemId } },
       create: {

@@ -1,6 +1,15 @@
 // docs/16-API-CONTRACT.md §13 (Files).
 
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
@@ -28,5 +37,12 @@ export class FilesController {
   @Get(':id')
   getById(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     return this.filesService.getById(id, user.sub, user.roles);
+  }
+
+  // Phase 13.3 (Media Frontend).
+  @HttpCode(204)
+  @Delete(':id')
+  deleteFile(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.filesService.deleteFile(id, user.sub, user.roles);
   }
 }

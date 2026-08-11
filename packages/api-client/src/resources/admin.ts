@@ -29,7 +29,11 @@ export function createAdminResource(request: RequestFn) {
       }),
 
     decideComment: (id: string, body: ModerationDecisionRequest) =>
-      request<CommentRecord>({ method: 'POST', path: `/admin/moderation/comments/${id}/decision`, body }),
+      request<CommentRecord>({
+        method: 'POST',
+        path: `/admin/moderation/comments/${id}/decision`,
+        body,
+      }),
 
     listAuditLogs: (query: ListAuditLogsQuery = {}) =>
       request<PaginatedResponse<AuditLogEntry>>({
@@ -48,7 +52,11 @@ export function createAdminResource(request: RequestFn) {
 
     /** `analytics:read` (admin/superadmin). A single flat overview object — no breakdown/segmentation endpoint exists anywhere in the backend. */
     getAnalyticsOverview: (query: AnalyticsOverviewQuery) =>
-      request<AnalyticsOverview>({ method: 'GET', path: '/admin/analytics/overview', query: { from: query.from, to: query.to } }),
+      request<AnalyticsOverview>({
+        method: 'GET',
+        path: '/admin/analytics/overview',
+        query: { from: query.from, to: query.to },
+      }),
   };
 }
 

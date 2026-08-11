@@ -8,14 +8,22 @@ export default function ProjectsBoard() {
 
   const totalProgress = useMemo(() => {
     if (!projects.length) return 0;
-    return Math.round(projects.reduce((sum, project) => sum + project.progress, 0) / projects.length);
+    return Math.round(
+      projects.reduce((sum, project) => sum + project.progress, 0) / projects.length,
+    );
   }, [projects]);
 
   const advanceProject = (id: number) => {
     setProjects((current) =>
       current.map((project) =>
-        project.id === id ? { ...project, progress: Math.min(project.progress + 10, 100), status: project.progress >= 90 ? 'Completed' : 'In Progress' } : project
-      )
+        project.id === id
+          ? {
+              ...project,
+              progress: Math.min(project.progress + 10, 100),
+              status: project.progress >= 90 ? 'Completed' : 'In Progress',
+            }
+          : project,
+      ),
     );
   };
 
@@ -38,7 +46,9 @@ export default function ProjectsBoard() {
             <div className="project-main">
               <div>
                 <strong>{project.name}</strong>
-                <p>{project.owner} • {project.status}</p>
+                <p>
+                  {project.owner} • {project.status}
+                </p>
               </div>
               <button type="button" onClick={() => advanceProject(project.id)}>
                 Advance
@@ -48,7 +58,9 @@ export default function ProjectsBoard() {
               <div className="progress-bar">
                 <div style={{ width: `${project.progress}%` }} />
               </div>
-              <span>{project.progress}% • {getProjectProgressLabel(project.progress)}</span>
+              <span>
+                {project.progress}% • {getProjectProgressLabel(project.progress)}
+              </span>
             </div>
           </div>
         ))}

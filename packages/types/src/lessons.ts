@@ -46,6 +46,13 @@ export interface LessonContent {
   createdAt: string;
   updatedAt: string;
   module: LessonContentModule;
+  /**
+   * Phase 28 addition — the id of this lesson's Quiz (contentType `quiz`
+   * lessons only; `null` otherwise), so the frontend can call the new
+   * `GET /progress/quizzes/:quizId`. Never includes question content —
+   * that's a separate, entitlement-gated call.
+   */
+  quizId: string | null;
 }
 
 // docs/16-API-CONTRACT.md POST .../lessons, PATCH /lessons/:id, POST

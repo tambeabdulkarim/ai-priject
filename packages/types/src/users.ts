@@ -9,6 +9,8 @@ export interface MeProfile {
   status: 'active' | 'suspended' | 'deactivated';
   locale: string;
   createdAt: string;
+  /** docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — added to GET /users/me. */
+  mfaEnabled: boolean;
 }
 
 /**
@@ -43,6 +45,14 @@ export interface SafeUser {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Phase 14.7: was already present on every SafeUser response at runtime
+   * (users.service.ts's `toSafeUser` spreads the full Prisma row, only
+   * dropping `passwordHash`/`mfaSecret`) but never declared here, so the
+   * admin UI had no typed way to read it. Declaration-only fix — no
+   * backend or contract change.
+   */
+  isTestData: boolean;
 }
 
 export interface ChangePasswordRequest {

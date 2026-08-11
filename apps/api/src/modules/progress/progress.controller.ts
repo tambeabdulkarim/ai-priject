@@ -24,8 +24,21 @@ export class ProgressController {
   }
 
   @Get('courses/:courseId')
-  getCourseProgress(@Param('courseId', ParseUUIDPipe) courseId: string, @CurrentUser() user: JwtPayload) {
+  getCourseProgress(
+    @Param('courseId', ParseUUIDPipe) courseId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.progressService.getCourseProgress(user.sub, courseId);
+  }
+
+  // docs/16-API-CONTRACT.md: Phase 28 — GET /progress/quizzes/:quizId,
+  // "60 requests / 5 min per user" — same generous tier as lesson
+  // progress, since loading a quiz to view it is a routine, high-frequency
+  // read, not the sensitive submit action below.
+  @Throttle({ default: { limit: 60, ttl: 300_000 } })
+  @Get('quizzes/:quizId')
+  getQuiz(@Param('quizId', ParseUUIDPipe) quizId: string, @CurrentUser() user: JwtPayload) {
+    return this.progressService.getQuizForLearner(user.sub, quizId);
   }
 
   // docs/16-API-CONTRACT.md: "10 requests / 15 min per user"

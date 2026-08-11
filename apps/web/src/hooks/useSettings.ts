@@ -18,9 +18,11 @@ export function useAdminSettings() {
 export function useUpdateSetting() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, value }: { key: string; value: string }) => apiClient.settings.update(key, { value }),
+    mutationFn: ({ key, value }: { key: string; value: string }) =>
+      apiClient.settings.update(key, { value }),
     onSuccess: (result) => {
-      if (!result.error) queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings.list() });
+      if (!result.error)
+        queryClient.invalidateQueries({ queryKey: queryKeys.admin.settings.list() });
     },
   });
 }

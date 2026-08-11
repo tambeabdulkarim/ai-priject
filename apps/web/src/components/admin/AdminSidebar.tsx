@@ -36,29 +36,56 @@ export function AdminSidebar({ locale }: { locale: Locale }) {
   const { hasAnyRole } = useAuth();
 
   const items = [
-    { href: withLang(ROUTES.adminDashboard, locale), label: t.dashboard, icon: LayoutDashboard, show: true },
-    { href: withLang(ROUTES.adminAuditLogs, locale), label: t.auditLogs, icon: ScrollText, show: true },
-    { href: withLang(ROUTES.adminAnalytics, locale), label: t.analytics, icon: LineChart, show: true },
+    {
+      href: withLang(ROUTES.adminDashboard, locale),
+      label: t.dashboard,
+      icon: LayoutDashboard,
+      show: true,
+    },
+    {
+      href: withLang(ROUTES.adminAuditLogs, locale),
+      label: t.auditLogs,
+      icon: ScrollText,
+      show: true,
+    },
+    {
+      href: withLang(ROUTES.adminAnalytics, locale),
+      label: t.analytics,
+      icon: LineChart,
+      show: true,
+    },
     { href: withLang(ROUTES.adminUsers, locale), label: t.users, icon: Users, show: true },
-    { href: withLang(ROUTES.adminSettings, locale), label: t.settings, icon: Settings, show: hasAnyRole([...SETTINGS_ROLES]) },
+    {
+      href: withLang(ROUTES.adminSettings, locale),
+      label: t.settings,
+      icon: Settings,
+      show: hasAnyRole([...SETTINGS_ROLES]),
+    },
   ];
 
   return (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '200px' }}>
-      {items.filter((item) => item.show).map((item) => {
-        const Icon = item.icon;
-        const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={isActive ? 'ph-btn-grad' : 'ph-btn-outline'}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-start' }}
-          >
-            <Icon size={16} strokeWidth={1.5} aria-hidden="true" /> {item.label}
-          </Link>
-        );
-      })}
+      {items
+        .filter((item) => item.show)
+        .map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive ? 'ph-btn-grad' : 'ph-btn-outline'}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <Icon size={16} strokeWidth={1.5} aria-hidden="true" /> {item.label}
+            </Link>
+          );
+        })}
     </nav>
   );
 }

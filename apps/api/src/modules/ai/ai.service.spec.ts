@@ -30,7 +30,9 @@ describe('AiService', () => {
       const { service, aiRepository } = makeService();
       aiRepository.findRequestById.mockResolvedValue({ id: 'r1', userId: 'owner1' });
 
-      await expect(service.getRequestById('r1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.getRequestById('r1', 'someone-else')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
 
     it('returns the request for its owner', async () => {
@@ -73,7 +75,13 @@ describe('AiService', () => {
 
       const result = await service.getMyUsage('u1');
 
-      expect(result).toEqual({ periodStart, periodEnd, requestsUsed: 5, tokensUsed: 1000, quotaLimit: 100 });
+      expect(result).toEqual({
+        periodStart,
+        periodEnd,
+        requestsUsed: 5,
+        tokensUsed: 1000,
+        quotaLimit: 100,
+      });
     });
   });
 });

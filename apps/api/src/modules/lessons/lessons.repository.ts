@@ -46,7 +46,14 @@ export class LessonsRepository {
     return this.prisma.lesson.findMany({
       where: { moduleId },
       orderBy: { position: 'asc' },
-      select: { id: true, title: true, contentType: true, durationSeconds: true, isPreview: true, position: true },
+      select: {
+        id: true,
+        title: true,
+        contentType: true,
+        durationSeconds: true,
+        isPreview: true,
+        position: true,
+      },
     });
   }
 
@@ -54,10 +61,15 @@ export class LessonsRepository {
     return this.prisma.lesson.findUnique({ where: { id } });
   }
 
+  // Phase 28: `quizzes` selected minimally (id only) so the frontend can
+  // discover a quiz-type lesson's real quiz ID to call the new
+  // GET /progress/quizzes/:quizId with — the same approved gap-closing
+  // change as that endpoint, not a separate decision. Never exposes
+  // question content or answers here; only an id.
   findByIdWithModuleCourse(id: string) {
     return this.prisma.lesson.findUnique({
       where: { id },
-      include: { module: { include: { course: true } } },
+      include: { module: { include: { course: true } }, quizzes: { select: { id: true } } },
     });
   }
 

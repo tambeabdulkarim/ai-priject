@@ -56,6 +56,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.error) {
         return { success: false, message: getErrorMessage(result.error) };
       }
+      // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2): MFA-enabled account —
+      // no session yet, hand the challenge back to the caller (the login
+      // page) to render the second-step form.
+      if ('mfaRequired' in result.data) {
+        return { success: false, mfaRequired: true, challengeToken: result.data.challengeToken };
+      }
+      setUser(result.data.user);
+      setStatus('authenticated');
+      await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+      return { success: true };
+    },
+    [queryClient],
+  );
+
+  const verifyMfa = useCallback<AuthContextValue['verifyMfa']>(
+    async (challengeToken, code) => {
+      const result = await authClient.verifyMfa(challengeToken, code);
+      if (result.error) {
+        return { success: false, message: getErrorMessage(result.error) };
+      }
       setUser(result.data.user);
       setStatus('authenticated');
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
@@ -89,7 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient]);
 
   const hasRole = useCallback((role: string) => user?.roles.includes(role) ?? false, [user]);
-  const hasAnyRole = useCallback((roles: string[]) => roles.some((r) => user?.roles.includes(r)), [user]);
+  const hasAnyRole = useCallback(
+    (roles: string[]) => roles.some((r) => user?.roles.includes(r)),
+    [user],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -97,13 +120,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       profile: profileQuery.data ?? null,
       login,
+      verifyMfa,
       register,
       logout,
       logoutAll,
       hasRole,
       hasAnyRole,
     }),
-    [status, user, profileQuery.data, login, register, logout, logoutAll, hasRole, hasAnyRole],
+    [
+      status,
+      user,
+      profileQuery.data,
+      login,
+      verifyMfa,
+      register,
+      logout,
+      logoutAll,
+      hasRole,
+      hasAnyRole,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

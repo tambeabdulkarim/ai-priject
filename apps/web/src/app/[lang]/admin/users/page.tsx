@@ -8,7 +8,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { Users } from 'lucide-react';
 import { type Locale } from '@/lib/i18n';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SkeletonGrid } from '@/components/ui/Loading';
 import { useAdminUsersList } from '../../../../hooks/useAdminUsers';
 import { ROUTES, withLang } from '../../../../constants/routes';
 import type { ListUsersQuery } from '@phoenix/types';
@@ -27,6 +31,7 @@ const COPY = {
     error: 'تعذّر التحميل.',
     empty: 'لا يوجد مستخدمون.',
     loadMore: 'تحميل المزيد...',
+    testData: 'بيانات اختبار',
   },
   en: {
     title: 'User administration',
@@ -41,6 +46,7 @@ const COPY = {
     error: 'Couldn’t load.',
     empty: 'No users.',
     loadMore: 'Load more...',
+    testData: 'Test data',
   },
 } as const;
 
@@ -63,14 +69,26 @@ export default function AdminUsersPage() {
     <div>
       <h1 className="ph-page-title">{t.title}</h1>
 
-      <div className="ph-form" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
+      <div
+        className="ph-form"
+        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}
+      >
         <div className="ph-field">
-          <label className="ph-label" htmlFor="q">{t.search}</label>
+          <label className="ph-label" htmlFor="q">
+            {t.search}
+          </label>
           <input id="q" className="ph-input" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="ph-field">
-          <label className="ph-label" htmlFor="status">{t.status}</label>
-          <select id="status" className="ph-input" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+          <label className="ph-label" htmlFor="status">
+            {t.status}
+          </label>
+          <select
+            id="status"
+            className="ph-input"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as typeof status)}
+          >
             <option value="">{t.all}</option>
             <option value="active">{t.active}</option>
             <option value="suspended">{t.suspended}</option>
@@ -78,21 +96,40 @@ export default function AdminUsersPage() {
           </select>
         </div>
         <div className="ph-field">
-          <label className="ph-label" htmlFor="role">{t.role}</label>
-          <input id="role" className="ph-input" value={role} onChange={(e) => setRole(e.target.value)} />
+          <label className="ph-label" htmlFor="role">
+            {t.role}
+          </label>
+          <input
+            id="role"
+            className="ph-input"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          />
         </div>
       </div>
 
-      {isLoading && <p className="ph-state">{t.loading}</p>}
+      {isLoading && <SkeletonGrid count={8} />}
       {isError && <p className="ph-state">{t.error}</p>}
-      {data && data.items.length === 0 && <p className="ph-state">{t.empty}</p>}
+      {data && data.items.length === 0 && (
+        <EmptyState icon={<Users size={24} strokeWidth={1.5} />} title={t.empty} />
+      )}
 
       <div className="ph-grid" style={{ marginTop: '1rem' }}>
         {data?.items.map((user) => (
-          <Link key={user.id} href={withLang(ROUTES.adminUserDetail, locale).replace('[id]', user.id)} className="ph-catalogue-card">
+          <Link
+            key={user.id}
+            href={withLang(ROUTES.adminUserDetail, locale).replace('[id]', user.id)}
+            className="ph-catalogue-card"
+          >
             <h3 className="ph-catalogue-card-title">{user.displayName}</h3>
             <div className="ph-catalogue-card-meta">{user.email}</div>
-            <p className="ph-catalogue-card-desc">{user.status}</p>
+            <div
+              className="ph-catalogue-card-meta"
+              style={{ marginTop: '0.5rem', flexWrap: 'wrap' }}
+            >
+              <StatusBadge status={user.status} locale={locale} />
+              {user.isTestData && <span className="ph-test-data-badge">{t.testData}</span>}
+            </div>
           </Link>
         ))}
       </div>

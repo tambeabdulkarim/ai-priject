@@ -25,7 +25,11 @@ export function useCreateModule(courseSlug: string) {
 export function useUpdateModule(courseSlug: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ courseId, moduleId, ...body }: CreateModuleRequest & { courseId: string; moduleId: string }) =>
+    mutationFn: ({
+      courseId,
+      moduleId,
+      ...body
+    }: CreateModuleRequest & { courseId: string; moduleId: string }) =>
       apiClient.lessons.updateModule(courseId, moduleId, body),
     onSuccess: (result) => {
       if (!result.error) {

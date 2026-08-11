@@ -28,6 +28,9 @@ import { EmailOnlyDto } from './dto/email-only.dto';
 import { LoginDto } from './dto/login.dto';
 import { OAuthCallbackDto } from './dto/oauth-callback.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { MfaVerifyDto } from './dto/mfa-verify.dto';
+import { MfaEnrollConfirmDto } from './dto/mfa-enroll-confirm.dto';
+import { MfaDisableDto } from './dto/mfa-disable.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 
@@ -91,8 +94,56 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto, this.requestMeta(req));
+    // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2): an MFA-enabled account
+    // gets a challenge token instead of real tokens — no refresh cookie
+    // is set until POST /auth/mfa/verify succeeds.
+    if ('mfaRequired' in result) {
+      return result;
+    }
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
     return { accessToken: result.accessToken, user: result.user };
+  }
+
+  // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2). Public (the caller has no
+  // access token yet at this point) — same rate-limit shape as `login`
+  // itself, since this is equally a credential-verification endpoint.
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  @HttpCode(200)
+  @Post('mfa/verify')
+  async mfaVerify(
+    @Body() dto: MfaVerifyDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyMfaChallenge(dto, this.requestMeta(req));
+    this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
+    return { accessToken: result.accessToken, user: result.user };
+  }
+
+  // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — enrollment/management,
+  // all authenticated (unlike login/mfa-verify above).
+  @Post('mfa/enroll/begin')
+  mfaEnrollBegin(@CurrentUser() user: JwtPayload) {
+    return this.authService.beginMfaEnrollment(user.sub);
+  }
+
+  @HttpCode(200)
+  @Post('mfa/enroll/confirm')
+  mfaEnrollConfirm(@CurrentUser() user: JwtPayload, @Body() dto: MfaEnrollConfirmDto) {
+    return this.authService.confirmMfaEnrollment(user.sub, dto);
+  }
+
+  @HttpCode(204)
+  @Post('mfa/disable')
+  mfaDisable(@CurrentUser() user: JwtPayload, @Body() dto: MfaDisableDto) {
+    return this.authService.disableMfa(user.sub, dto.password);
+  }
+
+  @HttpCode(200)
+  @Post('mfa/recovery-codes/regenerate')
+  mfaRegenerateRecoveryCodes(@CurrentUser() user: JwtPayload) {
+    return this.authService.regenerateMfaRecoveryCodes(user.sub);
   }
 
   // BLOCKED: no OAuth-identity table exists in docs/13-DATABASE-BLUEPRINT.md

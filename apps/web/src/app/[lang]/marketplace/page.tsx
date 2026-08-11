@@ -19,8 +19,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { ShoppingBag } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { type Locale } from '@/lib/i18n';
 import { useProductsList, useMarketplaceCategories } from '../../../hooks/useMarketplace';
 import { ROUTES, withLang } from '../../../constants/routes';
@@ -33,7 +35,8 @@ const COPY = {
     categoryAll: 'كل التصنيفات',
     minPrice: 'أقل سعر (سنت)',
     maxPrice: 'أعلى سعر (سنت)',
-    featuredNotice: 'لا توجد واجهة برمجية في الخادم لعرض "منتجات مميزة" — لا يوجد أي حقل أو نقطة وصول لهذا الغرض. يتم عرض كل المنتجات المنشورة بدلًا من ذلك.',
+    featuredNotice:
+      'لا توجد واجهة برمجية في الخادم لعرض "منتجات مميزة" — لا يوجد أي حقل أو نقطة وصول لهذا الغرض. يتم عرض كل المنتجات المنشورة بدلًا من ذلك.',
     loading: 'جارٍ التحميل...',
     error: 'تعذّر تحميل المنتجات.',
     empty: 'لا توجد منتجات منشورة.',
@@ -48,7 +51,8 @@ const COPY = {
     categoryAll: 'All categories',
     minPrice: 'Min price (cents)',
     maxPrice: 'Max price (cents)',
-    featuredNotice: 'No backend endpoint exposes "featured products" — there is no such field or route at all. All published products are shown instead.',
+    featuredNotice:
+      'No backend endpoint exposes "featured products" — there is no such field or route at all. All published products are shown instead.',
     loading: 'Loading...',
     error: 'Couldn’t load products.',
     empty: 'No published products.',
@@ -74,12 +78,13 @@ export default function MarketplaceHomePage() {
   const [maxPriceCents, setMaxPriceCents] = useState('');
 
   const { data: categories } = useMarketplaceCategories();
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductsList({
-    q: q || undefined,
-    category: category || undefined,
-    minPriceCents: minPriceCents ? Number(minPriceCents) : undefined,
-    maxPriceCents: maxPriceCents ? Number(maxPriceCents) : undefined,
-  });
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useProductsList({
+      q: q || undefined,
+      category: category || undefined,
+      minPriceCents: minPriceCents ? Number(minPriceCents) : undefined,
+      maxPriceCents: maxPriceCents ? Number(maxPriceCents) : undefined,
+    });
 
   const products = data?.pages.flatMap((page) => page.items) ?? [];
 
@@ -89,7 +94,9 @@ export default function MarketplaceHomePage() {
       <main className="ph-page">
         <h1 className="ph-page-title">{t.title}</h1>
         <p className="ph-page-subtitle">{t.subtitle}</p>
-        <p className="ph-form-error" role="note">{t.featuredNotice}</p>
+        <p className="ph-form-error" role="note">
+          {t.featuredNotice}
+        </p>
 
         <div className="ph-filters" style={{ flexWrap: 'wrap', gap: '1rem' }}>
           <input
@@ -100,10 +107,16 @@ export default function MarketplaceHomePage() {
             onChange={(e) => setQ(e.target.value)}
             aria-label={t.search}
           />
-          <select className="ph-input" value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            className="ph-input"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <option value="">{t.categoryAll}</option>
             {categories?.map((cat) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
             ))}
           </select>
           <input
@@ -126,17 +139,24 @@ export default function MarketplaceHomePage() {
 
         {isLoading && <p className="ph-state">{t.loading}</p>}
         {isError && <p className="ph-state">{t.error}</p>}
-        {!isLoading && !isError && products.length === 0 && <p className="ph-state">{t.empty}</p>}
+        {!isLoading && !isError && products.length === 0 && (
+          <EmptyState icon={<ShoppingBag size={24} strokeWidth={1.5} />} title={t.empty} />
+        )}
 
         <div className="ph-grid">
           {products.map((product) => (
             <Link
               key={product.id}
-              href={withLang(ROUTES.marketplaceProductDetail, locale).replace('[slug]', product.slug)}
+              href={withLang(ROUTES.marketplaceProductDetail, locale).replace(
+                '[slug]',
+                product.slug,
+              )}
               className="ph-catalogue-card"
             >
               <h2 className="ph-catalogue-card-title">{product.title}</h2>
-              {product.description && <p className="ph-catalogue-card-desc">{product.description}</p>}
+              {product.description && (
+                <p className="ph-catalogue-card-desc">{product.description}</p>
+              )}
               <div className="ph-catalogue-card-meta">
                 <span>{formatPrice(product.priceCents, locale, t.free)}</span>
               </div>
@@ -146,7 +166,12 @@ export default function MarketplaceHomePage() {
 
         {hasNextPage && (
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button type="button" className="ph-btn-outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            <button
+              type="button"
+              className="ph-btn-outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
               {isFetchingNextPage ? t.loadingMore : t.loadMore}
             </button>
           </div>

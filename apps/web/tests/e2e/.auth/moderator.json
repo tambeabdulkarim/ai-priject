@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "refresh_token",
+      "value": "c8800775c492b99bb6f84237b1bc8ca5ed126b6f0b6eb621e16e4178763059ab61a51ff12abc29469fc2992d10521ff1",
+      "domain": "localhost",
+      "path": "/api/v1/auth",
+      "expires": 1785806521.760192,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Strict"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "phoenix.cart.v1",
+          "value": "[]"
+        }
+      ]
+    }
+  ]
+}

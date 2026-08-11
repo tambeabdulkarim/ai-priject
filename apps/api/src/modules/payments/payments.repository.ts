@@ -22,7 +22,10 @@ export class PaymentsRepository {
 
   /** Used by EnrollmentsService.refund — docs/16-API-CONTRACT.md POST /enrollments/:id/refund "triggers linked Orders/refund processing". */
   findSucceededByOrderId(orderId: string): Promise<Payment | null> {
-    return this.prisma.payment.findFirst({ where: { orderId, status: 'succeeded' }, orderBy: { paidAt: 'desc' } });
+    return this.prisma.payment.findFirst({
+      where: { orderId, status: 'succeeded' },
+      orderBy: { paidAt: 'desc' },
+    });
   }
 
   create(data: Prisma.PaymentCreateInput): Promise<Payment> {
@@ -154,7 +157,9 @@ export class PaymentsRepository {
 
         const refundAmount = params.requestedAmountCents ?? refundable;
         if (refundAmount > refundable) {
-          throw new BadRequestException(`Refund amount exceeds the refundable balance of ${refundable} cents.`);
+          throw new BadRequestException(
+            `Refund amount exceeds the refundable balance of ${refundable} cents.`,
+          );
         }
 
         const transaction = await tx.transaction.create({
@@ -169,11 +174,16 @@ export class PaymentsRepository {
 
         const isFullRefund = refundAmount === refundable;
         if (isFullRefund) {
-          await tx.payment.update({ where: { id: params.paymentId }, data: { status: 'refunded' } });
+          await tx.payment.update({
+            where: { id: params.paymentId },
+            data: { status: 'refunded' },
+          });
           await tx.order.update({ where: { id: params.orderId }, data: { status: 'refunded' } });
         }
 
-        const updatedPayment = await tx.payment.findUniqueOrThrow({ where: { id: params.paymentId } });
+        const updatedPayment = await tx.payment.findUniqueOrThrow({
+          where: { id: params.paymentId },
+        });
         return { payment: updatedPayment, transaction, isFullRefund };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

@@ -1,6 +1,18 @@
 // docs/16-API-CONTRACT.md §9 (Library).
 
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -29,7 +41,11 @@ export class LibraryController {
   // docs/16-API-CONTRACT.md: "20 requests / hour per user"
   @Throttle({ default: { limit: 20, ttl: 3_600_000 } })
   @Post('items/:id/access')
-  grantAccess(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+  grantAccess(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
+  ) {
     return this.libraryService.grantAccess(id, user.sub, req.ip);
   }
 
@@ -40,7 +56,10 @@ export class LibraryController {
 
   @HttpCode(204)
   @Delete('items/:id/bookmark')
-  async removeBookmark(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload): Promise<void> {
+  async removeBookmark(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
     await this.libraryService.removeBookmark(id, user.sub);
   }
 
