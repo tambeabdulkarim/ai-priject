@@ -1,5 +1,9 @@
 # Known Issues
 
+### Staging deployment blocked on 2 manual Vercel dashboard steps (Phase 43)
+
+No live Staging URL exists yet. Backend is code-ready (serverless entrypoint + `vercel.json` added, tested), and the `staging` git branch is pushed to GitHub, but Vercel's auto-triggered Preview deployment for the frontend failed with `NEXT_PUBLIC_API_URL: Required` — that variable is configured for the existing "ai-priject" Vercel project's Production scope only, not Preview. Separately, no backend Vercel project exists yet at all. Neither can be fixed by an agent: (1) creating a new Vercel project for `apps/api` requires entering real secret env var values (see `docs/phase43-deployment-readiness-report.md` §7 for names only) into the dashboard; (2) setting `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_SITE_URL` on the frontend project's Preview scope is the same category of action. **Status:** real, disclosed, owner-action-required blocker — not a code defect (confirmed via a clean local `next build`). Full detail: `docs/phase43-deployment-readiness-report.md`.
+
 ## Platform (added Phase 14.1 — real, currently-open gaps outside Media/Storage)
 
 Every entry below was verified directly against the repository this session (`docs/phase-14-plan.md`'s findings, independently re-confirmed, not copied): `.github` absence, `apps/admin`/`apps/workers` contents, `auth.service.ts`'s self-documented blockers, and a grep for Meilisearch backend usage.
