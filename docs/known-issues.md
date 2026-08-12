@@ -1,8 +1,12 @@
 # Known Issues
 
-### Staging deployment blocked on 2 manual Vercel dashboard steps (Phase 43)
+### RESOLVED: Staging deployment (Phase 43) — was blocked, now live
 
-No live Staging URL exists yet. Backend is code-ready (serverless entrypoint + `vercel.json` added, tested), and the `staging` git branch is pushed to GitHub, but Vercel's auto-triggered Preview deployment for the frontend failed with `NEXT_PUBLIC_API_URL: Required` — that variable is configured for the existing "ai-priject" Vercel project's Production scope only, not Preview. Separately, no backend Vercel project exists yet at all. Neither can be fixed by an agent: (1) creating a new Vercel project for `apps/api` requires entering real secret env var values (see `docs/phase43-deployment-readiness-report.md` §7 for names only) into the dashboard; (2) setting `NEXT_PUBLIC_API_URL`/`NEXT_PUBLIC_SITE_URL` on the frontend project's Preview scope is the same category of action. **Status:** real, disclosed, owner-action-required blocker — not a code defect (confirmed via a clean local `next build`). Full detail: `docs/phase43-deployment-readiness-report.md`.
+~~No live Staging URL exists yet...~~ **Resolved 2026-08-12.** Both apps are deployed and live: frontend https://ai-priject-ex8pzy2ao-phoenix-project.vercel.app, backend https://api-seven-alpha-63.vercel.app. The owner completed the two manual dashboard/secret steps (guided step by step; no secret value was ever seen by the assistant). Two additional real bugs were found and fixed during this process — kept here for reference:
+- **Vercel-serverless-only crash**: `isomorphic-dompurify`'s `jsdom@28` dependency internally adopted an ESM-only package that Vercel's Node.js runtime can't `require()`. Fixed via a scoped `npm overrides` pin (`jsdom: 25.0.1`) in `apps/api/package.json` — no application code changed, no security regression (real DOMPurify sanitization re-verified against 6 XSS payloads).
+- **Frontend Vercel project had the wrong Root Directory** (`Auto` → repo root, instead of `apps/web`) — a real, previously-latent misconfiguration on the pre-existing "ai-priject" project, only surfaced once the original env-var blocker was cleared. Fixed by setting Root Directory explicitly.
+
+Full detail: `docs/phase43-deployment-readiness-report.md` (see "UPDATE" section).
 
 ## Platform (added Phase 14.1 — real, currently-open gaps outside Media/Storage)
 

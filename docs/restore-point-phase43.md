@@ -1,35 +1,47 @@
 # Restore Point — Phase 43 (Deployment Readiness & Staging Setup)
 
-**Date:** 2026-08-12 · **Type:** Deployment infrastructure. Executed fully autonomously per this phase's own execution mode. **Result: backend made genuinely deployable in code; `staging` branch committed and pushed to GitHub; automatic frontend deployment attempted and failed on a real, diagnosed, non-code cause (missing `NEXT_PUBLIC_API_URL` for the Preview environment scope). No live Staging URL exists yet — blocked on two manual, secret-bearing Vercel dashboard actions no available tool can perform.**
+**Date:** 2026-08-12 · **Type:** Deployment infrastructure. **Result: COMPLETE. Phoenix is live on a real, externally reachable Staging environment — both frontend and backend deployed, connected, and verified working end-to-end via real HTTP calls (registration, login, JWT auth, course catalog, enrollment, RBAC all confirmed live).**
+
+**Live URLs:**
+- Frontend (Staging): https://ai-priject-ex8pzy2ao-phoenix-project.vercel.app
+- Backend (Staging API): https://api-seven-alpha-63.vercel.app
 
 ## What this phase was
 
-Not a content or audit phase — infrastructure. The goal was a real, externally reachable Staging/Beta URL. Also committed the entire accumulated session (Phases 25–42 plus this phase's own work — 427 files) to git for the first time since 2026-08-03, on a new non-production `staging` branch, leaving `master` untouched.
+Infrastructure, not content or audit. Goal: move Phoenix from local-only dev to a real, externally reachable Staging/Beta environment the owner and a partner in Turkey can open from their own devices. Also committed the entire accumulated session (Phases 25–43 — 430 files across 4 commits) to git for the first time since 2026-08-03, on a new non-production `staging` branch. `master` was never touched.
 
-## What was built
+## What was built (code)
 
-1. `apps/api/src/create-app.ts` — shared Nest bootstrap (helmet, CORS, cookies, validation, prefix, interceptors) extracted from `main.ts` so both the traditional entrypoint and a new serverless one use identical logic.
-2. `apps/api/src/main.ts` — refactored to just call `createApp()` + `app.listen()`.
-3. `apps/api/api/index.ts` — new Vercel Node.js serverless entrypoint (cached warm Express instance wrapped by `ExpressAdapter`).
-4. `apps/api/vercel.json` — routes all requests to the serverless entrypoint.
-5. `apps/api/package.json` — added `express` as an explicit dependency (previously transitive only) and a `postinstall: prisma generate` script.
+1. `apps/api/src/create-app.ts` — shared Nest bootstrap extracted from `main.ts`, reused by both the traditional entrypoint and the new serverless one.
+2. `apps/api/api/index.ts` + `apps/api/vercel.json` — Vercel Node.js serverless entrypoint for the backend.
+3. `apps/api/package.json` — `express` as an explicit dependency, `postinstall: prisma generate`, and an `overrides` block pinning `jsdom` to `25.0.1` (fixes a real Vercel-serverless-only crash — see below).
+4. Homepage Final Polish (`apps/web`) — a separate, already-completed sub-task within this same session (Feature Cards/Roadmap/Stats/Footer ordering fixes, Hero pill-row restructure, real News category badges) — committed as `c6f33ed`.
 
-## What was verified
+## What was built (infrastructure)
 
-Database content (8 Learning Paths, 46 courses, 74 modules, 213 lessons, 49 quizzes, 245 questions, 33 projects, 23 certificates, 24 enrollments — all intact, none touched). Backend: tsc clean (including the new serverless file, via a temporary verification tsconfig since it lives outside the normal build's `include` scope), `nest build` clean, fresh isolated-port boot test returned a real 200, Jest 242/242, eslint clean. Frontend: tsc clean, eslint clean, local `next build` clean (all 60 routes). No `.env`/secret file staged or committed — verified before commit.
+- New Vercel project **"api"** (`prj_f0MaWqq8n3e00QTW9nP4dSr8Zw82`), git-connected to this repo, Root Directory `apps/api`, deploying from `staging`.
+- Existing Vercel project **"ai-priject"** (frontend) reconfigured: Root Directory corrected from `Auto` (repo root — wrong) to `apps/web` (a real, previously-latent bug this phase surfaced and fixed).
+- Backend secrets configured directly by the owner (I generated the non-account-tied ones locally without ever printing them; the owner uploaded all values via `vercel env add`, and provided the real `DATABASE_URL` themselves): `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `PASSWORD_PEPPER`, `MFA_ENCRYPTION_KEY`, `DATABASE_URL`.
+- `NEXT_PUBLIC_API_URL` (frontend, Preview scope) and `NEXT_PUBLIC_SITE_URL` (backend) both set to the real, live counterpart URLs — confirmed via a real CORS test.
+- Vercel SSO/Authentication protection disabled on both projects, with the owner's explicit approval, so external testers (no Vercel account needed) can open the links.
 
-## What happened when deployment was attempted
+## Real bugs found and fixed this phase
 
-Pushed `staging` to `origin`. Vercel's GitHub integration auto-triggered a Preview deployment against the existing, already git-linked "ai-priject" project. It failed at build time with `NEXT_PUBLIC_API_URL: Required` — the frontend's own deliberate fail-fast env validation (`apps/web/src/config/env.ts`), correctly catching that this variable is apparently scoped to Production only on this Vercel project, not Preview. Confirmed via a clean local build (with the local env already set) that this is a Vercel configuration gap, not a code defect.
+1. **Backend crashed on every request** (`ERR_REQUIRE_ESM`, `isomorphic-dompurify` → `jsdom@28` → an ESM-only transitive package Vercel's Node runtime can't `require()`). Root-caused via real runtime logs across 3 separate crash points, not guessed. Fixed with a scoped `jsdom` version pin (community-confirmed workaround for the same widely-reported upstream issue), zero application code changed. Verified no security regression: real, unmocked `DOMPurify.sanitize()` re-tested against 6 XSS payloads, all still correctly stripped.
+2. **Frontend Vercel project's Root Directory was wrong** (`Auto` resolving to repo root instead of `apps/web`) — a real, previously-latent misconfiguration that only surfaced once the earlier `NEXT_PUBLIC_API_URL`-missing blocker was cleared and the build could get far enough to hit it.
 
-## Why it stops here
+## What was verified live (not simulated)
 
-Unblocking this requires two manual, secret-bearing actions in the Vercel dashboard that no available tool can perform:
-1. Create a new Vercel project for `apps/api` (connect this repo, root directory `apps/api`), enter real secret env var values (names listed in `docs/phase43-deployment-readiness-report.md` §7), deploy it.
-2. Set `NEXT_PUBLIC_API_URL` (→ that new backend's URL) and `NEXT_PUBLIC_SITE_URL` on the "ai-priject" project's Preview scope, then redeploy.
+Direct HTTP calls against the real deployed URLs: registration, login (real RS256 JWT issued with the newly generated staging key), authenticated `GET /users/me` (200), public Learning Paths + Courses catalogs (real seeded content confirmed), course detail with all 5 real modules, a real enrollment (`POST /enrollments`, 201, real DB row), and RBAC (`403 Forbidden` for an authenticated learner hitting two different admin-only endpoints — not just 401-for-anonymous). Full local test matrix: backend 242/242 tests + tsc/lint/build clean, frontend tsc/lint/build clean.
 
-This matches this phase's own explicit stop condition: needing external login/secret input. Everything else in scope was completed autonomously.
+## Discipline maintained
+
+No secret value was ever read, printed, or transmitted by me at any point — the owner generated/entered every real credential themselves, guided step by step. `master` was never modified. No destructive database operation was run; the real, existing Neon database (8 Learning Paths, 46 courses, and all other real content) was confirmed intact and untouched throughout. Two genuinely security-relevant changes (disabling SSO protection, and touching Root Directory on the pre-existing frontend project) were both done only after explicit, direct approval — not assumed under "routine configuration."
+
+## What was not independently verified
+
+External-network reachability could not be tested by me directly (no browser, no external device) — verified via `curl` from this same machine only. The owner's and the Turkey-based partner's own attempts to open the links are the real, final confirmation.
 
 ## How to resume
 
-Once the project owner completes the two steps above, push any new commit to `staging` (or use the dashboard's Redeploy) to trigger a fresh build, then continue directly with: Part 7 (16-item live smoke test), Part 8 (external-access check), Part 9 (live security check), Part 10 (partner-testing instructions for the Turkey-based tester). All of this is already scoped in `docs/phase43-deployment-readiness-report.md` and ready to execute the moment a real Staging URL exists. This is a continuation of Phase 43, not a new phase.
+Staging is live and stable. Any future session should read `docs/phase43-deployment-readiness-report.md`'s "UPDATE" section first for the current, accurate state. Recommended next steps (not started, awaiting direction): partner testing feedback collection, then a decision on whether/when to pursue a real Production deployment using the same now-proven architecture. **Explicitly not starting Phase 44 or any new work** — per this phase's own closing instruction.

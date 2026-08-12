@@ -1,6 +1,37 @@
 # Phase 43 — Deployment Readiness & Staging Setup
 
-**Date:** 2026-08-12 · **Type:** Deployment infrastructure — move from local-only dev toward a real, externally reachable Staging/Beta environment. Executed autonomously per this phase's own execution mode. **Result: code is fully deployment-ready and committed; a live Staging URL does NOT yet exist, blocked on two manual, secret-bearing Vercel dashboard steps that no available tool can perform.**
+**Date:** 2026-08-12 · **Type:** Deployment infrastructure — move from local-only dev toward a real, externally reachable Staging/Beta environment.
+
+## UPDATE 2026-08-12 (later same day) — STAGING IS LIVE
+
+The section below this point is the original report, written when the phase paused waiting on two manual owner-side Vercel actions. Those actions were completed (with the owner's live, hands-on help via guided PowerShell steps for the secret-bearing parts — I never saw any secret value), and the phase continued autonomously from there. **Both apps are now genuinely deployed, live, and verified working end-to-end.**
+
+**Real, live URLs:**
+- **Frontend (Staging):** https://ai-priject-ex8pzy2ao-phoenix-project.vercel.app
+- **Backend (Staging API):** https://api-seven-alpha-63.vercel.app
+
+**What was done after the original pause:**
+1. **Vercel CLI authenticated** via the real device-authorization OAuth flow (owner opened the URL and approved it in their browser — I never handled a token or password).
+2. **New Vercel project "api" created** (`prj_f0MaWqq8n3e00QTW9nP4dSr8Zw82`, team `phoenix project`), linked to `apps/api`, git-connected to `tambeabdulkarim/ai-priject`, Root Directory set to `apps/api`.
+3. **Backend secrets configured** (names only, values never seen by me):
+   - `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `PASSWORD_PEPPER`, `MFA_ENCRYPTION_KEY` — generated locally (staging-only, not shared with any other environment) by the owner directly, via a script I wrote that never printed the values, and uploaded by the owner directly via `vercel env add` piped from local files.
+   - `DATABASE_URL` — the real, existing Neon connection string, extracted and uploaded by the owner directly from their own `.env` file; I never read or saw it.
+   - `NEXT_PUBLIC_SITE_URL` — set by me once the real frontend URL existed (see below); not a secret.
+4. **A real deployment-blocking bug was found and fixed**: the backend crashed on every request with `Error [ERR_REQUIRE_ESM]` — `isomorphic-dompurify`'s `jsdom@28` dependency (used for server-side HTML sanitization, `apps/api/src/common/utils/sanitize-html.ts`) adopted an ESM-only package (`@exodus/bytes`) internally, which Vercel's Node.js serverless runtime cannot `require()`. Root-caused across 3 separate crash points (via `html-encoding-sniffer`, `whatwg-url`, and jsdom's own top-level entry file) using real runtime logs, not guesswork. Fixed via a scoped `npm overrides` pin (`jsdom: 25.0.1`, matching a community-confirmed working workaround for the same widely-reported upstream issue) in `apps/api/package.json` — zero application code changed. **Verified no security regression**: ran the real, unmocked `DOMPurify.sanitize()` against 6 real XSS/injection test cases (script tags, `onerror`/`onclick` handlers, `javascript:` hrefs, disallowed tags) — all correctly stripped, identical to pre-fix behavior. 242/242 backend tests still pass. Committed as `6118e48`.
+5. **Frontend Root Directory was misconfigured** on the existing "ai-priject" Vercel project (`Auto` → resolved to the repo root, but the Next.js app lives in `apps/web`) — a real, previously-latent bug that only surfaced once the `NEXT_PUBLIC_API_URL` blocker (documented below) was cleared and the build could actually get far enough to fail on this next step. Fixed by explicitly setting Root Directory to `apps/web`.
+6. **`NEXT_PUBLIC_API_URL`** set on the frontend project's Preview scope to the real backend URL; **`NEXT_PUBLIC_SITE_URL`** set on the backend to the real frontend URL once it existed — confirmed live via a direct CORS test (`Access-Control-Allow-Origin` header exactly matches the real frontend origin).
+7. **Vercel SSO/Authentication protection was disabled on both projects**, with the owner's explicit approval (asked directly, since disabling an access-control wall is a real security-relevant change) — without this, no one without a Vercel account (including the Turkey-based partner) could open either URL.
+8. **Live validation performed via real HTTP calls against the live URLs** (no browser-automation tool available, consistent with this entire project's disclosed limitation): registered a fresh test account (`POST /auth/register`), logged in and received a real RS256 JWT signed with the newly generated staging key (`POST /auth/login`), fetched `GET /users/me` authenticated (200), fetched the real public Learning Paths and Courses catalogs (confirmed real seeded content — e.g. "Data Scientist" path, "Data Science Foundations" course with all 5 real modules), enrolled in a real course (`POST /enrollments`, 201, real DB row created), and confirmed RBAC live: the same authenticated learner correctly got `403 Forbidden` on `GET /admin/settings` and `GET /users` (admin-only endpoints) — not just 401-for-unauthenticated, but real role-based denial for an authenticated non-admin.
+9. **Full test matrix**: backend 242/242 tests, tsc clean, lint clean, build clean; frontend tsc clean, lint clean, build clean (all confirmed via actual command runs, output read).
+10. **Git**: 2 new commits pushed to `staging` after the original report (`6118e48` the jsdom fix, `6e0260a` a `.gitignore` addition for `apps/web/.vercel/`) — `master` untouched throughout. No secret value ever appeared in any commit (scanned).
+
+**What was NOT independently verified**: I cannot personally open a browser from an external network — the URLs above were tested via `curl`/HTTP only, from this same machine. The owner and the Turkey-based partner opening the links themselves is the real, final confirmation of true external reachability.
+
+---
+
+## ORIGINAL REPORT (superseded by the update above — kept for the historical record, per this project's documentation policy of never rewriting history)
+
+**Original result statement (no longer current): code is fully deployment-ready and committed; a live Staging URL does NOT yet exist, blocked on two manual, secret-bearing Vercel dashboard steps that no available tool can perform.**
 
 ## 1. What was inspected
 
