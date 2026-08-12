@@ -1,4 +1,9 @@
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
@@ -9,6 +14,10 @@ describe('AuthService', () => {
       mfaVerifyResult?: boolean;
       recoveryCode?: unknown;
       redisGet?: Record<string, string | null>;
+      refreshTokenRecord?: unknown;
+      rotatedRefreshTokenRecord?: unknown;
+      session?: unknown;
+      verifyJwt?: (token: string) => unknown;
     } = {},
   ) => {
     const usersService = {
@@ -32,10 +41,38 @@ describe('AuthService', () => {
         .mockResolvedValue({ id: 'session-1', expiresAt: new Date(Date.now() + 100000) }),
       findActiveByUserId: jest.fn(),
       revokeAllForUser: jest.fn(),
+      findById: jest.fn().mockResolvedValue(
+        overrides.session ?? { id: 'session-1', revokedAt: null },
+      ),
+      touchLastActive: jest.fn(),
     };
     const refreshTokensService = {
-      issue: jest.fn().mockResolvedValue({ raw: 'raw-refresh', record: { expiresAt: new Date() } }),
+      issue: jest
+        .fn()
+        .mockResolvedValue({
+          raw: 'raw-refresh',
+          record: { id: 'rt-1', expiresAt: new Date(Date.now() + 100000) },
+        }),
       revokeAllForSession: jest.fn(),
+      hash: jest.fn().mockReturnValue('hashed-raw'),
+      findByTokenHash: jest
+        .fn()
+        .mockResolvedValue(
+          'refreshTokenRecord' in overrides
+            ? overrides.refreshTokenRecord
+            : { id: 'rt-1', userId: 'u1', sessionId: 'session-1' },
+        ),
+      rotate: jest.fn().mockResolvedValue(
+        overrides.rotatedRefreshTokenRecord ?? {
+          raw: 'new-raw-refresh',
+          record: {
+            id: 'rt-2',
+            userId: 'u1',
+            sessionId: 'session-1',
+            expiresAt: new Date(Date.now() + 100000),
+          },
+        },
+      ),
     };
     const passwordService = {
       hash: jest.fn(),
@@ -53,7 +90,9 @@ describe('AuthService', () => {
       sign: jest.fn().mockReturnValue('signed.jwt.token'),
       verify: jest
         .fn()
-        .mockImplementation(() => ({ sub: 'u1', type: 'mfa_challenge', jti: 'jti-1' })),
+        .mockImplementation(
+          overrides.verifyJwt ?? (() => ({ sub: 'u1', type: 'mfa_challenge', jti: 'jti-1' })),
+        ),
     };
     const configService = { get: jest.fn().mockReturnValue({ issuer: 'phoenix-platform' }) };
     const mfaService = {
@@ -110,6 +149,9 @@ describe('AuthService', () => {
       mfaCryptoService,
       mfaRecoveryCodesRepository,
       emailService,
+      refreshTokensService,
+      sessionsService,
+      jwtService,
     };
   };
 
@@ -177,6 +219,9 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(result.refreshToken).toBe('raw-refresh');
       expect(result.user).toEqual({ id: 'u1', email: 'a@b.com', roles: ['learner'], locale: 'ar' });
+      // Phase 43 CSRF fix: login must also issue a csrfToken alongside the
+      // refresh token — the client needs it to call POST /auth/refresh later.
+      expect(result.csrfToken).toBe('signed.jwt.token');
     });
 
     it('returns an MFA challenge instead of tokens when the account has MFA enabled', async () => {
@@ -306,6 +351,81 @@ describe('AuthService', () => {
       await expect(
         service.verifyMfaChallenge({ challengeToken: 'challenge.jwt', code: '123456' }, {}),
       ).rejects.toThrow('MFA is not enabled for this account.');
+    });
+  });
+
+  describe('refresh (Phase 43 CSRF fix)', () => {
+    // Matches signCsrfToken's real payload shape: { sub, type: 'csrf', jti, rtid }.
+    const csrfVerifyFor = (rtid: string) => () => ({
+      sub: 'u1',
+      type: 'csrf',
+      jti: 'csrf-jti',
+      rtid,
+    });
+
+    it('rejects a refresh with no CSRF token at all (missing header)', async () => {
+      const { service } = makeService();
+
+      await expect(service.refresh('raw-refresh-token', undefined)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.refresh('raw-refresh-token', undefined)).rejects.toThrow(
+        'Missing CSRF token.',
+      );
+    });
+
+    it('rejects a refresh whose CSRF token is bound to a different session (rtid mismatch) — the case a stolen/replayed token from another session would hit', async () => {
+      const { service } = makeService({
+        refreshTokenRecord: { id: 'rt-1', userId: 'u1', sessionId: 'session-1' },
+        verifyJwt: csrfVerifyFor('some-other-refresh-token-id'),
+      });
+
+      await expect(service.refresh('raw-refresh-token', 'csrf-for-a-different-session')).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(service.refresh('raw-refresh-token', 'csrf-for-a-different-session')).rejects.toThrow(
+        'CSRF token does not match this session.',
+      );
+    });
+
+    it('rejects when the refresh_token cookie itself does not match any real record', async () => {
+      const { service } = makeService({
+        refreshTokenRecord: null,
+        verifyJwt: csrfVerifyFor('rt-1'),
+      });
+
+      await expect(service.refresh('bogus-token', 'some-csrf-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('succeeds and rotates both tokens when the CSRF token correctly matches the session bound to the refresh_token cookie', async () => {
+      const { service, refreshTokensService, sessionsService } = makeService({
+        refreshTokenRecord: { id: 'rt-1', userId: 'u1', sessionId: 'session-1' },
+        verifyJwt: csrfVerifyFor('rt-1'),
+      });
+
+      const result = await service.refresh('raw-refresh-token', 'matching-csrf-token');
+
+      expect(result.accessToken).toBe('signed.jwt.token');
+      expect(result.refreshToken).toBe('new-raw-refresh');
+      // A fresh csrfToken must be issued every rotation — it's tied to the
+      // NEW refresh token record, not reusable against the old one.
+      expect(result.csrfToken).toBe('signed.jwt.token');
+      expect(refreshTokensService.rotate).toHaveBeenCalledWith('raw-refresh-token');
+      expect(sessionsService.touchLastActive).toHaveBeenCalledWith('session-1');
+    });
+
+    it('rejects a refresh whose session has been revoked, even with a valid CSRF token', async () => {
+      const { service } = makeService({
+        refreshTokenRecord: { id: 'rt-1', userId: 'u1', sessionId: 'session-1' },
+        verifyJwt: csrfVerifyFor('rt-1'),
+        session: { id: 'session-1', revokedAt: new Date() },
+      });
+
+      await expect(service.refresh('raw-refresh-token', 'matching-csrf-token')).rejects.toThrow(
+        'Session has been revoked.',
+      );
     });
   });
 

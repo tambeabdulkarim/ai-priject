@@ -34,6 +34,8 @@ export interface RequestOptions {
   skipAuthRetry?: boolean;
   /** Omit the Authorization header even if a token is present (currently unused by any Phase 2 endpoint, but kept for a genuinely public call made through an otherwise-authenticated client instance). */
   skipAuthHeader?: boolean;
+  /** Extra headers merged in verbatim (e.g. X-CSRF-Token on POST /auth/refresh) — never overrides Content-Type/Authorization, which are always set internally. */
+  extraHeaders?: Record<string, string>;
   /** AbortSignal to compose with the wrapper's own timeout-driven signal — e.g. a caller-provided cancellation (React Query's own signal). */
   signal?: AbortSignal;
 }

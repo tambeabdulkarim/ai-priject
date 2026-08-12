@@ -65,9 +65,20 @@ export function createAuthResource(request: RequestFn) {
         skipAuthRetry: true,
       }),
 
-    /** Relies entirely on the httpOnly refresh_token cookie (credentials: 'include', set by core/request.ts) — no body. */
-    refresh: () =>
-      request<RefreshResponse>({ method: 'POST', path: '/auth/refresh', skipAuthRetry: true }),
+    /**
+     * Relies entirely on the httpOnly refresh_token cookie (credentials:
+     * 'include', set by core/request.ts) — no body. `csrfToken` is echoed
+     * back as X-CSRF-Token (see LoginResponse's comment in @phoenix/types
+     * for why this exists) — omitted only when the caller genuinely has
+     * none yet (e.g. a hard page load before any login this session).
+     */
+    refresh: (csrfToken?: string) =>
+      request<RefreshResponse>({
+        method: 'POST',
+        path: '/auth/refresh',
+        skipAuthRetry: true,
+        extraHeaders: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
+      }),
 
     logout: () => request<void>({ method: 'POST', path: '/auth/logout', skipAuthRetry: true }),
 

@@ -65,9 +65,29 @@ export interface AuthUser {
  * never-store-the-refresh-token-in-JS design (see api-client's auth
  * resource and apps/web/src/services/auth-client.ts).
  */
+/**
+ * `csrfToken` (Phase 43 Staging CORS/CSRF fix): a short-lived, signed
+ * token the client must echo back as the `X-CSRF-Token` header on
+ * `POST /auth/refresh` — required because that endpoint authenticates
+ * purely via the refresh_token cookie (no Authorization header exists
+ * yet), and the real Staging frontend/backend are two different sites
+ * (SameSite=None on that cookie), so this replaces the CSRF protection
+ * SameSite=Strict used to provide. Kept in memory for normal use (see
+ * apps/web/src/services/auth-client.ts) and ALSO mirrored into
+ * sessionStorage — the one exception to this package's usual in-memory-
+ * only token handling — specifically so a full page reload (F5), which
+ * wipes plain JS module state but not the still-valid httpOnly
+ * refresh_token cookie, doesn't strand the client without a CSRF token to
+ * send on the next refresh call. `accessToken` and the refresh token
+ * itself are never persisted anywhere client-side — `accessToken` stays
+ * in-memory only (a fresh one is reissued by that same post-reload
+ * refresh call), and the refresh token never leaves its httpOnly cookie.
+ * `localStorage` is never used for any of these.
+ */
 export interface LoginResponse {
   accessToken: string;
   user: AuthUser;
+  csrfToken: string;
 }
 
 /** What `POST /auth/login` actually returns — either real tokens, or an MFA challenge to resolve via `POST /auth/mfa/verify`. */
@@ -109,8 +129,10 @@ export interface MfaRegenerateRecoveryCodesResponse {
   recoveryCodes: string[];
 }
 
+/** `csrfToken` rotates every refresh — see LoginResponse's comment. */
 export interface RefreshResponse {
   accessToken: string;
+  csrfToken: string;
 }
 
 export interface LogoutAllResponse {

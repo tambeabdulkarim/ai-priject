@@ -26,7 +26,8 @@ export class RefreshTokensService {
     private readonly sessionsRepository: SessionsRepository,
   ) {}
 
-  private hash(raw: string): string {
+  /** Exposed (not private) so AuthService can look up a refresh token's record by its raw cookie value before deciding to rotate it — needed for the CSRF-token-binding check on POST /auth/refresh. */
+  hash(raw: string): string {
     return createHash('sha256').update(raw).digest('hex');
   }
 

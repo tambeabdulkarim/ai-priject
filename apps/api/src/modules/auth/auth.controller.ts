@@ -8,6 +8,7 @@
 import {
   Body,
   Controller,
+  Headers,
   HttpCode,
   NotImplementedException,
   Param,
@@ -42,11 +43,20 @@ export class AuthController {
     return { ipAddress: req.ip, userAgent: req.headers['user-agent'] };
   }
 
+  // docs/phase43-deployment-readiness-report.md: the real Staging frontend
+  // and backend are two different *.vercel.app sites (vercel.app is on the
+  // Public Suffix List, so these are genuinely cross-site, not same-site
+  // subdomains) — SameSite=Strict silently drops this cookie on every
+  // cross-site fetch(), which is why `/auth/refresh` always failed in a
+  // real browser despite working over direct HTTP calls. SameSite=None is
+  // the only setting that reaches the API at all in this topology; the
+  // CSRF exposure that removing Strict/Lax would otherwise open is closed
+  // by the csrfToken mechanism below (see AuthTokens.csrfToken's comment).
   private setRefreshCookie(res: Response, token: string, expiresAt: Date): void {
     res.cookie(REFRESH_COOKIE_NAME, token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       expires: expiresAt,
       path: '/api/v1/auth',
     });
@@ -101,7 +111,7 @@ export class AuthController {
       return result;
     }
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken: result.accessToken, user: result.user, csrfToken: result.csrfToken };
   }
 
   // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2). Public (the caller has no
@@ -118,7 +128,7 @@ export class AuthController {
   ) {
     const result = await this.authService.verifyMfaChallenge(dto, this.requestMeta(req));
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
-    return { accessToken: result.accessToken, user: result.user };
+    return { accessToken: result.accessToken, user: result.user, csrfToken: result.csrfToken };
   }
 
   // docs/10-SECURITY-BIBLE.md §5 (Phase 14.2) — enrollment/management,
@@ -163,14 +173,18 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 900_000 } })
   @HttpCode(200)
   @Post('refresh')
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Headers('x-csrf-token') csrfToken?: string,
+  ) {
     const raw = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
     if (!raw) {
       throw new UnauthorizedException('No refresh token cookie present.');
     }
-    const result = await this.authService.refresh(raw);
+    const result = await this.authService.refresh(raw, csrfToken);
     this.setRefreshCookie(res, result.refreshToken, result.refreshTokenExpiresAt);
-    return { accessToken: result.accessToken };
+    return { accessToken: result.accessToken, csrfToken: result.csrfToken };
   }
 
   @HttpCode(204)

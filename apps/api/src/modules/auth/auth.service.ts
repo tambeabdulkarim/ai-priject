@@ -28,6 +28,7 @@
 
 import {
   BadRequestException,
+  ForbiddenException,
   HttpException,
   Injectable,
   Logger,
@@ -61,14 +62,34 @@ import { MfaEnrollConfirmDto } from './dto/mfa-enroll-confirm.dto';
 
 interface PurposeTokenPayload {
   sub: string;
-  type: 'email_verification' | 'password_reset' | 'mfa_challenge';
+  type: 'email_verification' | 'password_reset' | 'mfa_challenge' | 'csrf';
   jti: string;
+  /** Only set for type 'csrf' — binds the token to the specific RefreshToken row it was issued alongside, so a CSRF token from one session can never be paired with another session's refresh_token cookie. */
+  rtid?: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   refreshTokenExpiresAt: Date;
+  /**
+   * Real-frontend/real-backend deployment (Phase 43 Staging) put the SPA
+   * and the API on two genuinely different sites (different *.vercel.app
+   * subdomains — vercel.app itself is on the Public Suffix List, so these
+   * are cross-site, not just cross-origin), which is why refresh_token's
+   * cookie now needs SameSite=None to ever reach the API at all. Removing
+   * SameSite=Strict's CSRF protection requires a real replacement — this
+   * is that replacement: a short-lived, signed, single-session-bound
+   * token the frontend must echo back as the X-CSRF-Token header on
+   * POST /auth/refresh (the only endpoint that authenticates purely via
+   * the cookie with no Authorization header). Reuses the existing
+   * purpose-token JWT mechanism (see `signPurposeToken`/
+   * `verifyPurposeToken` below) rather than a second, new mechanism —
+   * deliberately NOT stored in Redis: RedisService silently no-ops when
+   * Upstash isn't configured (true on this deployment today), which would
+   * have made every refresh attempt fail closed with no visible cause.
+   */
+  csrfToken: string;
 }
 
 export type AuthenticatedLoginResult = AuthTokens & {
@@ -394,6 +415,7 @@ export class AuthService {
     );
 
     const accessToken = this.signAccessToken(user.id, session.id, roleNames);
+    const csrfToken = this.signCsrfToken(user.id, record.id, record.expiresAt);
 
     await this.auditLogService.record({
       actorUserId: user.id,
@@ -407,6 +429,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       refreshTokenExpiresAt: record.expiresAt,
+      csrfToken,
       user: { id: user.id, email: user.email, roles: roleNames, locale: user.locale },
     };
   }
@@ -532,8 +555,31 @@ export class AuthService {
     return { recoveryCodes };
   }
 
-  /** docs/15-SYSTEM-WORKFLOWS.md §4 (Refresh). */
-  async refresh(rawRefreshToken: string): Promise<AuthTokens> {
+  /**
+   * docs/15-SYSTEM-WORKFLOWS.md §4 (Refresh). `submittedCsrfToken` is the
+   * X-CSRF-Token header value — this is a `@Public()` endpoint that
+   * authenticates purely via the refresh_token cookie (no Authorization
+   * header exists yet), so it's the one state-changing request a
+   * cross-site page could otherwise trigger just by having the victim's
+   * browser attach the cookie automatically. Checked BEFORE rotating: a
+   * missing/invalid/wrong-session CSRF token must never consume/rotate
+   * the real refresh token.
+   */
+  async refresh(rawRefreshToken: string, submittedCsrfToken: string | undefined): Promise<AuthTokens> {
+    const tokenHash = this.refreshTokensService.hash(rawRefreshToken);
+    const existing = await this.refreshTokensService.findByTokenHash(tokenHash);
+    if (!existing) {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    if (!submittedCsrfToken) {
+      throw new ForbiddenException('Missing CSRF token.');
+    }
+    const csrfPayload = this.verifyPurposeToken(submittedCsrfToken, 'csrf');
+    if (csrfPayload.rtid !== existing.id) {
+      throw new ForbiddenException('CSRF token does not match this session.');
+    }
+
     const { raw: refreshToken, record } = await this.refreshTokensService.rotate(rawRefreshToken);
     const session = await this.sessionsService.findById(record.sessionId);
     if (!session || session.revokedAt) {
@@ -543,8 +589,9 @@ export class AuthService {
     const roleNames = await this.rolesService.getRoleNamesForUser(record.userId);
     await this.sessionsService.touchLastActive(session.id);
     const accessToken = this.signAccessToken(record.userId, session.id, roleNames);
+    const csrfToken = this.signCsrfToken(record.userId, record.id, record.expiresAt);
 
-    return { accessToken, refreshToken, refreshTokenExpiresAt: record.expiresAt };
+    return { accessToken, refreshToken, refreshTokenExpiresAt: record.expiresAt, csrfToken };
   }
 
   /** docs/15-SYSTEM-WORKFLOWS.md §5 (Logout). */
@@ -636,6 +683,18 @@ export class AuthService {
   private signPurposeToken(payload: PurposeTokenPayload, ttlSeconds: number): string {
     const jwtConfig = this.configService.get('jwt', { infer: true });
     return this.jwtService.sign(payload, { expiresIn: ttlSeconds, issuer: jwtConfig.issuer });
+  }
+
+  /** Same lifetime as the refresh_token it's issued alongside — a CSRF token can never outlive the session it protects. */
+  private signCsrfToken(userId: string, refreshTokenId: string, refreshTokenExpiresAt: Date): string {
+    const ttlSeconds = Math.max(
+      1,
+      Math.floor((refreshTokenExpiresAt.getTime() - Date.now()) / 1000),
+    );
+    return this.signPurposeToken(
+      { sub: userId, type: 'csrf', jti: randomUUID(), rtid: refreshTokenId },
+      ttlSeconds,
+    );
   }
 
   private verifyPurposeToken(

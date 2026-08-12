@@ -61,6 +61,9 @@ export function createRequestFn(config: ApiClientConfig) {
     if (token && !input.skipAuthHeader) {
       headers.Authorization = `Bearer ${token}`;
     }
+    if (input.extraHeaders) {
+      Object.assign(headers, input.extraHeaders);
+    }
 
     const timeoutMs = input.timeoutMs ?? config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const timeoutController = new AbortController();

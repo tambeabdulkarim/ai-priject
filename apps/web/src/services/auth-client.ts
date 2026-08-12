@@ -27,7 +27,49 @@ const authApi = createApiClient({
   onUnauthorized: async () => null, // never actually invoked — see file header.
 });
 
+// csrfToken persistence (Phase 43 Staging CSRF fix, F5 follow-up): held in
+// memory for normal use, exactly like accessToken — but ALSO mirrored into
+// sessionStorage so a full page reload (which wipes this module's plain JS
+// variables, but not the still-valid httpOnly refresh_token cookie) doesn't
+// strand recoverSession()/handleUnauthorized() without a CSRF token to send
+// on the very next POST /auth/refresh. sessionStorage specifically (never
+// localStorage): origin-scoped exactly like this in-memory variable already
+// was, and cleared when the tab closes — no new persistence beyond one tab's
+// lifetime is introduced. accessToken and refresh_token are deliberately
+// NEVER written here — refresh_token is httpOnly (JS can't touch it
+// regardless), and accessToken doesn't need this treatment since a fresh
+// one is reissued by the same post-reload refresh call this fix repairs.
+const CSRF_STORAGE_KEY = 'phoenix_csrf_token';
+
+function readStoredCsrfToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage.getItem(CSRF_STORAGE_KEY);
+  } catch {
+    // Private-browsing modes / storage disabled — fall back to memory-only
+    // behavior (the pre-fix behavior) rather than throwing.
+    return null;
+  }
+}
+
+function writeStoredCsrfToken(token: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) {
+      window.sessionStorage.setItem(CSRF_STORAGE_KEY, token);
+    } else {
+      window.sessionStorage.removeItem(CSRF_STORAGE_KEY);
+    }
+  } catch {
+    // Same fallback as above — the in-memory value still works for the
+    // remainder of this tab's lifetime even if persistence itself fails.
+  }
+}
+
 let accessToken: string | null = null;
+// Restored from sessionStorage at module load (covers the F5 case) — see
+// the block comment above.
+let csrfToken: string | null = readStoredCsrfToken();
 let refreshPromise: Promise<string | null> | null = null;
 
 export function getAccessToken(): string | null {
@@ -36,6 +78,11 @@ export function getAccessToken(): string | null {
 
 function setAccessToken(token: string | null): void {
   accessToken = token;
+}
+
+function setCsrfToken(token: string | null): void {
+  csrfToken = token;
+  writeStoredCsrfToken(token);
 }
 
 export function getCurrentAuthUser(): AuthUser | null {
@@ -61,13 +108,15 @@ export async function handleUnauthorized(): Promise<string | null> {
     return refreshPromise;
   }
   refreshPromise = authApi.auth
-    .refresh()
+    .refresh(csrfToken ?? undefined)
     .then((result) => {
       if (result.error) {
         setAccessToken(null);
+        setCsrfToken(null);
         return null;
       }
       setAccessToken(result.data.accessToken);
+      setCsrfToken(result.data.csrfToken);
       return result.data.accessToken;
     })
     .finally(() => {
@@ -98,6 +147,7 @@ export async function login(email: string, password: string) {
     return result;
   }
   setAccessToken(result.data.accessToken);
+  setCsrfToken(result.data.csrfToken);
   return result;
 }
 
@@ -108,6 +158,7 @@ export async function verifyMfa(challengeToken: string, code: string) {
     return result;
   }
   setAccessToken(result.data.accessToken);
+  setCsrfToken(result.data.csrfToken);
   return result;
 }
 
@@ -152,12 +203,14 @@ export async function resetPassword(token: string, newPassword: string) {
 export async function logout(): Promise<void> {
   await authApi.auth.logout();
   setAccessToken(null);
+  setCsrfToken(null);
 }
 
 /** Ends EVERY session, including the acting one (matches the real backend: auth.controller.ts's logoutAll clears the current session's cookie too) — forces a fresh login regardless of which device called it. */
 export async function logoutAll(): Promise<{ sessionsRevoked: number }> {
   const result = await authApi.auth.logoutAll();
   setAccessToken(null);
+  setCsrfToken(null);
   if (result.error) {
     return { sessionsRevoked: 0 };
   }

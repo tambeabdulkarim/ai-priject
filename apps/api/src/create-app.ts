@@ -56,7 +56,10 @@ export async function createApp(httpAdapter?: AbstractHttpAdapter): Promise<INes
     origin: frontendOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    // X-CSRF-Token: required for POST /auth/refresh's CSRF-binding check
+    // (auth.controller.ts) — without it, the browser's preflight strips
+    // the header before it ever reaches the API.
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   });
 
   app.use(cookieParser());
