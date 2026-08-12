@@ -15,22 +15,15 @@ const FEATURES: {
   title: string;
   desc: string;
   link: string;
+  badge?: { text: string; color: string };
 }[] = [
   {
-    id: 'tools',
-    Icon: Zap,
-    color: '#f59e0b',
-    title: 'أدوات الذكاء الاصطناعي',
-    desc: 'اكتشف أفضل الأدوات الذكية مع شروحات وتقييمات مستمرة',
-    link: 'استكشف الأدوات',
-  },
-  {
-    id: 'courses',
-    Icon: GraduationCap,
-    color: '#db2777',
-    title: 'الدورات التدريبية',
-    desc: 'دورات تدريبية عملية من المبتدئ إلى الاحتراف. مع مشاريع وشهادات',
-    link: 'تصفح الدورات',
+    id: 'news',
+    Icon: FileText,
+    color: '#10b981',
+    title: 'أخبار الذكاء الاصطناعي',
+    desc: 'أحدث أخبار وتقنيات الذكاء الاصطناعي والتطورات اليومية',
+    link: 'اقرأ الأخبار',
   },
   {
     id: 'careers',
@@ -39,6 +32,24 @@ const FEATURES: {
     title: 'المسارات المهنية',
     desc: 'اختر المسار المناسب لطموحك وطور مهاراتك باستخدام الذكاء الاصطناعي',
     link: 'استكشف المسارات',
+  },
+  {
+    id: 'courses',
+    Icon: GraduationCap,
+    color: '#db2777',
+    title: 'الدورات التدريبية',
+    desc: 'دورات تدريبية عملية من المبتدئ إلى الاحتراف. مع مشاريع وشهادات',
+    link: 'تصفح الدورات',
+    badge: { text: 'الأكثر شيوعاً', color: 'var(--accent-pink)' },
+  },
+  {
+    id: 'tools',
+    Icon: Zap,
+    color: '#f59e0b',
+    title: 'أدوات الذكاء الاصطناعي',
+    desc: 'اكتشف أفضل الأدوات الذكية مع شروحات وتقييمات مستمرة',
+    link: 'استكشف الأدوات',
+    badge: { text: 'الأكثر زيارة', color: 'var(--accent-purple)' },
   },
   {
     id: 'products',
@@ -56,14 +67,6 @@ const FEATURES: {
     desc: 'مكتبة إلكترونية متخصصة ومراجع مختارة بعناية',
     link: 'استكشف الكتب',
   },
-  {
-    id: 'news',
-    Icon: FileText,
-    color: '#10b981',
-    title: 'أخبار الذكاء الاصطناعي',
-    desc: 'أحدث أخبار وتقنيات الذكاء الاصطناعي والتطورات اليومية',
-    link: 'اقرأ الأخبار',
-  },
 ];
 
 export default function FeatureCards() {
@@ -74,6 +77,11 @@ export default function FeatureCards() {
         <div className="ph-feat-grid">
           {FEATURES.map((f) => (
             <article key={f.id} className="ph-feat-card" style={{ borderBottomColor: f.color }}>
+              {f.badge && (
+                <span className="ph-pill" style={{ background: f.badge.color }}>
+                  {f.badge.text}
+                </span>
+              )}
               <div
                 className="ph-feat-ico"
                 style={{ background: f.color + '22', color: f.color }}

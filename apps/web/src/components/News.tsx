@@ -70,6 +70,7 @@ export default function News() {
               <Newspaper size={40} strokeWidth={1.5} color="#fff" />
             </div>
             <div className="ph-news-body">
+              <span className="ph-news-badge">{article.category.name}</span>
               <p className="ph-news-title">{article.title}</p>
               <span className="ph-news-time">
                 <Clock size={12} strokeWidth={2} aria-hidden="true" />

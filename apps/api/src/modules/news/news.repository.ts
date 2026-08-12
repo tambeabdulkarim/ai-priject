@@ -23,7 +23,9 @@ export class NewsRepository {
     return this.prisma.newsCategory.findUnique({ where: { id } });
   }
 
-  async findMany(params: ListNewsParams): Promise<{ items: News[]; nextCursor: string | null }> {
+  async findMany(
+    params: ListNewsParams,
+  ): Promise<{ items: (News & { category: NewsCategory })[]; nextCursor: string | null }> {
     const where: Prisma.NewsWhereInput = {
       AND: [
         params.includeAllStatuses ? {} : { status: 'published' },
@@ -45,6 +47,11 @@ export class NewsRepository {
       ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
       where,
       orderBy: { createdAt: 'desc' },
+      // Public category name/slug only — same public taxonomy data already
+      // exposed on the detail endpoint (findBySlug) for the exact same
+      // anonymous caller. No author/PII join added here, unlike the
+      // deliberately-narrowed `author` scoping below.
+      include: { category: true },
     });
 
     const hasMore = items.length > params.limit;

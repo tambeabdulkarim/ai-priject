@@ -178,20 +178,8 @@ export default function Hero({ locale }: HeroProps) {
             والمنتجات الرقمية في مكان واحد.
           </p>
 
-          <div className="ph-search ph-hero-search">
-            <input
-              className="ph-search-input"
-              type="search"
-              placeholder="ابحث عن أداة، دورة، مسار مهني أو موضوع..."
-              aria-label="Search"
-            />
-            <button className="ph-search-btn" type="button" aria-label="Search">
-              <Search size={14} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="ph-hero-cta-row">
-            <div className="ph-hero-pill-group" aria-hidden="true">
+          <div className="ph-hero-pills-row" aria-hidden="true">
+            <div className="ph-hero-pill-group">
               {PILLS_LEFT.map((p) => (
                 <div key={p.label} className="ph-hero-pill">
                   <span className="ph-hero-pill-ico">
@@ -205,18 +193,7 @@ export default function Hero({ locale }: HeroProps) {
               ))}
             </div>
 
-            <div className="ph-hero-btns">
-              <a href={`/${locale}/workspace`} className="ph-btn-primary">
-                <Rocket size={16} strokeWidth={2.25} aria-hidden="true" />
-                ابدأ التعلم الآن
-              </a>
-              <button className="ph-btn-ghost" type="button">
-                <Play size={16} strokeWidth={2.25} aria-hidden="true" />
-                شاهد كيف تعمل المنصة
-              </button>
-            </div>
-
-            <div className="ph-hero-pill-group" aria-hidden="true">
+            <div className="ph-hero-pill-group">
               {PILLS_RIGHT.map((p) => (
                 <div key={p.label} className="ph-hero-pill">
                   <span className="ph-hero-pill-ico">
@@ -228,6 +205,31 @@ export default function Hero({ locale }: HeroProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="ph-search ph-hero-search">
+            <input
+              className="ph-search-input"
+              type="search"
+              placeholder="ابحث عن أداة، دورة، مسار مهني أو موضوع..."
+              aria-label="Search"
+            />
+            <button className="ph-search-btn" type="button" aria-label="Search">
+              <Search size={14} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="ph-hero-cta-row">
+            <div className="ph-hero-btns">
+              <a href={`/${locale}/workspace`} className="ph-btn-primary">
+                <Rocket size={16} strokeWidth={2.25} aria-hidden="true" />
+                ابدأ التعلم الآن
+              </a>
+              <button className="ph-btn-ghost" type="button">
+                <Play size={16} strokeWidth={2.25} aria-hidden="true" />
+                شاهد كيف تعمل المنصة
+              </button>
             </div>
           </div>
         </div>

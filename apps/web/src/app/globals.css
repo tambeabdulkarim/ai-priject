@@ -583,9 +583,23 @@ body {
   direction: ltr;
 }
 
+/* Row of the two flanking stat-pill pairs (AI Models/API Requests on
+   the left, Dataset/Cloud Sync on the right), positioned above the
+   search bar — matches apps/web/public/images/v1/hero/approved.png.jpeg,
+   the Hero-specific approved reference. Fixed left/right sides
+   regardless of page direction, same technique as .ph-hero-stage. */
+.ph-hero-pills-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  direction: ltr;
+}
+
 .ph-hero-pill-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.6rem;
   flex-shrink: 0;
 }
@@ -1475,6 +1489,16 @@ body {
 
   .ph-h1 {
     font-size: 1.7rem;
+  }
+
+  .ph-hero-pills-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ph-hero-pill-group {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .ph-feat-grid {
